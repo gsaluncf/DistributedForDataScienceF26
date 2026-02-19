@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 6 Lab — pandas vs Polars Benchmark</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Benchmarking DataFrame Workloads</h2>
+    <p style="color:#1e293b;">Reproduce the same ETL in pandas and Polars, record runtimes and memory, and assert thresholds to enable autograding. Use Parquet for IO where possible.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Dataset</h3>
+  <p style="color:#1e293b;">Use the provided synthetic CSV (~200MB) from the assignment repo (<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/data/synthetic.csv</code>). You may convert to Parquet for faster repeated runs.</p>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tasks</h3>
+  <ol style="color:#1e293b;">
+    <li>Load data; ensure column dtypes are optimal (categoricals/ints where applicable).</li>
+    <li>Compute: groupby aggregations (mean/sum), filtered joins, windowed rank, and a derived column.</li>
+    <li>Write result to Parquet with snappy compression.</li>
+  </ol>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Benchmark protocol</h3>
+    <ul>
+      <li>Warm-up once, then record the best of 3 runs for each library.</li>
+      <li>Measure wall time and peak RSS (process memory) if possible.</li>
+      <li>Save timings to a small JSON (pandas_time, polars_time, pandas_mem_mb, polars_mem_mb).</li>
+    </ul>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Autograding assertions</h3>
+  <ul style="color:#1e293b;">
+    <li>Results equality check: outputs must be identical (same row count and key metrics within tolerance).</li>
+    <li>Performance check: <em>polars_time ≤ 0.75 × pandas_time</em> on the benchmark machine (set as a soft threshold in tests).</li>
+  </ul>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">What to submit</h3>
+    <ul style="color:#1e293b;">
+      <li>Notebook (.ipynb) with both implementations and timing cells.</li>
+      <li>Exported Parquet output (first 100 rows) and timing JSON.</li>
+      <li>Short memo (<=300 words): when to switch to Polars; caveats.</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+    <ul>
+      <li><a href="https://pandas.pydata.org/docs/user_guide/enhancingperf.html">pandas performance</a></li>
+      <li><a href="https://pandas.pydata.org/docs/user_guide/scale.html">pandas scaling</a></li>
+      <li><a href="https://docs.pola.rs/user-guide/lazy/intro/">Polars lazy</a></li>
+      <li><a href="https://docs.pola.rs/user-guide/transformations/predicate-pushdown/">Polars predicate pushdown</a></li>
+    </ul>
+  </div>
+</body>
+</html>

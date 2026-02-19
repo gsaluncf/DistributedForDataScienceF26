@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS CLI v2 Installation Guide (Windows/macOS/Linux)</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Install AWS CLI v2</h2>
+    <p style="color:#1e293b;">Follow the steps for your OS. Verify with <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws --version</code> and <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws sts get-caller-identity</code>. Screenshots are indicated with placeholders—capture them during class for Canvas.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Windows 10/11 (PowerShell)</h3>
+  <ol style="color:#1e293b;">
+    <li>Download installer: <a href="https://awscli.amazonaws.com/AWSCLIV2.msi" target="_blank" rel="noopener">AWSCLIV2.msi</a>.</li>
+    <li>Run the MSI (Next → Next). Accept defaults.</li>
+    <li>Open <strong>Windows PowerShell</strong> and run:
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">aws --version
+aws configure --profile student
+# When prompted, paste your Access Key ID, Secret, default region (e.g., us-east-1), and output format (json)</pre>
+    </li>
+    <li>Verify identity (after creating your IAM user and keys):
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">aws sts get-caller-identity --profile student</pre>
+      <p style="color:#1e293b;"><em>Screenshot Placeholder 1:</em> Output of <code>aws --version</code>.</p>
+      <p style="color:#1e293b;"><em>Screenshot Placeholder 2:</em> Output of <code>aws sts get-caller-identity</code> (redact the Account ID except last 4 digits).</p>
+    </li>
+  </ol>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">macOS (Intel/Apple Silicon)</h3>
+  <ol style="color:#1e293b;">
+    <li>Using Homebrew (recommended):
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">brew install awscli</pre>
+    </li>
+    <li>Or download the PKG from <a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html" target="_blank" rel="noopener">official docs</a>.</li>
+    <li>Verify and configure:
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">aws --version
+aws configure --profile student</pre>
+    </li>
+  </ol>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Linux</h3>
+  <ol style="color:#1e293b;">
+    <li>Install via package manager or bundle:
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version</pre>
+    </li>
+    <li>Configure profile:
+      <pre style="background:#f1f5f9;padding:12px;border-radius:6px;overflow:auto;">aws configure --profile student</pre>
+    </li>
+  </ol>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Troubleshooting</h3>
+    <ul>
+      <li><strong>Command not found:</strong> Close and reopen terminal; ensure AWS CLI is on PATH.</li>
+      <li><strong>AccessDenied:</strong> Use the correct <code>--profile student</code> or re-run <code>aws configure --profile student</code>.</li>
+      <li><strong>Wrong region:</strong> Set default region during <code>aws configure</code> (e.g., <code>us-east-1</code>).</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Key Terms</h3>
+    <ul>
+      <li><strong style="color:#1e40af;">AWS CLI</strong>: A command-line tool to interact with AWS services.</li>
+      <li><strong style="color:#1e40af;">Profile</strong>: A named set of credentials and default settings used by AWS CLI, e.g., <code>--profile student</code>.</li>
+      <li><strong style="color:#1e40af;">Region</strong>: A geographic area where AWS hosts resources (e.g., <code>us-east-1</code>).</li>
+    </ul>
+  </div>
+</body>
+</html>

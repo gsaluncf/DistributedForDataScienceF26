@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4 Lab 1 - DynamoDB Hands-On</title>
+</head>
+
+<body>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Lab 1: DynamoDB
+            Hands-On</h2>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;">In this lab you will work directly with DynamoDB from
+            Python in Google Colab. You will create a table, store documents with different attribute shapes, query
+            them, update them, and clean up. Everything runs against your real AWS account.</p>
+    </div>
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Before You Start</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Prerequisites</h3>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Requirement</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How to Check</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS credentials</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">You set these up for the SAM deploy in
+                    Week 3. If <code
+                        style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws sts get-caller-identity</code>
+                    works in your terminal, you are good.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Google account</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Needed to open the notebook in Google
+                    Colab.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Setting Up Credentials in Colab</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Google Colab does not have your AWS credentials by default.
+        You need to copy two values from your local machine into Colab Secrets.</p>
+
+    <!-- Step 1: Find credentials -->
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Step 1: Find Your Credentials</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">You configured the AWS CLI in Week 3. Your credentials
+            are stored locally. Open a terminal and run:</p>
+
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">cat ~/.aws/credentials</pre>
+        </div>
+
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">You should see output like this:</p>
+
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">[default]
+aws_access_key_id = AKIA...............
+aws_secret_access_key = Y+Co...............</pre>
+        </div>
+
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Copy each value (everything <em>after</em> the
+            <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">=</code> sign, without leading spaces).
+        </p>
+    </div>
+
+    <!-- Step 2: Add to Colab -->
+    <div style="background-color:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#166534;margin-top:5px;">Step 2: Add Secrets in Colab</h3>
+        <ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>In Colab, click the <strong>🔑 key icon</strong> in the left sidebar</li>
+            <li>Click <strong>+ Add new secret</strong></li>
+            <li>Create secrets with these exact names and paste the matching values:</li>
+        </ol>
+
+        <table style="width:100%;border-collapse:collapse;margin:15px 0;border:1px solid #86efac;">
+            <thead>
+                <tr style="background-color:#dcfce7;">
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Secret Name (exact)
+                    </th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Value</th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Required?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:13px;">
+                        AWS_ACCESS_KEY_ID</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;">Starts with <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">AKIA...</code></td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#10b981;font-weight:bold;">Yes</td>
+                </tr>
+                <tr style="background-color:#f0fdf4;">
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:13px;">
+                        AWS_SECRET_ACCESS_KEY</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;">Long string of letters, numbers,
+                        and symbols</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#10b981;font-weight:bold;">Yes</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <ol start="4" style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>Toggle the <strong>Notebook access</strong> switch <strong>ON</strong> for each secret</li>
+            <li>Run the first code cell — it should print <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">Connected as: arn:aws:sts::...</code>
+            </li>
+        </ol>
+    </div>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Never hardcode credentials</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Do not paste your AWS keys directly into code cells.
+            Always use Colab Secrets or environment variables. If you accidentally commit credentials to GitHub, rotate
+            them immediately in the AWS Console.</p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Open the Notebook</h2>
+
+    <p style="color:#1e293b;font-size:16px;line-height:1.6;">Click the link below to open the lab notebook directly in
+        Google Colab:</p>
+
+    <div style="text-align:center;margin:30px 0;">
+        <a href="https://colab.research.google.com/github/gsaluncf/publicfiles/blob/main/distributedfords/week04/dynamodb_hands_on.ipynb"
+            style="display:inline-block;background-color:#3b82f6;color:#ffffff;padding:12px 30px;border-radius:8px;text-decoration:none;font-size:16px;font-weight:bold;">Open
+            in Google Colab</a>
+    </div>
+
+    <p style="color:#64748b;font-size:13px;text-align:center;">If the link does not work, download the notebook from the
+        course GitHub repository and upload it to Colab manually.</p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What You Will Do</h2>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Operation</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What You Will Learn
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Create a table</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Defining a partition key and choosing
+                    billing mode</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Put documents</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Storing items with different attribute
+                    shapes (the document model)</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Get an item</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Fast lookup by partition key</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Update attributes</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Expression syntax, adding new
+                    attributes to existing items</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scan with filters</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Finding items without knowing the key
+                    (and why this is expensive)</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">6</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>PartiQL queries</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Using SQL-like syntax to query DynamoDB
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">7</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB → DataFrame</strong>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Loading data into Pandas for analysis
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">8</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Delete and cleanup</strong>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Removing items and deleting the table
+                    to avoid charges</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">9</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Mini challenge</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add your own records, query with
+                    PartiQL, and load into a DataFrame</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Deliverable</h2>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">What to submit</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Take a screenshot of your completed Mini Challenge
+            output (Step 9) showing your custom records, PartiQL query results, and DataFrame summary. Upload the
+            screenshot to the Canvas
+            assignment.</p>
+    </div>
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Cleanup Checklist</h2>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Before you close Colab</h3>
+        <ul style="color:#1e293b;">
+            <li>Run the cleanup cell at the bottom of the notebook to delete your table</li>
+            <li>Verify in the AWS Console (DynamoDB section) that no tables remain from this lab</li>
+            <li>On-demand tables only cost money when you read/write, but deleting unused tables is good practice</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

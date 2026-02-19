@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4 Lecture 1 - DynamoDB: Understanding What You Built</title>
+</head>
+
+<body>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">DynamoDB:
+            Understanding What You Built</h2>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;">Last week you deployed a serverless API with SAM. It
+            stored data in DynamoDB. But SAM automated so much that it is worth slowing down to ask: <strong>what is
+                DynamoDB, how does it actually work, and how is it different from the SQL databases you used in your
+                Database class?</strong></p>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:10px;">By the end of this lecture you will
+            understand DynamoDB as a document database, know how partition keys work, and be ready to write CRUD code
+            against it directly in the hands-on lab.</p>
+    </div>
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: Quick Recap -
+        What SAM Deployed</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">When you ran <code
+            style="background-color:#e2e8f0;padding:2px 4px;border-radius:3px;font-family:'Courier New',monospace;">sam deploy</code>,
+        three things happened behind the scenes:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What SAM Created</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB table</strong> with a
+                    partition key called <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">id</code>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Stores your items. No schema migration,
+                    no server. On-demand billing means zero cost when idle.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Lambda function</strong> with
+                    <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">TABLE_NAME</code> environment
+                    variable
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reads the table name from its
+                    environment so the same code works in dev or production.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>IAM policy</strong>
+                    (DynamoDBCrudPolicy) scoped to that one table</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda can read/write this table only.
+                    Principle of least privilege.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Today we focus on that first item: the DynamoDB table. What
+        is it? How does it differ from MySQL or PostgreSQL? And how do you talk to it from Python?</p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1b: How Your Code
+        Talks to DynamoDB</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Unlike a traditional database where your code opens a
+        persistent TCP connection to a server, DynamoDB is an <strong>HTTP API service</strong>. Every operation
+        (put_item, get_item, etc.) is an HTTPS request to an AWS endpoint. The boto3 SDK handles this for you, but it is
+        worth understanding the layers:</p>
+
+    <!-- Architecture Diagram: App → SDK → HTTPS → DynamoDB -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 220" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Your Code box -->
+            <rect x="10" y="60" width="140" height="80" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="80" y="90" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">Your Python
+                Code</text>
+            <text x="80" y="112" text-anchor="middle" fill="#64748b" font-size="11">table.put_item(...)</text>
+
+            <!-- Arrow 1 -->
+            <line x1="150" y1="100" x2="210" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="180" y="90" text-anchor="middle" fill="#64748b" font-size="10">calls</text>
+
+            <!-- boto3 SDK box -->
+            <rect x="210" y="60" width="140" height="80" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="280" y="90" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">boto3 SDK</text>
+            <text x="280" y="112" text-anchor="middle" fill="#78716c" font-size="11">Signs request,</text>
+            <text x="280" y="126" text-anchor="middle" fill="#78716c" font-size="11">serializes JSON</text>
+
+            <!-- Arrow 2 -->
+            <line x1="350" y1="100" x2="410" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="380" y="90" text-anchor="middle" fill="#64748b" font-size="10">HTTPS</text>
+
+            <!-- AWS API Gateway / Endpoint box -->
+            <rect x="410" y="60" width="140" height="80" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
+            <text x="480" y="90" text-anchor="middle" fill="#334155" font-size="13" font-weight="bold">AWS
+                Endpoint</text>
+            <text x="480" y="112" text-anchor="middle" fill="#64748b" font-size="11">dynamodb.us-east-1</text>
+            <text x="480" y="126" text-anchor="middle" fill="#64748b" font-size="11">.amazonaws.com</text>
+
+            <!-- Arrow 3 -->
+            <line x1="550" y1="100" x2="610" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+            <text x="580" y="90" text-anchor="middle" fill="#64748b" font-size="10">routes</text>
+
+            <!-- DynamoDB box -->
+            <rect x="610" y="50" width="170" height="100" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="695" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">DynamoDB</text>
+            <text x="695" y="105" text-anchor="middle" fill="#047857" font-size="11">Partitioned storage</text>
+            <text x="695" y="120" text-anchor="middle" fill="#047857" font-size="11">across many servers</text>
+            <text x="695" y="135" text-anchor="middle" fill="#047857" font-size="11">(managed by AWS)</text>
+
+            <!-- Label row -->
+            <text x="80" y="170" text-anchor="middle" fill="#94a3b8" font-size="10">YOUR MACHINE</text>
+            <text x="280" y="170" text-anchor="middle" fill="#94a3b8" font-size="10">YOUR MACHINE</text>
+            <text x="480" y="170" text-anchor="middle" fill="#94a3b8" font-size="10">AWS CLOUD</text>
+            <text x="695" y="170" text-anchor="middle" fill="#94a3b8" font-size="10">AWS CLOUD</text>
+
+            <!-- Arrowhead marker -->
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Notice there is no "connection string" in the traditional
+        sense. You do not open a socket, specify a port, or provide a database name. Instead, boto3 uses your
+        <strong>AWS credentials</strong> (access key + secret key) to sign each HTTPS request. DynamoDB authenticates
+        the signature and routes the request to your table.
+    </p>
+
+    <!-- Connection Strings Panel -->
+    <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Aside: Connection Strings Are Harder Than They Look</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Every database has its own way of connecting, and the
+            differences catch people off guard. Here is what "connect to a database" looks like across three systems you
+            might encounter:</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:15px 0;border:1px solid #cbd5e1;">
+            <thead>
+                <tr style="background-color:#f1f5f9;">
+                    <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Database</th>
+                    <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How You Connect
+                    </th>
+                    <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Makes It
+                        Tricky</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>SQL Server</strong></td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">
+                        <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;font-size:12px;">Server=myserver.database.windows.net; Database=mydb; User Id=admin; Password=***;</code>
+                    </td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Port numbers, Windows auth vs SQL
+                        auth, TLS settings, firewall rules, driver versions (ODBC vs JDBC vs pymssql)</td>
+                </tr>
+                <tr style="background-color:#f8fafc;">
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Excel / Google
+                            Sheets</strong></td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">
+                        Install an ODBC driver, configure a DSN in Windows, then use <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;font-size:12px;">Data > Get External Data</code>
+                    </td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">ODBC driver often needs separate
+                        installation, 32-bit vs 64-bit conflicts, credentials stored in the connection dialog</td>
+                </tr>
+                <tr>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>DynamoDB</strong></td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">
+                        <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;font-size:12px;">boto3.resource('dynamodb', region_name='us-east-1')</code>
+                    </td>
+                    <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No host, port, or database name.
+                        Credentials come from environment variables or <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;font-size:12px;">~/.aws/credentials</code>.
+                        Region selects the endpoint automatically.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p style="color:#64748b;font-size:14px;line-height:1.5;margin-top:10px;">The takeaway: each database system has
+            its own connection model. DynamoDB's approach (credentials + region, no connection string) feels unusual at
+            first, but it is actually simpler once set up because there is no server address, port, or driver to manage.
+        </p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: DynamoDB is a
+        Document Database</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">What is a Document Database?</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">In your Database class you worked with relational databases
+        where every row in a table has the same columns. DynamoDB is different: it stores <strong>documents</strong>.
+        Each document (called an <strong>item</strong>) is a JSON-like collection of attributes, and different items in
+        the same table can have completely different attributes.</p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Think of it this way: a SQL table is like a spreadsheet
+        with fixed columns. A DynamoDB table is more like a filing cabinet where each folder can contain whatever papers
+        it needs.</p>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Comparing What You Already Know</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">You spent a semester with SQL. Here is how DynamoDB maps to
+        concepts you already understand:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">SQL (What You Know)
+                </th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">DynamoDB (What is New)
+                </th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Key Difference</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Table with fixed columns</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Table with flexible attributes</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Only the key is defined. Everything
+                    else is per-item.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Row</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Item (a JSON document)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Items in the same table can have
+                    different attributes.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Column (same type for every row)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Attribute (varies per item)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No ALTER TABLE needed. Just add new
+                    attributes to new items.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">PRIMARY KEY (often auto-increment)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Partition key (you choose the
+                    attribute)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Partition key also determines physical
+                    data placement.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQL queries (SELECT, INSERT, JOIN)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API calls (get_item, put_item)
+                    <em>or</em> PartiQL (SQL-like syntax)
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Two options: Pythonic API or PartiQL
+                    for familiar SQL syntax.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">JOINs across tables</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No JOINs</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Design your data to avoid the need for
+                    joins.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Scale up (bigger server)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Scale out (automatic,
+                        horizontal)</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB distributes data across many
+                    servers automatically.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">The Flexible Schema in Action</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Here is what a DynamoDB table actually looks like. Notice
+        that each item has different attributes:</p>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;"># Item 1: Alice has a contact map and skills list
+{
+    "student_id": "stu-001",           # Partition key (required)
+    "name": "Alice Johnson",
+    "major": "Data Science",
+    "skills": ["python", "sql", "statistics"],
+    "contact": {"email": "alice@example.edu", "campus": "main"}
+}
+
+# Item 2: Bob has a thesis_title that Alice does not have
+{
+    "student_id": "stu-002",           # Partition key (required)
+    "name": "Bob Martinez",
+    "major": "Computer Science",
+    "skills": ["java", "python", "aws"],
+    "thesis_title": "Distributed Cache Invalidation"
+}
+
+# Item 3: Carol has a scholarship flag that neither Alice nor Bob have
+{
+    "student_id": "stu-003",           # Partition key (required)
+    "name": "Carol Chen",
+    "major": "Data Science",
+    "skills": ["r", "python", "tableau"],
+    "scholarship": true
+}</pre>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">In SQL you would need separate tables or nullable columns
+        for thesis_title and scholarship. In DynamoDB, you just include the attributes that are relevant to each
+        document.</p>
+
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+        <ul>
+            <li>In SQL, what would you need to do to add a <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">thesis_title</code> column to a
+                students table? What does DynamoDB require?</li>
+            <li>Can two items in the same DynamoDB table have completely different attributes?</li>
+            <li>What are three different data models DynamoDB can support?</li>
+        </ul>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: Keys - How
+        DynamoDB Finds Your Data</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Partition Key</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Every DynamoDB table has a <strong>partition key</strong>.
+        This is the attribute DynamoDB uses to decide where to physically store each item across its fleet of servers.
+        When you call <code
+            style="background-color:#e2e8f0;padding:2px 4px;border-radius:3px;font-family:'Courier New',monospace;">get_item(Key={'student_id': 'stu-001'})</code>,
+        DynamoDB hashes the partition key value and goes directly to the right server. That is why single-item lookups
+        are so fast - typically under 10 milliseconds, regardless of table size.</p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Think of it like a hash table in Python (a dict). If you
+        know the key, the lookup is O(1). If you do not know the key, you have to scan the entire dict.</p>
+
+    <!-- Visual: How data is partitioned -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 750 260" style="max-width:750px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Title -->
+            <text x="375" y="20" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">How DynamoDB
+                Distributes Data Across Partitions</text>
+
+            <!-- Partition 1 -->
+            <rect x="20" y="40" width="220" height="200" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="130" y="62" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">Partition A (hash
+                range 0-33%)</text>
+            <rect x="35" y="75" width="190" height="45" rx="5" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="45" y="93" fill="#334155" font-size="11" font-weight="bold">stu-001</text>
+            <text x="45" y="108" fill="#64748b" font-size="10">Alice / Data Science / skills[...]</text>
+            <rect x="35" y="128" width="190" height="45" rx="5" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="45" y="146" fill="#334155" font-size="11" font-weight="bold">stu-004</text>
+            <text x="45" y="161" fill="#64748b" font-size="10">David / Applied Math / minor</text>
+            <text x="130" y="200" text-anchor="middle" fill="#94a3b8" font-size="10">Server 1</text>
+
+            <!-- Partition 2 -->
+            <rect x="265" y="40" width="220" height="200" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="375" y="62" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">Partition B (hash
+                range 34-66%)</text>
+            <rect x="280" y="75" width="190" height="45" rx="5" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="290" y="93" fill="#334155" font-size="11" font-weight="bold">stu-002</text>
+            <text x="290" y="108" fill="#64748b" font-size="10">Bob / CS / thesis_title</text>
+            <text x="375" y="200" text-anchor="middle" fill="#94a3b8" font-size="10">Server 2</text>
+
+            <!-- Partition 3 -->
+            <rect x="510" y="40" width="220" height="200" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2" />
+            <text x="620" y="62" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">Partition C (hash
+                range 67-100%)</text>
+            <rect x="525" y="75" width="190" height="45" rx="5" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="535" y="93" fill="#334155" font-size="11" font-weight="bold">stu-003</text>
+            <text x="535" y="108" fill="#64748b" font-size="10">Carol / Data Science / scholarship</text>
+            <text x="620" y="200" text-anchor="middle" fill="#94a3b8" font-size="10">Server 3</text>
+
+            <!-- Caption -->
+            <text x="375" y="255" text-anchor="middle" fill="#64748b" font-size="11">DynamoDB hashes the partition key
+                to decide which server stores each item</text>
+        </svg>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Composite Key (Partition + Sort)</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">You can add a <strong>sort key</strong> as a second part of
+        the primary key. This is useful when items are naturally grouped:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Key Type</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Structure</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Simple</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Partition key only</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    student_id = "stu-001"</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">One item per entity (user profiles)
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Composite</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Partition + sort key</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    user_id = "alice", timestamp = "2026-02-13T09:00"</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Multiple items per entity (orders,
+                    logs)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">With a composite key you can <strong>query</strong> for all
+        items sharing the same partition key: "get all orders for user alice" or "get alice's orders after January 1st."
+        The sort key enables efficient range queries within a partition.</p>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Query vs Scan</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">This is one of the most important distinctions in DynamoDB:
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Operation</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How It Works</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Speed</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Query</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Uses partition key to go directly to
+                    the data. Like a SQL query with a WHERE clause on the primary key.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Fast</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Reads only matching
+                        data</strong></td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scan</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reads every item in the table, then
+                    filters. Like a SQL query with no WHERE clause or a WHERE on a non-indexed column.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Slow on large tables</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">You pay for reading every item</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">For small tables (our lab exercises), scan is fine. For
+        tables with millions of items, you design your keys so that query handles your access patterns.</p>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+        <ul>
+            <li>Your Week 3 table used <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">id</code> as
+                a simple partition key. What happens if you call <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">put_item</code> with the same <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">id</code> twice?</li>
+            <li>If you were building a chat app, what would you choose as partition key and sort key?</li>
+            <li>In SQL terms, is a scan more like <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">SELECT * FROM students WHERE id = ?</code>
+                or <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">SELECT * FROM students</code>?
+            </li>
+        </ul>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: CRUD with Python
+        (boto3)</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">These are the same four operations you know from SQL,
+        mapped to DynamoDB API calls:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">SQL</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">DynamoDB</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Key Difference</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    INSERT INTO students ...</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    table.put_item(Item={...})</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Replaces entire item if key exists
+                    (upsert behavior)</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    SELECT * FROM students WHERE id = ?</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    table.get_item(Key={...})</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Returns one item by exact key match
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    UPDATE students SET year=4 WHERE id = ?</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    table.update_item(...)</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Uses expression syntax (more verbose
+                    but injection-safe)</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    DELETE FROM students WHERE id = ?</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    table.delete_item(Key={...})</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No error if item does not exist</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Create: put_item</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">from decimal import Decimal
+
+table.put_item(
+    Item={
+        'student_id': 'stu-001',           # Partition key (required)
+        'name': 'Alice Johnson',            # String
+        'major': 'Data Science',
+        'year': 3,                          # Number (int is fine)
+        'gpa': Decimal('3.85'),             # Decimal, NOT float
+        'skills': ['python', 'sql'],        # List
+        'contact': {                        # Nested map (like a dict)
+            'email': 'alice@example.edu',
+            'campus': 'main'
+        }
+    }
+)</pre>
+    </div>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">The Decimal requirement</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">DynamoDB rejects Python <code
+                style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">float</code> values. Use <code
+                style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">from decimal import Decimal</code> and
+            wrap any floating-point numbers. This is what the <code
+                style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">convert_floats</code> function in your
+            Week 3 Lambda code was for.</p>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Read: get_item</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">response = table.get_item(Key={'student_id': 'stu-001'})
+
+if 'Item' in response:
+    item = response['Item']
+    print(f"Name: {item['name']}, GPA: {float(item['gpa'])}")
+else:
+    print("Not found")</pre>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Update: update_item</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">table.update_item(
+    Key={'student_id': 'stu-001'},
+    UpdateExpression='SET #yr = :y, gpa = :g',
+    ExpressionAttributeNames={'#yr': 'year'},     # 'year' is a reserved word
+    ExpressionAttributeValues={':y': 4, ':g': Decimal('3.90')}
+)</pre>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">The expression syntax looks heavy compared to <code
+            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">UPDATE SET year=4</code>, but it prevents
+        injection attacks and handles DynamoDB's reserved words. You will practice this in the Colab notebook.</p>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Delete: delete_item</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">table.delete_item(Key={'student_id': 'stu-001'})</pre>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Scan with Filters</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">from boto3.dynamodb.conditions import Attr
+
+# Find all Data Science students (reads entire table, then filters)
+response = table.scan(
+    FilterExpression=Attr('major').eq('Data Science')
+)
+for item in response['Items']:
+    print(item['name'])</pre>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4a: Two Ways to Query DynamoDB</h2>
+
+    <!-- Two Ways to Query DynamoDB -->
+    <div style="background-color:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#166534;margin-top:5px;">Two Ways to Query DynamoDB</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">You can interact with DynamoDB in two different ways:
+            the <strong>DynamoDB API</strong> (what boto3 uses by default) or <strong>PartiQL</strong>, a SQL-compatible
+            query language that AWS added so SQL developers can use familiar syntax.</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:15px 0;border:1px solid #86efac;">
+            <thead>
+                <tr style="background-color:#dcfce7;">
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Operation</th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">DynamoDB API
+                        (boto3)
+                    </th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">PartiQL (SQL-like)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;"><strong>Get one item</strong></td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        table.get_item(Key={'student_id': 'stu-001'})</td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        SELECT * FROM "student-directory-lab" WHERE student_id='stu-001'</td>
+                </tr>
+                <tr style="background-color:#f0fdf4;">
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;"><strong>Filter items</strong></td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        table.scan(FilterExpression=Attr('major').eq('Data Science'))</td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        SELECT * FROM "student-directory-lab" WHERE major='Data Science'</td>
+                </tr>
+                <tr>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;"><strong>Insert</strong></td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        table.put_item(Item={...})</td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        INSERT INTO "student-directory-lab" VALUE {...}</td>
+                </tr>
+                <tr style="background-color:#f0fdf4;">
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;"><strong>Update</strong></td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        table.update_item(Key={...}, UpdateExpression=...)</td>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:12px;">
+                        UPDATE "student-directory-lab" SET year=4 WHERE student_id='stu-001'</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4 style="color:#166534;margin-top:15px;">PartiQL Code Example (Python)</h4>
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;"># PartiQL uses the LOW-LEVEL client, not the resource
+client = boto3.client('dynamodb', region_name='us-east-1')
+
+# SELECT with a WHERE clause (feels just like SQL!)
+response = client.execute_statement(
+    Statement='SELECT * FROM "student-directory-lab" WHERE student_id=?',
+    Parameters=[{'S': 'stu-001'}]
+)
+
+for item in response['Items']:
+    print(item['name']['S'], item['major']['S'])
+
+# SELECT all Data Science students
+response = client.execute_statement(
+    Statement='SELECT name, gpa FROM "student-directory-lab" WHERE major=?',
+    Parameters=[{'S': 'Data Science'}]
+)
+for item in response['Items']:
+    print(f"  {item['name']['S']} - GPA: {item['gpa']['N']}")</pre>
+        </div>
+
+        <p style="color:#64748b;font-size:14px;line-height:1.5;margin-top:10px;"><strong>When to use which?</strong>
+            The DynamoDB API (boto3 resource) is more Pythonic and handles type conversion automatically. PartiQL is
+            great when you want to write familiar SQL syntax or when working with tools that speak SQL. Both perform the
+            same operations under the hood.</p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4b: DynamoDB →
+        Pandas DataFrames</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">As data science students, you will want to analyze DynamoDB
+        data with familiar tools. Here is how to get your data into a Pandas DataFrame:</p>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Method 1: Scan → DataFrame (manual)</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">import pandas as pd
+from decimal import Decimal
+
+# Scan the table (works for small tables)
+response = table.scan()
+
+# Convert Decimal values to float for Pandas compatibility
+def decimals_to_floats(item):
+    return {k: float(v) if isinstance(v, Decimal) else v
+            for k, v in item.items()}
+
+items = [decimals_to_floats(item) for item in response['Items']]
+df = pd.DataFrame(items)
+
+print(df[['student_id', 'name', 'major', 'gpa']])
+#   student_id           name           major   gpa
+# 0    stu-001  Alice Johnson    Data Science  3.90
+# 1    stu-002  Bob Martinez  Computer Science  3.72
+# 2    stu-003     Carol Chen    Data Science  3.95
+
+# Now use all the Pandas you already know!
+print(f"\nMean GPA: {df['gpa'].mean():.2f}")
+print(df.groupby('major')['gpa'].mean())</pre>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Method 2: AWS SDK for pandas (awswrangler)</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;"><code
+            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">awswrangler</code> (also called <strong>AWS
+            SDK for pandas</strong>) connects AWS services directly to Pandas. It supports PartiQL queries that return
+        DataFrames in one line:</p>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">!pip install -q awswrangler
+
+import awswrangler as wr
+
+# PartiQL query → DataFrame directly!
+df = wr.dynamodb.read_partiql_query(
+    query='SELECT * FROM "student-directory-lab"',
+    boto3_session=boto3.Session(region_name='us-east-1')
+)
+print(df)
+
+# Filter with PartiQL — still returns a DataFrame
+ds_students = wr.dynamodb.read_partiql_query(
+    query='SELECT name, gpa FROM "student-directory-lab" WHERE major=?',
+    parameters=['Data Science']
+)
+print(ds_students)</pre>
+    </div>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Why awswrangler?</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">It handles Decimal→float conversion, pagination (for
+            large tables), and type mapping automatically. If you are doing data analysis on DynamoDB data, this is
+            often the fastest path from table to DataFrame.</p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4c: No JOINs? No
+        Problem</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">In SQL, you would JOIN a students table to an enrollments
+        table. DynamoDB does not support JOINs, so you have two patterns:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Pattern</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How It Works</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">When to Use</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Denormalize</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Put all related data in one item
+                    (courses inside the student document as a list of maps).</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">When you always need data together
+                    (user profile + preferences)</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Client-side join</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Query two tables separately and merge
+                    in Python with Pandas.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Analytics, reporting, batch processing
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Client-Side Join Example</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">import pandas as pd
+
+# Load from two DynamoDB tables into DataFrames
+students_df = pd.DataFrame(students_table.scan()['Items'])
+enrollments_df = pd.DataFrame(enrollments_table.scan()['Items'])
+
+# Merge in Pandas — same as a SQL JOIN!
+merged = pd.merge(
+    students_df,
+    enrollments_df,
+    on='student_id',    # The "join key"
+    how='inner'         # INNER JOIN
+)
+
+print(merged[['name', 'course_name', 'grade']])
+#           name           course_name  grade
+# 0  Alice Johnson    Distributed Systems    A
+# 1  Alice Johnson        Data Mining       A-
+# 2   Bob Martinez    Distributed Systems    B+</pre>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">This is the same <code
+            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">pd.merge()</code> you already know. The "JOIN"
+        happens in Python, not in the database. For analytics workloads this is perfectly fine.</p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4d: How DynamoDB
+        Scales Automatically</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">When a partition gets too large (over 10 GB) or too hot
+        (too many reads/writes), DynamoDB <strong>splits it into two smaller partitions</strong> and distributes them
+        across more servers. Zero downtime, zero config.</p>
+
+    <!-- Scaling SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 340" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <text x="400" y="22" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">DynamoDB
+                Auto-Scaling: Partition Splitting</text>
+
+            <text x="200" y="52" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">BEFORE (1
+                partition, high traffic)</text>
+            <rect x="70" y="62" width="260" height="110" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="200" y="88" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">Partition
+                A</text>
+            <text x="200" y="108" text-anchor="middle" fill="#78716c" font-size="11">8 GB data, 5000 req/sec</text>
+            <rect x="85" y="118" width="100" height="22" rx="4" fill="#fff" stroke="#cbd5e1" />
+            <text x="135" y="133" text-anchor="middle" fill="#334155" font-size="10">stu-001..stu-500</text>
+            <rect x="215" y="118" width="100" height="22" rx="4" fill="#fff" stroke="#cbd5e1" />
+            <text x="265" y="133" text-anchor="middle" fill="#334155" font-size="10">stu-501..stu-999</text>
+            <text x="200" y="160" text-anchor="middle" fill="#dc2626" font-size="11">⚠ Getting too hot!</text>
+
+            <text x="400" y="120" text-anchor="middle" fill="#3b82f6" font-size="24">→</text>
+            <text x="400" y="140" text-anchor="middle" fill="#3b82f6" font-size="11"
+                font-weight="bold">auto-split</text>
+
+            <text x="630" y="52" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">AFTER (2
+                partitions, balanced)</text>
+            <rect x="500" y="62" width="120" height="100" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="560" y="88" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">A1</text>
+            <text x="560" y="105" text-anchor="middle" fill="#047857" font-size="10">4 GB, 2500 req/s</text>
+            <rect x="510" y="115" width="100" height="20" rx="4" fill="#fff" stroke="#cbd5e1" />
+            <text x="560" y="129" text-anchor="middle" fill="#334155" font-size="9">stu-001..stu-500</text>
+            <text x="560" y="155" text-anchor="middle" fill="#94a3b8" font-size="10">Server 1</text>
+
+            <rect x="660" y="62" width="120" height="100" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" />
+            <text x="720" y="88" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">A2</text>
+            <text x="720" y="105" text-anchor="middle" fill="#2563eb" font-size="10">4 GB, 2500 req/s</text>
+            <rect x="670" y="115" width="100" height="20" rx="4" fill="#fff" stroke="#cbd5e1" />
+            <text x="720" y="129" text-anchor="middle" fill="#334155" font-size="9">stu-501..stu-999</text>
+            <text x="720" y="155" text-anchor="middle" fill="#94a3b8" font-size="10">Server 2</text>
+
+            <!-- Bottom comparison boxes -->
+            <rect x="50" y="200" width="320" height="100" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1" />
+            <text x="210" y="222" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">SQL Database
+                Scaling</text>
+            <text x="210" y="242" text-anchor="middle" fill="#7f1d1d" font-size="11">Buy a bigger server (vertical
+                scaling)</text>
+            <text x="210" y="260" text-anchor="middle" fill="#7f1d1d" font-size="11">Set up replicas manually, possible
+                downtime</text>
+            <text x="210" y="280" text-anchor="middle" fill="#dc2626" font-size="11">You manage it 👷</text>
+
+            <rect x="430" y="200" width="320" height="100" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1" />
+            <text x="590" y="222" text-anchor="middle" fill="#166534" font-size="12" font-weight="bold">DynamoDB
+                Scaling</text>
+            <text x="590" y="242" text-anchor="middle" fill="#14532d" font-size="11">Partitions split
+                automatically</text>
+            <text x="590" y="260" text-anchor="middle" fill="#14532d" font-size="11">Data rebalances in the
+                background</text>
+            <text x="590" y="280" text-anchor="middle" fill="#10b981" font-size="11">AWS manages it 🤖</text>
+
+            <text x="400" y="330" text-anchor="middle" fill="#64748b" font-size="11">DynamoDB scales horizontally and
+                automatically — you never outgrow a table</text>
+        </svg>
+    </div>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+        <ul>
+            <li>What happens when a DynamoDB partition gets too large or too busy?</li>
+            <li>Compare PartiQL's <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">SELECT * FROM table WHERE major='DS'</code>
+                to the DynamoDB API method. Which reads more naturally?</li>
+            <li>If DynamoDB has no JOINs, how would you combine data from two tables for a report?</li>
+        </ul>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: Billing -
+        On-Demand vs Provisioned</h2>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Mode</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How It Works</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Best For</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>On-Demand</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Pay per read/write. Zero cost when
+                    idle.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Spiky workloads, development, learning
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Provisioned</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reserve capacity in advance. Pay
+                    whether you use it or not.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Steady production workloads (cheaper
+                    per-request)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">We use On-Demand (<code
+            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">BillingMode: PAY_PER_REQUEST</code>) in this
+        course. Your lab exercises will cost fractions of a cent.</p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary</h2>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Key Takeaways</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+            <tbody>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Document database</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">Items are JSON documents with arbitrary attributes - no
+                        fixed schema</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Partition key is everything</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">Determines where data lives and how fast you can find it
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Query beats Scan</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">In production, design your keys so query handles your
+                        access patterns</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Decimals, not floats</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">Convert between Decimal and float at the boundary</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Two query paths</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">DynamoDB API (Pythonic) or PartiQL (SQL-like) — same
+                        operations under the hood</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>DynamoDB → DataFrame</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">Use <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">pd.DataFrame</code> or <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">awswrangler</code> to bring
+                        data into Pandas for analysis</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;"><strong>Automatic scaling</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">DynamoDB splits partitions and rebalances data
+                        automatically — no migration downtime</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>Next:</strong> Open the <a
+            href="lab_1.html" style="color:#3b82f6;font-weight:bold;">DynamoDB Hands-On Lab</a> to practice all of these
+        operations yourself in Google Colab.</p>
+
+    <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+        <ul>
+            <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html"
+                    style="color:#3b82f6;">DynamoDB Developer Guide</a></li>
+            <li><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/guide/dynamodb.html"
+                    style="color:#3b82f6;">boto3 DynamoDB Tutorial</a></li>
+            <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html"
+                    style="color:#3b82f6;">Best Practices for Partition Keys</a></li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 3 Lab: Deploy a Serverless API with AWS SAM</title>
+</head>
+<body>
+
+<h1>Week 3 Lab: Deploy a Serverless API with AWS SAM</h1>
+
+<p style="color:#1e293b;font-size:16px;line-height:1.8;margin-top:20px;">In this lab, you'll deploy a complete serverless application using AWS SAM (Serverless Application Model). You'll create a REST API with Lambda functions that store and retrieve data from DynamoDB. By the end of this lab, you'll have hands-on experience with the entire serverless deployment workflow.
+</p>
+<p>https://classroom.github.com/a/FgY2m19t</p>
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">What You'll Build</h3>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>API Endpoint 1:</strong> POST /items - Create a new item in DynamoDB</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>API Endpoint 2:</strong> GET /items/{id} - Retrieve an item from DynamoDB</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Infrastructure:</strong> Lambda function, API Gateway HTTP API, DynamoDB table</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Deployment Method:</strong> AWS SAM (Infrastructure as Code)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Prerequisites</h3>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">AWS account with appropriate permissions</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">AWS CLI configured with credentials</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Python 3.14 installed</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">AWS SAM CLI installed (we'll cover this in Step 1)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 1: Install AWS SAM CLI</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">AWS SAM CLI is a command-line tool that helps you build, test, and deploy serverless applications.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Installation Instructions</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Operating System</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Installation Method</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Windows</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Download MSI installer from <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" style="color:#3b82f6;">AWS SAM CLI Installation Guide</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>macOS</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">brew install aws-sam-cli</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Linux</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Follow instructions at <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" style="color:#3b82f6;">AWS SAM CLI Installation Guide</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Verify Installation</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">After installation, verify SAM CLI is working:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">sam --version</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Expected output:</strong> SAM CLI, version 1.x.x or higher</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Verify AWS CLI Configuration</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Critical step:</strong> Before deploying anything, verify your AWS credentials are configured correctly. Run this command:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">aws sts get-caller-identity</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>What success looks like:</strong></p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">{
+    "UserId": "AIDACKCEVSQ6C2EXAMPLE",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/your-username"
+}</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">If you see your AWS account number and ARN, you're good to go!</p>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">What If This Fails?</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If you get an error like <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">Unable to locate credentials</code>, your AWS CLI is not configured.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Fix it by running:</strong></p>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:12px;">
+    <pre style="margin:0;">aws configure</pre>
+  </div>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You'll need your AWS Access Key ID and Secret Access Key from the AWS Console (IAM → Users → Security credentials).</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Without valid credentials, sam deploy will fail silently after 20 minutes of confusion!</strong></p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 2: Review the Project Structure</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Your project should have the following structure:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">week03/
+├── template.yaml          # SAM template (infrastructure definition)
+├── src/
+│   ├── handler.py         # Lambda function code
+│   └── requirements.txt   # Python dependencies
+└── events/                # Test events (optional)</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">File</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">template.yaml</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Defines all AWS resources (Lambda, API Gateway, DynamoDB)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">src/handler.py</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda function code with routing and DynamoDB operations</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">src/requirements.txt</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Python dependencies (boto3)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why requirements.txt Lists boto3</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Important clarification:</strong> boto3 is already included in the AWS Lambda Python runtime, so technically you don't need to install it.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">However, we list it in requirements.txt for two reasons:</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">1. <strong>Explicit dependencies:</strong> Makes it clear what libraries the code uses</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">2. <strong>Local testing:</strong> If you run the code locally (outside Lambda), you'll need boto3 installed</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">3. <strong>Version pinning:</strong> Ensures consistent behavior across environments</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">In production projects, you'd only list third-party libraries NOT included in Lambda (like requests, pandas, etc.).</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Review template.yaml</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Open <strong>template.yaml</strong> and examine the key sections:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Section</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Defines</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Globals</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Default settings for all Lambda functions (timeout, memory, runtime)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">ItemsTable</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB table with partition key 'id' and on-demand billing</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">ApiFunction</td>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Review handler.py</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Open <strong>src/handler.py</strong> and identify these key components:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Component</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Initialization (lines 6-8)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">boto3 and DynamoDB table setup (runs once per container)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">lambda_handler()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Main entry point, routes requests to GET or POST handlers</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">handle_get()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retrieves item from DynamoDB by ID</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">handle_post()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Creates new item in DynamoDB</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">convert_floats()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Converts float to Decimal for DynamoDB storage</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">convert_decimals()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Converts Decimal to float for JSON serialization</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 2.5: Review the Lambda Handler (handler.py)</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Before building and deploying, take a moment to read the Lambda handler you'll deploy. In this repo it's located at <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">src/handler.py</code>. If you're using the class template from GitHub Classroom, you'll get the same file from the assignment link: <a href="https://classroom.github.com/a/FgY2m19t" target="_blank">GitHub Classroom Assignment</a>.</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">import json
+import os
+import boto3
+from decimal import Decimal
+
+# Initialize DynamoDB resource
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ.get('TABLE_NAME', 'items'))
+
+
+def lambda_handler(event, context):
+    """
+    Main Lambda handler for API requests.
+    Routes requests based on HTTP method.
+    """
+    # Get HTTP method from event (supports both v1.0 and v2.0 formats)
+    http_method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method')
+    
+    if http_method == 'GET':
+        return handle_get(event)
+    elif http_method == 'POST':
+        return handle_post(event)
+    else:
+        return {
+            'statusCode': 405,
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+
+
+def handle_get(event):
+    """
+    Handle GET requests to retrieve an item by ID.
+    """
+    # Extract item ID from path parameters
+    item_id = event.get('pathParameters', {}).get('id')
+    
+    if not item_id:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': 'Missing id parameter'})
+        }
+    
+    try:
+        # Get item from DynamoDB
+        response = table.get_item(Key={'id': item_id})
+        
+        if 'Item' in response:
+            # Convert Decimal to float for JSON serialization
+            item = convert_decimals(response['Item'])
+            return {
+                'statusCode': 200,
+                'body': json.dumps(item)
+            }
+        else:
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'error': 'Item not found'})
+            }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
+
+
+def handle_post(event):
+    """
+    Handle POST requests to create a new item.
+    """
+    try:
+        # Parse request body
+        body = json.loads(event.get('body', '{}'))
+        
+        # Validate required fields
+        item_id = body.get('id')
+        if not item_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'Missing id in request body'})
+            }
+        
+        # Convert floats to Decimal for DynamoDB
+        item = convert_floats(body)
+        
+        # Store item in DynamoDB
+        table.put_item(Item=item)
+        
+        return {
+            'statusCode': 201,
+            'body': json.dumps({'message': 'Item created', 'id': item_id})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
+
+
+def convert_floats(obj):
+    """
+    Recursively convert float values to Decimal for DynamoDB storage.
+    """
+    if isinstance(obj, list):
+        return [convert_floats(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, float):
+        return Decimal(str(obj))
+    else:
+        return obj
+
+
+def convert_decimals(obj):
+    """
+    Recursively convert Decimal values to float for JSON serialization.
+    """
+    if isinstance(obj, list):
+        return [convert_decimals(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    else:
+        return obj</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What This Handler Does</h3>
+<table style="width:100%;margin:10px 0;">
+  <tbody>
+    <tr>
+      <td style="padding:6px 0;color:#1e293b;">1. Routes requests by HTTP method in <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">lambda_handler()</code> (supports API Gateway v1 and v2 events).</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:6px 0;color:#1e293b;">2. <strong>GET /items/{id}</strong>: extracts <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">id</code> from <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">pathParameters</code> and retrieves the item from DynamoDB.</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#1e293b;">3. <strong>POST /items</strong>: validates that <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">id</code> exists in the request body, converts floats to <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">Decimal</code>, and stores the item.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:6px 0;color:#1e293b;">4. Uses environment variable <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">TABLE_NAME</code> (set by SAM) to choose the DynamoDB table.</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#1e293b;">5. <strong>Serialization helpers</strong>: <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">convert_floats()</code> (float→Decimal for writes) and <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">convert_decimals()</code> (Decimal→float for JSON responses).</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:6px 0;color:#1e293b;">6. Returns appropriate HTTP status codes: 201 on create, 200 on success, 400/404 for bad input/not found, 405 for unsupported methods, and 500 on errors.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why Decimal Conversion Matters</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">DynamoDB stores numbers precisely. Using Python <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">float</code> can cause <em>TypeError: Float types are not supported</em>. The handler converts floats → <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">Decimal</code> before writes, and converts them back to floats when returning JSON.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 3: Build the Application</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">The <strong>sam build</strong> command prepares your application for deployment by downloading dependencies and packaging your code.</p>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Before You Build: Use a Python Virtual Environment</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Using a project-specific virtual environment prevents dependency conflicts and helps <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build</code> find the correct Python. Create and activate a venv first, then install requirements.</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:6px 0;color:#1e293b;"><strong>Windows (PowerShell)</strong></td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#1e293b;">
+          <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:6px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;"># from the week03 folder
+py -3.14 -m venv .venv   # use Python 3.14 to match template.yaml
+.\.venv\Scripts\Activate.ps1
+python --version         # should show 3.14.x
+pip install -r src/requirements.txt</pre></div>
+          <div style="color:#1e293b;font-size:14px;">Tip: List installed Pythons with <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">py -0p</code>.</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0 4px 0;color:#1e293b;"><strong>macOS / Linux</strong></td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#1e293b;">
+          <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:6px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;"># from the week03 folder
+python3.14 -m venv .venv   # install Python 3.14 if not present
+source .venv/bin/activate
+python --version           # should show 3.14.x
+pip install -r src/requirements.txt</pre></div>
+          <div style="color:#1e293b;font-size:14px;">If you cannot install Python 3.14 locally, you can run containerized builds instead: <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build --use-container</code> (requires Docker).</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Run the Build Command</h3>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">cd week03
+sam build</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What Happens During Build</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What SAM Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1. Parse template</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reads template.yaml to understand your resources</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2. Install dependencies</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Runs pip install -r requirements.txt for Python packages</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3. Copy code</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Copies handler.py and dependencies to .aws-sam/build/</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4. Prepare for deployment</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Creates deployment artifacts ready for AWS</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Expected Output</h3>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">Building codeuri: src/ runtime: python3.14 architecture: x86_64 functions: ApiFunction
+Running PythonPipBuilder:ResolveDependencies
+Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml</pre>
+</div>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">Troubleshooting: Python Not Found</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If you get an error about Python not being found, ensure Python 3.14 is installed and that your <strong>virtual environment is activated</strong> before running <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build</code>.</p>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">What If Build Fails?</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build</code> fails, check:</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">1. Python version matches template.yaml (python3.14)</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">2. requirements.txt exists in src/ directory</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">3. No syntax errors in handler.py</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">SAM will show detailed error messages - read them carefully!</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 4: Deploy to AWS</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">The <strong>sam deploy --guided</strong> command deploys your application to AWS. The --guided flag walks you through configuration options.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Run the Deploy Command</h3>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">sam deploy --guided</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Configuration Prompts</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM will ask you several questions. Here are recommended answers:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Prompt</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Recommended Answer</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Explanation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Stack Name</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">week3-yourname</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Unique name for your CloudFormation stack</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">AWS Region</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">us-east-1</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Choose a region close to you</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Confirm changes before deploy</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Y</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Review changes before deploying</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Allow SAM CLI IAM role creation</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Y</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Required for Lambda to access DynamoDB</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Disable rollback</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">N</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Enable rollback on failure (safer)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Save arguments to config file</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Y</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Saves settings for future deployments</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Deployment Process</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM will show you a changeset preview. Type <strong>y</strong> to proceed with deployment. You'll see progress as SAM creates resources:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Resource</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">ItemsTable (DynamoDB)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">CREATE_IN_PROGRESS → CREATE_COMPLETE</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">ApiFunction (Lambda)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">CREATE_IN_PROGRESS → CREATE_COMPLETE</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">ServerlessHttpApi (API Gateway)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">CREATE_IN_PROGRESS → CREATE_COMPLETE</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Deployment Complete!</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When deployment finishes successfully, SAM will display the outputs defined in your template:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">Outputs
+-----------------------------------------------------------------------
+Key                 ApiUrl
+Description         URL of the HTTP API
+Value               https://abc123xyz.execute-api.us-east-1.amazonaws.com
+
+Key                 FunctionName
+Description         Lambda Function Name
+Value               week3-yourname-ApiFunction-ABC123
+
+Key                 TableName
+Description         DynamoDB Table Name
+Value               week3-yourname-items
+-----------------------------------------------------------------------</pre>
+</div>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Important: Save Your API URL</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Copy the <strong>ApiUrl</strong> value - you'll need it for testing in the next step!</p>
+</div>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">What If Deployment Fails?</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If deployment fails, SAM will automatically roll back changes. Common issues:</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>Insufficient permissions:</strong> Your AWS credentials need CloudFormation, Lambda, API Gateway, DynamoDB, and IAM permissions</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>Stack name already exists:</strong> Choose a different stack name or delete the existing stack first</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>Resource limits:</strong> Check your AWS account limits (rare for new accounts)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">SAM will show detailed error messages in the CloudFormation events. Check the AWS Console \u2192 CloudFormation \u2192 Events tab for details.</p>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Monitoring Costs During the Lab</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">This lab uses minimal resources and will likely cost less than $0.01 (one cent). Here's what you're charged for:</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>Lambda:</strong> Free tier includes 1 million requests/month and 400,000 GB-seconds of compute</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>API Gateway:</strong> Free tier includes 1 million HTTP API requests/month</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;"><strong>DynamoDB:</strong> Free tier includes 25 GB storage and 25 million read/write requests/month</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Important:</strong> Always run <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam delete</code> when you're done to avoid any ongoing charges!</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 5: Test Your API</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now that your API is deployed, let's test both endpoints to make sure everything works.</p>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Option 1: Web UI Tester (Easiest)</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">We've provided a local HTML file that lets you test your API directly from your browser—no command-line tools needed! This is a standalone testing tool that you open locally on your computer.</p>
+
+  <h4 style="color:#059669;margin-top:15px;font-size:16px;">Step-by-Step Instructions:</h4>
+  <ol style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;padding-left:18px;">
+    <li style="margin:8px 0;">
+      <strong>Locate the tester file</strong>: In your project folder (where you cloned the repository), find <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">local_tester.html</code>. It's in the same directory as your <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">template.yaml</code> file.
+    </li>
+    <li style="margin:8px 0;">
+      <strong>Open in your browser</strong>:
+      <ul style="margin:6px 0 0 20px;">
+        <li><strong>Windows:</strong> Right-click <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">local_tester.html</code> → "Open with" → Choose your browser (Chrome, Edge, Firefox)</li>
+        <li><strong>macOS:</strong> Right-click <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">local_tester.html</code> → "Open With" → Choose your browser</li>
+        <li><strong>Alternative:</strong> Drag and drop <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">local_tester.html</code> into an open browser window</li>
+      </ul>
+    </li>
+    <li style="margin:8px 0;">
+      <strong>Get your API URL</strong>: From Step 4 deployment outputs, copy the <strong>ApiUrl</strong> value. It looks like:
+      <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:8px 0;font-family:monospace;font-size:12px;"><pre style="margin:0;">https://abc123xyz.execute-api.us-east-1.amazonaws.com</pre></div>
+      <strong style="color:#dc2626;">Important:</strong> Copy it exactly—<strong>no trailing slash</strong> at the end!
+    </li>
+    <li style="margin:8px 0;">
+      <strong>Paste your API URL</strong>: In the tester page, paste your API URL into the "API URL" field at the top.
+    </li>
+    <li style="margin:8px 0;">
+      <strong>Test POST /items</strong>: The page has a pre-filled JSON body like:
+      <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:8px 0;font-family:monospace;font-size:12px;"><pre style="margin:0;">{
+  "id": "item-001",
+  "name": "Laptop",
+  "price": 999.99
+}</pre></div>
+      Click the <strong>"POST - Create Item"</strong> button. You should see:
+      <ul style="margin:6px 0 0 20px;">
+        <li>Status: <strong>201</strong> (Created)</li>
+        <li>Response showing the item was created successfully</li>
+      </ul>
+    </li>
+    <li style="margin:8px 0;">
+      <strong>Test GET /items/{id}</strong>: In the "Item ID" field, enter <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">item-001</code> (or whatever ID you used in POST). Click <strong>"GET - Retrieve Item"</strong>. You should see:
+      <ul style="margin:6px 0 0 20px;">
+        <li>Status: <strong>200</strong> (OK)</li>
+        <li>Response: The full item data you stored</li>
+      </ul>
+    </li>
+  </ol>
+
+  <div style="background:#ecfeff;border:1px solid #06b6d4;border-radius:6px;padding:10px;margin-top:15px;">
+    <strong style="color:#0f172a;">Common Issues and Solutions</strong>
+    <ul style="margin:6px 0 0 16px;color:#0f172a;">
+      <li><strong>CORS error:</strong> Make sure you copied the API URL correctly and that your SAM template includes the CORS configuration (it does by default).</li>
+      <li><strong>404 Not Found:</strong> Double-check your API URL. Make sure you're using the <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;">ApiUrl</code> output from <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;">sam deploy</code>, not the Lambda function name.</li>
+      <li><strong>Trailing slash issue:</strong> The URL should be <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;">...amazonaws.com</code>, NOT <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;">...amazonaws.com/</code></li>
+      <li><strong>Item not found (GET):</strong> Make sure you created the item with POST first, and you're using the exact same ID.</li>
+    </ul>
+  </div>
+
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:12px;"><strong>How it works:</strong> The tester is a simple HTML page with JavaScript that makes HTTP requests to your API. The SAM template includes CORS (Cross-Origin Resource Sharing) configuration, which allows browsers to make requests from <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;">file://</code> URLs to your API. Without CORS, browsers would block these requests for security reasons.</p>
+
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Behind the scenes:</strong> When you click the buttons, the tester calls:
+    <br>• <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">POST {ApiUrl}/items</code> - Creates a new item in DynamoDB
+    <br>• <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">GET {ApiUrl}/items/{id}</code> - Retrieves an item from DynamoDB
+  </p>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Understanding CORS</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">CORS is configured in template.yaml under the Globals section:</p>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:12px;">
+    <pre style="margin:0;">Globals:
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowOrigin: "'*'"</pre>
+  </div>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">AllowOrigin: "'*'"</code> means any website can call your API. In production, you'd restrict this to your specific domain (e.g., <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">"'https://myapp.com'"</code>).</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Without CORS:</strong> Browser-based testing would fail with errors like "blocked by CORS policy". Command-line tools (curl, PowerShell) are not affected by CORS.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Option 2: Command Line Testing</h3>
+
+<h4 style="color:#1d4ed8;margin-top:20px;font-size:16px;">Test 1: Create an Item (POST)</h4>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Use curl or PowerShell to create a new item in DynamoDB:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># PowerShell
+$API_URL = "YOUR_API_URL_HERE"
+$body = @{
+    id = "test-123"
+    name = "Test Item"
+    price = 29.99
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "$API_URL/items" -Method Post -Body $body -ContentType "application/json"</pre>
+</div>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># curl (Linux/macOS)
+curl -X POST https://YOUR_API_URL/items \
+  -H "Content-Type: application/json" \
+  -d '{"id":"test-123","name":"Test Item","price":29.99}'</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Expected Response:</strong></p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">{
+  "message": "Item created",
+  "id": "test-123"
+}</pre>
+</div>
+
+<h4 style="color:#1d4ed8;margin-top:20px;font-size:16px;">Test 2: Retrieve the Item (GET)</h4>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now retrieve the item you just created:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># PowerShell
+Invoke-RestMethod -Uri "$API_URL/items/test-123" -Method Get</pre>
+</div>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># curl (Linux/macOS)
+curl https://YOUR_API_URL/items/test-123</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Expected Response:</strong></p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">{
+  "id": "test-123",
+  "name": "Test Item",
+  "price": 29.99
+}</pre>
+</div>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Success!</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If you see the correct responses, congratulations! Your serverless API is working end-to-end. Data is being stored in DynamoDB and retrieved successfully.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Test 3: Try an Invalid Request</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Test error handling by requesting a non-existent item:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># PowerShell
+Invoke-RestMethod -Uri "$API_URL/items/does-not-exist" -Method Get</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Expected Response:</strong> HTTP 404 with error message</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">{
+  "error": "Item not found"
+}</pre>
+</div>
+ 
+
+<!-- Optional: Docker + SAM Local Section -->
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:20px;margin:30px 0;">
+  <h2 style="color:#1e40af;margin:0 0 10px 0;">Optional: Enable Local Testing with Docker + SAM Local --- HIGHLY USEFUL FOR DEBUGGING -- BUT NOT REQUIRED and HAS MANY STEPS THAT NEED FOCUS</h2>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You can run the Lambda function locally using SAM’s Docker-based emulation. This is optional and <strong>not required</strong> to complete the lab.</p>
+
+  <h3 style="color:#1d4ed8;margin-top:20px;">When you need Docker</h3>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:6px 0;color:#1e293b;">• To use <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam local start-api</code> or <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam local invoke</code></td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#1e293b;">• If you prefer containerized builds via <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build --use-container</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:15px;padding:12px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Official AWS references</h3>
+    <ul style="color:#1e293b;">
+      <li>Install the AWS SAM CLI: <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" target="_blank">AWS docs</a></li>
+      <li><code>sam local</code> command reference: <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-command-reference-sam-local.html" target="_blank">AWS docs</a></li>
+      <li><code>sam build</code> command reference: <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-command-reference-sam-build.html" target="_blank">AWS docs</a></li>
+    </ul>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:20px;">Windows (Docker Desktop) – Install</h3>
+  <ol style="color:#1e293b;">
+    <li>Ensure Windows 10/11 64-bit. Home edition works with WSL 2.</li>
+    <li>Enable hardware virtualization (Intel VT-x/AMD-V) in BIOS/UEFI.</li>
+    <li>Install WSL 2 (requires reboot):
+      <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;">wsl --install</pre></div>
+    </li>
+    <li>Install Docker Desktop for Windows (WSL 2 backend): <a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">Docker docs</a></li>
+    <li>Start Docker Desktop and wait until it shows “Docker is running”.</li>
+  </ol>
+
+  <h4 style="color:#0f766e;margin-top:10px;">Verify (Windows)</h4>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;">docker --version
+docker run hello-world</pre></div>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You should see “Hello from Docker!”. If it fails, ensure Docker Desktop is running and WSL 2 is enabled.</p>
+
+  <h3 style="color:#1d4ed8;margin-top:20px;">macOS (Docker Desktop) – Install</h3>
+  <ol style="color:#1e293b;">
+    <li>Use macOS 12+ if possible. Download the correct build for Apple Silicon or Intel.</li>
+    <li>Install Docker Desktop for macOS: <a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank">Docker docs</a></li>
+    <li>Launch Docker and wait for it to be running.</li>
+  </ol>
+
+  <h4 style="color:#0f766e;margin-top:10px;">Verify (macOS)</h4>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;">docker --version
+docker run hello-world</pre></div>
+
+  <h3 style="color:#1d4ed8;margin-top:20px;">Use SAM Local (Optional)</h3>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:6px;margin:10px 0;font-family:monospace;font-size:13px;"><pre style="margin:0;"># from the week03 project directory
+docker --version  # confirm Docker works
+sam build         # or: sam build --use-container
+sam local start-api
+# then visit: http://127.0.0.1:3000/items/test-123</pre></div>
+
+  <h4 style="color:#0f766e;margin-top:10px;">Troubleshooting</h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Docker not running:</strong> Start Docker Desktop and wait until it shows “running”.</li>
+    <li><strong>Port 3000 in use:</strong> Stop the conflicting app or run <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam local start-api --port 3001</code>.</li>
+    <li><strong>Apple Silicon:</strong> Most Lambda base images support arm64. If an image pull fails, retry or ensure you’re using a supported runtime.</li>
+    <li><strong>Windows path sharing:</strong> Share your project drive in Docker Desktop → Settings → Resources → File sharing.</li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 6: View CloudWatch Logs</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Lambda automatically sends logs to CloudWatch. Let's view them to see what's happening inside your function.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Access CloudWatch Logs</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Go to AWS Console → CloudWatch → Log groups</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Find log group: /aws/lambda/week3-yourname-ApiFunction-ABC123</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Click on the most recent log stream</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Review logs showing function execution, requests, and responses</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What You'll See in Logs</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Log Entry</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">START RequestId: abc-123</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Function invocation started</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">END RequestId: abc-123</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Function invocation completed</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">REPORT Duration: 150ms</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Performance metrics (duration, memory used, billed duration)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Bonus: Inspect the IAM Role</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Remember how we talked about SAM automatically creating IAM roles with least privilege? Let's actually see it!</p>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">View the Generated IAM Role</h4>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Step 1:</strong> Go to AWS Console → IAM → Roles</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Step 2:</strong> Search for your stack name (e.g., "week3-yourname")</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Step 3:</strong> Click on the role named something like "week3-yourname-ApiFunctionRole-ABC123"</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Step 4:</strong> Click "Permissions" tab to see the attached policies</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>What you'll see:</strong></p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">• <strong>DynamoDBCrudPolicy:</strong> Allows put_item, get_item, update_item, delete_item, query, scan on your specific table only</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">• <strong>CloudWatch Logs policy:</strong> Allows creating log groups and writing logs</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#1e293b;">• <strong>No other permissions:</strong> The Lambda cannot access S3, EC2, or any other AWS services</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>This is least privilege in action!</strong> The function can only do exactly what it needs to do, nothing more.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Step 7: Clean Up Resources</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When you're done testing, it's important to delete your resources to avoid ongoing charges.</p>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Important: Clean Up to Avoid Charges</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">While this lab uses minimal resources, it's good practice to delete everything when you're done. DynamoDB on-demand mode charges per request, and Lambda charges per invocation.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Delete the Stack</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM makes cleanup easy with a single command:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">sam delete --stack-name week3-yourname</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM will ask for confirmation. Type <strong>y</strong> to proceed.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What Gets Deleted</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Resource</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB Table</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deleted (all data is lost)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda Function</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deleted (code and configuration removed)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API Gateway</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deleted (API URL becomes invalid)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">IAM Roles</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deleted (permissions removed)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">CloudWatch Logs</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retained (you can manually delete if desired)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Verify Deletion</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">After deletion completes, verify in the AWS Console:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Service</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What to Check</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>CloudFormation</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Stack should show DELETE_COMPLETE status</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Table should no longer appear in tables list</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Lambda</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Function should no longer appear in functions list</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Troubleshooting</h2>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Problem</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>sam build fails with Python not found</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Ensure Python 3.14 is installed and in your PATH, and make sure your virtual environment is activated before running <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build</code>.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Deployment fails with permissions error</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Check that your AWS CLI is configured with credentials that have sufficient permissions.</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>API returns 500 Internal Server Error</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Check CloudWatch Logs for the Lambda function to see the error details.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>POST request fails with TypeError</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Ensure convert_floats() is being called before put_item() to handle Decimal conversion.</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Stack already exists error</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Choose a different stack name or delete the existing stack first.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary and Key Takeaways</h2>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">What You Accomplished</h3>
+  <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Installed and configured AWS SAM CLI</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Reviewed Infrastructure as Code (template.yaml)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Built a serverless application with sam build</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Deployed Lambda, API Gateway, and DynamoDB with sam deploy</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Tested REST API endpoints (POST and GET)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Viewed Lambda execution logs in CloudWatch</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">Cleaned up resources with sam delete</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Concepts Reinforced</h3>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Infrastructure as Code:</strong> Define all resources in template.yaml, not through console clicks</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Serverless Benefits:</strong> No servers to manage, automatic scaling, pay-per-use pricing</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>SAM Simplicity:</strong> 3 commands (build, deploy, delete) vs 25+ manual steps</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Lambda Integration:</strong> SAM automatically wires Lambda to API Gateway and DynamoDB</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Observability:</strong> CloudWatch Logs provide visibility into function execution</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Next Steps</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now that you've completed the lab, consider these extensions:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Extension</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What You'll Learn</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add a DELETE endpoint</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Implement delete_item() operation in DynamoDB</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add a PUT endpoint</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Update existing items with conditional writes</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add input validation</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Validate request data before storing in DynamoDB</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add a LIST endpoint</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use scan() to retrieve all items (with pagination)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add CORS configuration</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Enable API access from web browsers</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#059669;margin-top:5px;">Congratulations!</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You've successfully deployed a production-ready serverless API using AWS SAM. You now have hands-on experience with Lambda, API Gateway, DynamoDB, and Infrastructure as Code - skills that are in high demand in the cloud computing industry.</p>
+</div>
+
+</table>
+
+</body>
+</html>
+

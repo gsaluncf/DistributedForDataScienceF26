@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 4 Lecture 2 - Scaling Your Website with AWS</title>
+</head>
+<body>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Lecture 2: Scaling Your Website with AWS</h2>
+  <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:15px;">In Lecture 1, we explored the fundamental laws that govern distributed systems: Moore's Law, Amdahl's Law, and Conway's Law. We learned about horizontal vs vertical scaling and the difference between throughput and latency.</p>
+  <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:10px;">Today, we're going to get practical. We'll start by diving deeper into performance metrics, then work through a real-world example: building a pizza ordering system that can handle Friday dinner rush without crashing. Along the way, you'll learn how to use AWS services like Load Balancers, Auto Scaling Groups, and Message Queues to build scalable, resilient applications.</p>
+  <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:10px;"><strong>By the end of this lecture, you'll have working code you can deploy to AWS.</strong></p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: Throughput vs Latency - Understanding Performance Metrics</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Two Different Ways to Measure Performance</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When we talk about system performance, we're usually talking about one of two things: throughput or latency. Understanding the difference is critical for designing scalable systems.</p>
+
+
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Metric</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Definition</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Units</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How long it takes to complete a single request</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Milliseconds (ms)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API response time: 150ms</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Throughput</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How many requests can be processed per unit time</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Requests per second (RPS)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API can handle 10,000 RPS</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Highway Analogy</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Think of a highway system:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Concept</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Highway Analogy</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">System Analogy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How long it takes one car to get from A to B</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How long one request takes to complete</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Throughput</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How many cars can travel the highway per hour</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How many requests the system can handle per second</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Improve Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Increase speed limit, reduce traffic lights</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Optimize code, use caching, faster database queries</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Improve Throughput</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add more lanes to the highway</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add more servers, horizontal scaling</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Insight: They're Not Always Correlated</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You can have high throughput with high latency (many slow requests), or low throughput with low latency (few fast requests). A 10-lane highway in rush hour traffic has high throughput but high latency. A single-lane country road at 3 AM has low throughput but low latency.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Tail Latency: Why Averages Lie</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When measuring latency, the average (mean) can be misleading. What really matters is the <strong>tail latency</strong> - the worst-case performance that a small percentage of users experience.</p>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Consider this scenario:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Request</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Latency</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Requests 1-95</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">50ms each</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Requests 96-99</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">500ms each</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Request 100</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5000ms (5 seconds!)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;\"><strong>Average Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;\"><strong>115ms - looks great!</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">The average is 115ms, which looks good. But 5% of your users are experiencing 500ms+ latency, and 1% are waiting 5 seconds. That's a terrible user experience!</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Percentiles: A Better Way to Measure Latency</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Instead of averages, we use <strong>percentiles</strong> to understand the distribution of latency:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Percentile</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Means</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>p50 (median)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">50% of requests are faster than this</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Typical user experience</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>p95</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">95% of requests are faster than this</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Most users have this experience or better</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>p99</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">99% of requests are faster than this</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Catches outliers that affect 1 in 100 users</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>p99.9</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">99.9% of requests are faster than this</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Critical for high-scale systems (1 in 1000 users)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why p99 Matters at Scale</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If you have 1 million users per day and your p99 latency is 5 seconds, that means 10,000 users per day are experiencing 5+ second delays. That's a lot of frustrated users!</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">At Amazon scale, even p99.9 isn't enough - they care about p99.99 because even 0.01% of their traffic represents thousands of customers.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Video Resources</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">For deeper dives into these concepts, check out these excellent videos:</p>
+
+<div style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Recommended Videos</h4>
+  <ul style="color:#1e293b;">
+    <li style="margin-bottom:10px;"><strong>Throughput vs. Latency: How To Debug A Latency Problem</strong><br><a href="https://www.youtube.com/watch?v=f7VsHLk_Z8c" style="color:#3b82f6;">https://www.youtube.com/watch?v=f7VsHLk_Z8c</a></li>
+    <li><strong>What are P50, P95, P99? - Backend Performance 101</strong><br><a href="https://www.youtube.com/watch?v=9rlGSahksLQ" style="color:#3b82f6;">https://www.youtube.com/watch?v=9rlGSahksLQ</a></li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Thinking Ahead: The Distribution Problem</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now that you understand throughput vs latency and tail latency, let's think about a practical problem that brings all these concepts together.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">A Thought Experiment: Pizza Delivery Service</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Imagine you're building an online pizza ordering system. When a customer places an order through your website, your system needs to:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Accept the order and payment</li>
+  <li>Send the order to the kitchen</li>
+  <li>Track the order status (received, preparing, baking, out for delivery)</li>
+  <li>Send SMS notifications to the customer</li>
+  <li>Update the delivery driver's app</li>
+  <li>Record the order in the database for analytics</li>
+</ul>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Here's the challenge: <strong>Making a pizza takes 15 minutes</strong>, but customers expect to place their order and get confirmation in under 2 seconds. During Friday dinner rush (6-8 PM), you get 200 orders per hour.</p>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">The Constraints</h4>
+  <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+    <tbody>
+      <tr>
+        <td style="padding:8px;color:#1e293b;"><strong>Order placement time:</strong></td>
+        <td style="padding:8px;color:#1e293b;">Must respond in under 2 seconds</td>
+      </tr>
+      <tr style="background-color:#fffbeb;">
+        <td style="padding:8px;color:#1e293b;"><strong>Pizza preparation time:</strong></td>
+        <td style="padding:8px;color:#1e293b;">15 minutes per pizza</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;color:#1e293b;"><strong>Peak load (Friday 6-8 PM):</strong></td>
+        <td style="padding:8px;color:#1e293b;">200 orders per hour (3-4 per minute)</td>
+      </tr>
+      <tr style="background-color:#fffbeb;">
+        <td style="padding:8px;color:#1e293b;"><strong>Tasks per order:</strong></td>
+        <td style="padding:8px;color:#1e293b;">6 different operations</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Questions to Consider</h3>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Think about these questions before our next lecture:</strong></p>
+
+  <ol style="color:#1e293b;font-size:15px;line-height:1.8;margin-top:10px;">
+    <li><strong>Horizontal Scaling:</strong> If your website runs on one server and gets slow during dinner rush, can you just add more servers? How would that help?</li>
+
+    <li><strong>Amdahl's Law:</strong> Which parts of taking an order can be parallelized? Which parts must be sequential? What's your bottleneck?</li>
+
+    <li><strong>Throughput vs Latency:</strong> How do you accept 200 orders per hour (throughput) while responding to each customer in under 2 seconds (latency)?</li>
+
+    <li><strong>The Coordination Problem:</strong> When a customer places an order, how does the website communicate with the kitchen, the SMS service, and the driver app? Do they all need to respond before you can confirm the order?</li>
+
+    <li><strong>Failure Handling:</strong> What happens if the SMS service is down? Should the customer's order be rejected? Or should you accept the order and retry the SMS later?</li>
+
+    <li><strong>Load Spikes:</strong> What if the local football team wins and suddenly 500 people order pizza at the same time? How do you prevent your system from crashing?</li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Real Challenge: Temporal Decoupling</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Notice that the problem isn't just about having enough servers. Even with unlimited capacity, you still face a fundamental challenge:</p>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>The order-taking service and the pizza-making service operate at different speeds.</strong></p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">Orders come in fast (200 per hour in bursts), but making pizzas is slow (15 minutes each). The website can't just wait for the pizza to be made before responding to the customer - that would tie up the web server for 15 minutes and create a terrible user experience.</p>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">You need a way to:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li><strong>Accept orders quickly</strong> (respond to customer in under 2 seconds)</li>
+  <li><strong>Process orders slowly</strong> (take 15 minutes to make the pizza)</li>
+  <li><strong>Decouple the two</strong> (website doesn't wait for kitchen)</li>
+  <li><strong>Distribute work</strong> across multiple kitchen stations</li>
+  <li><strong>Handle failures gracefully</strong> (retry SMS if it fails, don't lose the order)</li>
+  <li><strong>Coordinate multiple steps</strong> (kitchen, SMS, driver app, database)</li>
+</ul>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">The Missing Piece</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">All the concepts we've covered today - horizontal scaling, Amdahl's Law, throughput vs latency - are necessary but not sufficient. We need a mechanism to:</p>
+  <ul style="color:#1e293b;">
+    <li>Store orders that need to be processed (without blocking the customer)</li>
+    <li>Distribute those orders across multiple kitchen stations</li>
+    <li>Ensure orders don't get lost if a system crashes</li>
+    <li>Allow different services (kitchen, SMS, driver app) to work at their own pace</li>
+  </ul>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>What kind of system architecture would enable this?</strong></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Hint: Think About Real-World Analogies</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Real-World System</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How It Handles Temporal Decoupling</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Pizza Restaurant</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Cashier takes order quickly, kitchen makes pizza slowly. Orders are written on tickets and hung up for cooks to grab.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Coffee Shop</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Barista writes your name on a cup, you pay and step aside. Multiple baristas make drinks from the queue of cups.</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Emergency Room</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Triage nurse sees you immediately, but you wait in queue based on severity. Doctors process patients as they become available.</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Print Shop</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">You submit print job instantly, but it sits in a queue. Multiple printers work through the queue in parallel.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">What do all these systems have in common? They use a <strong>queue</strong> to buffer work between fast producers (taking orders) and slow consumers (making pizzas).</p>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">Now Let's Build It</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You've seen the problem. You understand the constraints. Now let's see how AWS provides the tools to solve it. We'll cover:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Load Balancers and Auto Scaling</strong> - adding more web servers when traffic increases</li>
+    <li><strong>Message Queues (SQS)</strong> - buffering and distributing pizza orders</li>
+    <li><strong>Pub/Sub Systems (SNS)</strong> - notifying multiple services when an order is placed</li>
+    <li><strong>Retry Strategies</strong> - handling failures gracefully</li>
+  </ul>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">By the end of this lecture, you'll have a working demo where you can submit pizza orders from a static HTML page and watch them flow through a queue!</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: The Problem - One Server Isn't Enough</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Pizza Ordering Challenge</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Let's revisit our pizza ordering scenario with specific numbers:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Normal traffic: 50 orders per hour (website handles this fine)</li>
+  <li>Friday dinner rush: 200 orders per hour (website slows down)</li>
+  <li>Football game ends: 500 orders in 10 minutes (website crashes)</li>
+</ul>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Your website is currently running on a single EC2 instance. When too many customers try to order at once, the server gets overwhelmed.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Solution 1: Vertical Scaling (The Wrong Answer)</h3>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">Attempt 1: Buy a Bigger Server</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">You could upgrade from a t3.small to a t3.2xlarge (8x more CPU and RAM). This helps, but:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Expensive:</strong> Costs 8x more, even during slow hours</li>
+    <li><strong>Limited:</strong> Eventually you hit the biggest instance size</li>
+    <li><strong>Single point of failure:</strong> If that one server crashes, your entire website is down</li>
+    <li><strong>Wasteful:</strong> You're paying for peak capacity 24/7, even at 3 AM when nobody orders pizza</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Solution 2: Horizontal Scaling (The Right Answer)</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Instead of one big server, use many small servers. During dinner rush, run 10 servers. At 3 AM, run 2 servers. This is <strong>horizontal scaling</strong>.</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://d1.awsstatic.com/product-marketing/elasticloadbalancing/Application-Load-Balancer/Product-Page-Diagram_Elastic-Load-Balancing_ALB_HIW%402x.cb3ce6cfd5dd549c99645ed51eef9e8be8a27aa3.png" alt="AWS Application Load Balancer distributing traffic across multiple EC2 instances in different availability zones" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Application Load Balancer distributing traffic across multiple servers for horizontal scaling (Source: AWS)</p>
+</div>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Benefits of Horizontal Scaling</h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Cost-effective:</strong> Pay only for what you need, when you need it</li>
+    <li><strong>Unlimited:</strong> Can scale to hundreds or thousands of servers</li>
+    <li><strong>Resilient:</strong> If one server crashes, the others keep running</li>
+    <li><strong>Flexible:</strong> Automatically add/remove servers based on traffic</li>
+  </ul>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">But horizontal scaling introduces a new problem: <strong>How do customers know which server to connect to?</strong></p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: Load Balancers - Traffic Distribution</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What is a Load Balancer?</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">A <strong>load balancer</strong> sits in front of your servers and distributes incoming requests across all available servers. Think of it like a restaurant host who seats customers at different tables to balance the workload across waiters.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Without Load Balancer</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">With Load Balancer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customers connect to pizza.com (points to one server)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customers connect to pizza.com (points to load balancer)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">All traffic goes to that one server</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Load balancer distributes traffic across 10 servers</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">If server crashes, website is down</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">If one server crashes, load balancer routes traffic to the other 9</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">AWS Application Load Balancer (ALB)</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">AWS provides <strong>Application Load Balancer (ALB)</strong>, a fully managed load balancer that:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li><strong>Distributes traffic</strong> across multiple EC2 instances</li>
+  <li><strong>Health checks</strong> - automatically stops sending traffic to unhealthy servers</li>
+  <li><strong>SSL termination</strong> - handles HTTPS encryption for you</li>
+  <li><strong>Path-based routing</strong> - send /api requests to one set of servers, /images to another</li>
+  <li><strong>Sticky sessions</strong> - keep a user on the same server (if needed)</li>
+</ul>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How Health Checks Work</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">The load balancer periodically sends a request to each server (e.g., GET /health). If the server responds with HTTP 200, it's healthy. If it fails 3 times in a row, the load balancer stops sending traffic to it.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Server</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Health Check Result</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Server 1</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;">HTTP 200 OK</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Receives traffic</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Server 2</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;">HTTP 200 OK</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Receives traffic</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Server 3</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#dc2626;">Timeout (crashed)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Removed from rotation</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: Auto Scaling Groups - Dynamic Capacity</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Problem: How Many Servers Do You Need?</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">You have a load balancer, but you still need to decide: how many servers should be running?</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Tuesday at 3 PM: 20 orders/hour - need 2 servers</li>
+  <li>Friday at 7 PM: 200 orders/hour - need 10 servers</li>
+  <li>Football game ends: 500 orders in 10 minutes - need 25 servers</li>
+</ul>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">You could manually start/stop servers, but that's tedious and slow. By the time you notice the traffic spike and start new servers, customers are already experiencing slowness.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Auto Scaling Groups (ASG)</h3>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://docs.aws.amazon.com/images/autoscaling/ec2/userguide/images/as-basic-diagram.png" alt="Auto Scaling Group architecture showing EC2 instances distributed across multiple availability zones within a VPC" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Auto Scaling Group managing EC2 instances across availability zones (Source: AWS Documentation)</p>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">An <strong>Auto Scaling Group</strong> automatically adjusts the number of EC2 instances based on demand. You define:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li><strong>Minimum capacity:</strong> Always run at least 2 servers (for redundancy)</li>
+  <li><strong>Maximum capacity:</strong> Never run more than 50 servers (cost limit)</li>
+  <li><strong>Desired capacity:</strong> Target number of servers (ASG adjusts this automatically)</li>
+  <li><strong>Scaling policy:</strong> When to add/remove servers</li>
+</ul>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Scaling Policies</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Policy Type</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How It Works</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Target Tracking</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Maintain a metric at a target value</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Keep average CPU at 50%</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Step Scaling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add/remove instances based on thresholds</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">If CPU > 70%, add 2 servers</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scheduled Scaling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Scale at specific times</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Scale up Fri-Sun 5-9 PM</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Example: Target Tracking Policy</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Let's say you configure: "Keep average CPU utilization at 50%"</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Time</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Traffic</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">CPU Usage</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">ASG Action</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Servers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3:00 PM</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Low</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">30%</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Remove 1 server</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">6:00 PM</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Rising</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">75%</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add 2 servers</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">7:00 PM</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Peak</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">80%</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add 4 servers</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">8</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">9:00 PM</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Declining</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">35%</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Remove 3 servers</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Connecting to Amdahl's Law</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Remember from Lecture 1: Amdahl's Law says your speedup is limited by the sequential portion of your code. For web applications, the key to horizontal scaling is making your servers <strong>stateless</strong>:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Session data:</strong> Store in DynamoDB or ElastiCache (not on the server)</li>
+    <li><strong>User uploads:</strong> Save to S3 (not local disk)</li>
+    <li><strong>No sticky sessions:</strong> Any server can handle any request</li>
+  </ul>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">With stateless servers, you can scale from 2 to 100 instances with near-linear speedup!</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Putting It Together: ALB + ASG</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Here's how ALB and ASG work together:</p>
+
+<ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li>Customer visits pizza.com (DNS points to ALB)</li>
+  <li>ALB receives the request and picks a healthy server from the ASG</li>
+  <li>Server processes the request and returns the response</li>
+  <li>If CPU usage rises above 50%, ASG launches new servers</li>
+  <li>ALB automatically starts sending traffic to the new servers</li>
+  <li>When traffic drops, ASG terminates excess servers</li>
+</ol>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">Great! We Solved Scaling... Or Did We?</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">ALB + ASG solves the problem of scaling your <strong>website</strong> (the part that accepts orders). But remember from Lecture 1: the website operates at a different speed than the kitchen.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">Even with 100 web servers, you still have the temporal decoupling problem: orders come in fast, but processing (making pizzas, sending SMS, updating driver app) is slow.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>We need a way to decouple the fast part (accepting orders) from the slow part (processing orders).</strong></p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: Message Queues - Temporal Decoupling</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Queue Concept</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Remember from Lecture 1: real-world systems like restaurants use queues to handle temporal decoupling. In a pizza restaurant:</p>
+
+<ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li>Cashier takes order and writes it on a ticket (fast - 30 seconds)</li>
+  <li>Ticket is hung on a rack (the queue)</li>
+  <li>Cook grabs next ticket when ready (slow - 15 minutes to make pizza)</li>
+  <li>Customer gets confirmation immediately, doesn't wait for pizza to be made</li>
+</ol>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">We need the same pattern for our website!</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Amazon SQS - Simple Queue Service</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Amazon SQS</strong> is a fully managed message queue service. It acts as a buffer between your fast web servers and your slow processing workers.</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://docs.aws.amazon.com/images/AWSSimpleQueueService/latest/SQSDeveloperGuide/images/sqs-what-is-sqs-diagram.png" alt="Amazon SQS architecture showing producers sending messages to a queue and consumers receiving messages" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Amazon SQS basic architecture with producers, queue, and consumers (Source: AWS Documentation)</p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Feature</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Description</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Fully Managed</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No servers to manage, scales automatically</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Focus on business logic, not infrastructure</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Unlimited Throughput</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Can handle millions of messages per second</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Handles traffic spikes automatically</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Message Retention</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1 minute to 14 days (default 4 days)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Messages won't be lost if workers are down</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>At-Least-Once Delivery</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Messages may be delivered more than once</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Your code must be idempotent</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Visibility Timeout</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Message hidden while being processed</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Prevents duplicate processing</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How SQS Works: The Pizza Order Flow</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Component</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>1. Order</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Website (Lambda)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customer submits order, Lambda sends message to SQS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;">< 1 second</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>2. Queue</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Message sits in queue until worker is ready</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Variable</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>3. Process</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker (Lambda)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker pulls message, processes order, sends SMS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">15 minutes</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>4. Delete</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker (Lambda)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker deletes message from queue (success!)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;">< 1 second</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Key Insight: Throughput vs Latency</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">The website responds in < 1 second (great latency for the customer), while processing happens asynchronously over 15 minutes. With multiple workers pulling from the queue, you can process 200 orders per hour (high throughput).</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">This is exactly what we discussed in Lecture 1: optimizing for both latency AND throughput!</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Visibility Timeout: Preventing Duplicate Work</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When a worker pulls a message from SQS, the message becomes invisible to other workers for a set period (visibility timeout). This prevents two workers from processing the same order.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Scenario</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Worker processes successfully</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker deletes message, it's gone forever</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Worker crashes mid-processing</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">After visibility timeout expires, message becomes visible again for another worker to try</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Processing takes longer than timeout</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Message becomes visible again, another worker might process it (need idempotency!)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#d97706;margin-top:5px;">Important: Idempotency</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Because SQS guarantees <strong>at-least-once delivery</strong>, your worker might receive the same message twice. Make sure your code is idempotent (safe to run multiple times):</p>
+  <ul style="color:#1e293b;">
+    <li>Check if order has already been processed (query DynamoDB)</li>
+    <li>Use unique order IDs to prevent duplicate charges</li>
+    <li>Design operations to be safe when repeated</li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 6: Building the Pizza Ordering Demo</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Architecture Overview</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Let's build a simple demo that shows queuing in action. We'll create:</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://d2908q01vomqb2.cloudfront.net/1b6453892473a467d07372d45eb05abc2031647a/2019/11/14/DLQ-1.png" alt="Serverless architecture diagram showing API Gateway, Lambda functions, SQS queue, and DynamoDB integration" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Serverless architecture with Lambda, SQS, and DynamoDB for asynchronous processing (Source: AWS Compute Blog)</p>
+</div>
+
+<ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li><strong>Static HTML page</strong> - hosted on S3, lets customers submit pizza orders</li>
+  <li><strong>API Gateway + Lambda</strong> - accepts orders and sends them to SQS (fast response)</li>
+  <li><strong>SQS Queue</strong> - holds orders waiting to be processed</li>
+  <li><strong>Worker Lambda</strong> - pulls orders from queue and processes them (slow work)</li>
+  <li><strong>DynamoDB</strong> - stores order status</li>
+</ol>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 1: Create the SQS Queue</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Building on Week 3's SAM knowledge, here's the template:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">template.yaml</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  # SQS Queue for pizza orders
+  PizzaQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: pizza-orders
+      VisibilityTimeout: 300  # 5 minutes
+      MessageRetentionPeriod: 86400  # 1 day
+
+  # DynamoDB table for order tracking
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: pizza-orders
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+
+  # API Lambda - accepts orders (fast)
+  OrderApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: order_api.handler
+      Runtime: python3.11
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref PizzaQueue
+          TABLE_NAME: !Ref OrdersTable
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt PizzaQueue.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        OrderApi:
+          Type: Api
+          Properties:
+            Path: /order
+            Method: post
+            Cors:
+              AllowOrigin: "'*'"
+              AllowHeaders: "'Content-Type'"
+
+  # Worker Lambda - processes orders (slow)
+  OrderWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: order_worker.handler
+      Runtime: python3.11
+      Timeout: 300  # 5 minutes
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref OrdersTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PizzaQueue.Arn
+            BatchSize: 1
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/order'
+</code></pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 2: The Order API (Fast Response)</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">order_api.py</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>import json
+import boto3
+import os
+import uuid
+from datetime import datetime
+
+sqs = boto3.client('sqs')
+dynamodb = boto3.resource('dynamodb')
+
+QUEUE_URL = os.environ['QUEUE_URL']
+TABLE_NAME = os.environ['TABLE_NAME']
+table = dynamodb.Table(TABLE_NAME)
+
+def handler(event, context):
+    # Parse the order from request body
+    body = json.loads(event['body'])
+    pizza_type = body.get('pizza_type', 'Pepperoni')
+    size = body.get('size', 'Large')
+    customer_name = body.get('customer_name', 'Anonymous')
+
+    # Generate unique order ID
+    order_id = str(uuid.uuid4())
+
+    # Save order to DynamoDB (status: pending)
+    table.put_item(Item={
+        'orderId': order_id,
+        'pizzaType': pizza_type,
+        'size': size,
+        'customerName': customer_name,
+        'status': 'pending',
+        'createdAt': datetime.utcnow().isoformat()
+    })
+
+    # Send message to SQS
+    sqs.send_message(
+        QueueUrl=QUEUE_URL,
+        MessageBody=json.dumps({
+            'orderId': order_id,
+            'pizzaType': pizza_type,
+            'size': size,
+            'customerName': customer_name
+        })
+    )
+
+    # Return immediately (< 1 second!)
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        },
+        'body': json.dumps({
+            'message': 'Order received!',
+            'orderId': order_id,
+            'estimatedTime': '15-20 minutes'
+        })
+    }
+</code></pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding the Order API Code</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Let's break down what this code does line by line:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Code Section</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">sqs = boto3.client('sqs')</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Initialize SQS client outside handler</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reused across invocations (Lambda container reuse)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">QUEUE_URL = os.environ['QUEUE_URL']</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Get queue URL from environment variable</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SAM injects this automatically - no hardcoding!</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">order_id = str(uuid.uuid4())</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Generate unique ID for order</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Prevents duplicate orders, enables idempotency</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">table.put_item(...)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Save order to DynamoDB with status "pending"</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Persists order immediately - won't be lost if worker crashes</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">sqs.send_message(...)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Send message to SQS queue</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Triggers worker Lambda asynchronously</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">return {'statusCode': 200, ...}</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Return success response immediately</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customer gets response in < 1 second (doesn't wait for pizza to cook!)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Key Insight: Temporal Decoupling</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">The API function completes in under 1 second. It doesn't wait for the pizza to be made (which could take 15 minutes). The SQS message acts as a "work ticket" that the worker will process later. This is <strong>temporal decoupling</strong> - separating fast operations (accepting orders) from slow operations (making pizzas).</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 3: The Order Worker (Slow Processing)</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">order_worker.py</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>import json
+import boto3
+import os
+import time
+from datetime import datetime
+
+dynamodb = boto3.resource('dynamodb')
+TABLE_NAME = os.environ['TABLE_NAME']
+table = dynamodb.Table(TABLE_NAME)
+
+def handler(event, context):
+    # Lambda automatically polls SQS and invokes this function
+    for record in event['Records']:
+        # Parse the message
+        message = json.loads(record['body'])
+        order_id = message['orderId']
+        pizza_type = message['pizzaType']
+        size = message['size']
+        customer_name = message['customerName']
+
+        print(f"Processing order {order_id} for {customer_name}")
+
+        # Update status to "preparing"
+        table.update_item(
+            Key={'orderId': order_id},
+            UpdateExpression='SET #status = :status, updatedAt = :time',
+            ExpressionAttributeNames={'#status': 'status'},
+            ExpressionAttributeValues={
+                ':status': 'preparing',
+                ':time': datetime.utcnow().isoformat()
+            }
+        )
+
+        # Simulate making the pizza (this would be real work in production)
+        # In reality, this might call external APIs, process data, etc.
+        time.sleep(10)  # Simulate 10 seconds of work
+
+        # Update status to "ready"
+        table.update_item(
+            Key={'orderId': order_id},
+            UpdateExpression='SET #status = :status, completedAt = :time',
+            ExpressionAttributeNames={'#status': 'status'},
+            ExpressionAttributeValues={
+                ':status': 'ready',
+                ':time': datetime.utcnow().isoformat()
+            }
+        )
+
+        print(f"Order {order_id} is ready!")
+
+        # If this function completes successfully,
+        # Lambda automatically deletes the message from SQS
+
+    return {'statusCode': 200}
+</code></pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding the Worker Code</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">The worker Lambda is triggered automatically by SQS. Let's understand the key concepts:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Code Section</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">for record in event['Records']:</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Loop through SQS messages</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda can receive multiple messages in one invocation (BatchSize)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">message = json.loads(record['body'])</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Parse the message body</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQS stores messages as strings, need to parse JSON</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">table.update_item(...)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Update order status in DynamoDB</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customer can check status without waiting for completion</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">time.sleep(10)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Simulate slow work (making pizza)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">In production, this would be real processing (API calls, data transformation, etc.)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">return {'statusCode': 200}</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Signal success to Lambda</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda automatically deletes message from SQS (won't be reprocessed)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Important: Automatic Message Deletion</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If your handler completes successfully (no exceptions), Lambda automatically deletes the message from SQS. If your handler throws an exception, the message stays in the queue and will be retried. This is why <strong>idempotency</strong> is critical - your code must handle processing the same message multiple times safely.</p>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Connecting to Week 3 Concepts</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Notice we're using the same DynamoDB patterns from Week 3: <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">update_item</code> with <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">UpdateExpression</code> and <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">ExpressionAttributeNames</code>. The difference is we're now triggering this Lambda from SQS instead of API Gateway!</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 4: The Static HTML Page</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">This simple page can be hosted on S3 (just like Week 2). Customers use it to submit orders:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">index.html</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Pizza Ordering Demo&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+    input, select, button { margin: 10px 0; padding: 10px; width: 100%; }
+    button { background: #3b82f6; color: white; border: none; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+    .success { background: #d1fae5; border: 1px solid #10b981; }
+    .error { background: #fee2e2; border: 1px solid #ef4444; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Order Your Pizza&lt;/h1&gt;
+
+  &lt;form id="orderForm"&gt;
+    &lt;input type="text" id="customerName" placeholder="Your Name" required&gt;
+
+    &lt;select id="pizzaType"&gt;
+      &lt;option&gt;Pepperoni&lt;/option&gt;
+      &lt;option&gt;Margherita&lt;/option&gt;
+      &lt;option&gt;Hawaiian&lt;/option&gt;
+      &lt;option&gt;Veggie&lt;/option&gt;
+    &lt;/select&gt;
+
+    &lt;select id="size"&gt;
+      &lt;option&gt;Small&lt;/option&gt;
+      &lt;option&gt;Medium&lt;/option&gt;
+      &lt;option selected&gt;Large&lt;/option&gt;
+      &lt;option&gt;Extra Large&lt;/option&gt;
+    &lt;/select&gt;
+
+    &lt;button type="submit"&gt;Place Order&lt;/button&gt;
+  &lt;/form&gt;
+
+  &lt;div id="result"&gt;&lt;/div&gt;
+
+  &lt;script&gt;
+    // Replace with your API Gateway URL after deployment
+    const API_URL = 'YOUR_API_GATEWAY_URL_HERE';
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) =&gt; {
+      e.preventDefault();
+
+      const order = {
+        customer_name: document.getElementById('customerName').value,
+        pizza_type: document.getElementById('pizzaType').value,
+        size: document.getElementById('size').value
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(order)
+        });
+
+        const data = await response.json();
+
+        document.getElementById('result').className = 'success';
+        document.getElementById('result').innerHTML =
+          `&lt;strong&gt;Order Confirmed!&lt;/strong&gt;&lt;br&gt;
+           Order ID: ${data.orderId}&lt;br&gt;
+           Estimated Time: ${data.estimatedTime}&lt;br&gt;
+           &lt;em&gt;Your order is being processed in the background!&lt;/em&gt;`;
+
+        document.getElementById('orderForm').reset();
+      } catch (error) {
+        document.getElementById('result').className = 'error';
+        document.getElementById('result').innerHTML =
+          `&lt;strong&gt;Error:&lt;/strong&gt; ${error.message}`;
+      }
+    });
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How It All Works Together</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">User Experience</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>1</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customer fills out form and clicks "Place Order"</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Waiting for response...</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>2</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API Lambda receives order, saves to DynamoDB, sends to SQS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;">Gets confirmation in < 1 second!</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>3</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Message sits in SQS queue</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Customer can close browser, order won't be lost</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>4</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker Lambda pulls message and processes order</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Happens in background (customer doesn't wait)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>5</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Worker updates DynamoDB status to "ready"</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Could send SMS notification (we'll add this with SNS!)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Deploying the Pizza Ordering Demo</h2>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now let's deploy this application to AWS using SAM. Just like in Week 3, we'll use <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam build</code> and <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam deploy</code> to create all the resources.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 1: Create the Project Structure</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Create a new directory for your project with the following structure:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">week04-pizza-demo/
+├── template.yaml          # SAM template (from Step 1 above)
+├── order_api.py          # API Lambda code (from Step 2 above)
+├── order_worker.py       # Worker Lambda code (from Step 3 above)
+└── public/
+    └── index.html        # Static HTML page (from Step 4 above)</pre>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Creating the Files</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Create a new folder called <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">week04-pizza-demo</code> and copy the code from the sections above into the appropriate files. Make sure the file names match exactly!</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 2: Verify AWS Credentials</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Before deploying, verify your AWS credentials are configured (same as Week 3):</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">aws sts get-caller-identity</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">You should see your AWS account information. If not, run <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">aws configure</code> to set up your credentials.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 3: Build the Application</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Navigate to your project directory and run:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">cd week04-pizza-demo
+sam build</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM will package your Lambda functions and prepare them for deployment. You should see output like:</p>
+
+<div style="background-color:#f1f5f9;border:1px solid #cbd5e1;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:12px;">
+<pre style="margin:0;">Building codeuri: ./ runtime: python3.11 metadata: {} architecture: x86_64 functions: OrderApiFunction, OrderWorkerFunction
+Running PythonPipBuilder:CleanUp
+Running PythonPipBuilder:ResolveDependencies
+Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 4: Deploy to AWS</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Now deploy your application:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">sam deploy --guided</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Answer the prompts:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Prompt</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Recommended Answer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Stack Name</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">week4-pizza-yourname (replace with your name)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">AWS Region</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">us-east-1 (or your preferred region)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Confirm changes before deploy</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Y (yes)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Allow SAM CLI IAM role creation</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Y (yes)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Disable rollback</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">N (no)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Save arguments to config file</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Y (yes)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM will create a changeset and ask you to confirm. Type <strong>y</strong> and press Enter. Deployment takes 2-3 minutes.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 5: Get Your API URL</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">After deployment completes, SAM will display the outputs:</p>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;font-family:monospace;font-size:12px;">
+<pre style="margin:0;">CloudFormation outputs from deployed stack
+---------------------------------------------------------------------------
+Outputs
+---------------------------------------------------------------------------
+Key                 ApiUrl
+Description         API Gateway endpoint
+Value               https://abc123xyz.execute-api.us-east-1.amazonaws.com/Prod/order
+---------------------------------------------------------------------------</pre>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Important: Save Your API URL!</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Copy the <strong>ApiUrl</strong> value. You'll need to update <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">index.html</code> with this URL before testing!</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 6: Update the HTML Page</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Open <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">public/index.html</code> and replace the API_URL placeholder:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">// Replace this line:
+const API_URL = 'YOUR_API_URL_HERE';
+
+// With your actual API URL:
+const API_URL = 'https://abc123xyz.execute-api.us-east-1.amazonaws.com/Prod/order';</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 7: Test the Application</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Open <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">public/index.html</code> in your browser (just double-click the file). Fill out the form and click "Place Order". You should see a confirmation message with an order ID!</p>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Viewing Logs in CloudWatch</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">To see your Lambda functions in action:</p>
+  <ol style="color:#1e293b;font-size:15px;line-height:1.6;">
+    <li>Go to AWS Console → CloudWatch → Log groups</li>
+    <li>Find <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">/aws/lambda/week4-pizza-yourname-OrderApiFunction-...</code></li>
+    <li>Click on the latest log stream to see the execution logs</li>
+    <li>You should see the print statements from your code!</li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 8: Check DynamoDB</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Verify your orders are being saved:</p>
+
+<ol style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Go to AWS Console → DynamoDB → Tables</li>
+  <li>Click on your table (should be named <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">pizza-orders</code>)</li>
+  <li>Click "Explore table items"</li>
+  <li>You should see your orders with status "ready" (after the worker processes them)</li>
+</ol>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 9: Clean Up Resources</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When you're done testing, delete all resources to avoid charges:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">sam delete</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Confirm by typing the stack name when prompted.</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 7: Adding SNS for Notifications (Optional Enhancement)</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Problem: Notifying Multiple Systems</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When an order is ready, you might want to:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Send SMS to customer</li>
+  <li>Send email receipt</li>
+  <li>Update driver app</li>
+  <li>Log to analytics system</li>
+</ul>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">You could have the worker Lambda call each service directly, but that creates tight coupling. If you add a new notification channel, you have to modify the worker code.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Amazon SNS - Simple Notification Service</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Amazon SNS</strong> implements the pub/sub (publish-subscribe) pattern. The worker publishes one message to an SNS topic, and SNS fans it out to multiple subscribers.</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://d1.awsstatic.com/product-marketing/SNS/product-page-diagram_Amazon-SNS_event-driven-SNS-compute%402x.03cb54865e1c586c26ee73f9dff0dc079125e9dc.png" alt="Amazon SNS fanout pattern showing one publisher sending to multiple subscribers including Lambda, SQS, and HTTP endpoints" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Amazon SNS fanout pattern distributing messages to multiple subscribers (Source: AWS)</p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Pattern</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Use Case</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>SQS (Queue)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">One producer, one consumer (or competing consumers)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Order processing - one worker processes each order</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>SNS (Pub/Sub)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">One producer, many consumers (all get the message)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Order ready - notify SMS, email, driver app all at once</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>SNS + SQS Fan-out</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reliable delivery to multiple systems</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SNS publishes to multiple SQS queues, each with its own worker</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Adding SNS to Our Demo</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Add this to your SAM template:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">template.yaml (addition)</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>  # SNS Topic for order notifications
+  OrderNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: pizza-order-notifications
+      Subscription:
+        - Protocol: email
+          Endpoint: your-email@example.com  # Replace with your email
+</code></pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Then update the worker to publish to SNS when order is ready:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">order_worker.py (addition)</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>sns = boto3.client('sns')
+TOPIC_ARN = os.environ['TOPIC_ARN']
+
+# After updating status to "ready"
+sns.publish(
+    TopicArn=TOPIC_ARN,
+    Subject=f'Pizza Order {order_id} Ready!',
+    Message=f'Hi {customer_name}, your {size} {pizza_type} pizza is ready!'
+)
+</code></pre>
+</div>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Best Practice: SNS + SQS Fan-out</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">For production systems, don't subscribe Lambda directly to SNS. Instead, use the fan-out pattern:</p>
+  <ol style="color:#1e293b;">
+    <li>Worker publishes to SNS topic</li>
+    <li>SNS fans out to multiple SQS queues (one for SMS, one for email, one for analytics)</li>
+    <li>Each queue has its own Lambda worker</li>
+  </ol>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">This provides better reliability and allows each system to process at its own pace.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 8: Retries and Exponential Backoff</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Connecting Back to Lecture 1</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">In Lecture 1, we discussed how distributed systems need to handle failures gracefully. When calling external services (SMS API, payment gateway, etc.), failures are inevitable:</p>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.6;">
+  <li>Network timeouts</li>
+  <li>Service temporarily down</li>
+  <li>Rate limiting (too many requests)</li>
+  <li>Transient errors (database deadlock, etc.)</li>
+</ul>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Exponential Backoff with Jitter</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Instead of retrying immediately (which can overwhelm a struggling service), use <strong>exponential backoff</strong>: wait longer between each retry. Add <strong>jitter</strong> (randomness) to prevent thundering herd problem.</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;" src="https://d2908q01vomqb2.cloudfront.net/fc074d501302eb2b93e2554793fcaf50b3bf7291/2021/04/27/Figure-1.-Retry-with-backoff.png" alt="Diagram showing exponential backoff retry pattern with increasing delays between retry attempts" />
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">Exponential backoff pattern showing increasing delays between retries (Source: AWS Architecture Blog)</p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Retry Attempt</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Base Delay</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">With Jitter (Random 0-100%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1st retry</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1 second</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">0.5 - 1.0 seconds</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2nd retry</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2 seconds</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1.0 - 2.0 seconds</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3rd retry</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4 seconds</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2.0 - 4.0 seconds</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4th retry</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">8 seconds</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4.0 - 8.0 seconds</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5th retry</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">16 seconds</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">8.0 - 16.0 seconds</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Python Implementation</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">Exponential Backoff with Jitter</h4>
+  <pre style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:5px;overflow-x:auto;"><code>import time
+import random
+
+def call_external_api_with_retry(max_retries=5):
+    base_delay = 1  # Start with 1 second
+
+    for attempt in range(max_retries):
+        try:
+            # Try to call the external API
+            response = external_api.send_sms(...)
+            return response  # Success!
+
+        except Exception as e:
+            if attempt == max_retries - 1:
+                # Last attempt failed, give up
+                raise e
+
+            # Calculate delay with exponential backoff
+            delay = base_delay * (2 ** attempt)
+
+            # Add jitter (random 0-100% of delay)
+            jittered_delay = delay * random.random()
+
+            print(f"Attempt {attempt + 1} failed, retrying in {jittered_delay:.2f}s")
+            time.sleep(jittered_delay)
+</code></pre>
+</div>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">AWS SDK Built-in Retries</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Good news: The AWS SDK (boto3 for Python) already implements exponential backoff with jitter for you! When you call SQS, DynamoDB, SNS, etc., the SDK automatically retries on transient errors.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">You only need to implement your own retry logic when calling external (non-AWS) APIs.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary: Bringing It All Together</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">From Theory to Practice</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Lecture 1 Concept</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">AWS Implementation</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Pizza Demo Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Horizontal Scaling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">ALB + Auto Scaling Groups</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Scale web servers from 2 to 25 during dinner rush</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Amdahl's Law</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Stateless design (DynamoDB, S3)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Any server can handle any request, near-linear speedup</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Throughput vs Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQS for temporal decoupling</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Fast response (< 1s) + high throughput (200 orders/hour)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Queues</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Amazon SQS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Orders wait in queue, workers process at their own pace</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Pub/Sub</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Amazon SNS</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Notify SMS, email, driver app all at once</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Retries</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Exponential backoff (built into boto3)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retry SMS API calls with increasing delays</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Key Takeaways</h3>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+    <li><strong>Scale the website with ALB + ASG:</strong> Automatically add/remove servers based on traffic</li>
+    <li><strong>Decouple with SQS:</strong> Fast operations (accepting orders) don't wait for slow operations (processing)</li>
+    <li><strong>Design for statelessness:</strong> Store session data in DynamoDB, uploads in S3, not on servers</li>
+    <li><strong>Use SNS for fan-out:</strong> One message, many subscribers (SMS, email, analytics)</li>
+    <li><strong>Handle failures gracefully:</strong> Exponential backoff, idempotent operations, visibility timeouts</li>
+    <li><strong>Build on Week 3 knowledge:</strong> Lambda, SAM, DynamoDB are the foundation for all of this</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What's Next: The Lab</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">In this week's lab, you'll deploy the pizza ordering demo to your AWS account. You'll:</p>
+
+<ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li>Deploy the SAM template with SQS, Lambda, and DynamoDB</li>
+  <li>Host the HTML page on S3</li>
+  <li>Test the system by placing multiple orders simultaneously</li>
+  <li>Monitor the queue depth in CloudWatch</li>
+  <li>Add SNS notifications (optional challenge)</li>
+  <li>Experiment with scaling policies</li>
+</ol>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">This hands-on experience will solidify your understanding of how queues enable temporal decoupling in distributed systems!</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">References and Further Reading</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">AWS Documentation</h3>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li><a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html" style="color:#3b82f6;">Application Load Balancer Documentation</a></li>
+  <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html" style="color:#3b82f6;">Amazon EC2 Auto Scaling Documentation</a></li>
+  <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html" style="color:#3b82f6;">Amazon SQS Developer Guide</a></li>
+  <li><a href="https://docs.aws.amazon.com/sns/latest/dg/welcome.html" style="color:#3b82f6;">Amazon SNS Developer Guide</a></li>
+  <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html" style="color:#3b82f6;">Using Lambda with SQS</a></li>
+  <li><a href="https://aws.amazon.com/blogs/compute/operating-lambda-performance-optimization-part-1/" style="color:#3b82f6;">AWS Lambda Performance Optimization</a></li>
+</ul>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Best Practices</h3>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li><a href="https://aws.amazon.com/architecture/well-architected/" style="color:#3b82f6;">AWS Well-Architected Framework</a></li>
+  <li><a href="https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/welcome.html" style="color:#3b82f6;">Reliability Pillar - Well-Architected Framework</a></li>
+  <li><a href="https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/" style="color:#3b82f6;">Amazon Builders Library: Avoiding Insurmountable Queue Backlogs</a></li>
+  <li><a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/" style="color:#3b82f6;">Amazon Builders Library: Timeouts, Retries, and Backoff with Jitter</a></li>
+</ul>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Additional Resources</h3>
+
+<ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+  <li><a href="https://www.youtube.com/watch?v=UNUz1-msbOM" style="color:#3b82f6;">AWS re:Invent - Deep Dive on Amazon SQS</a></li>
+  <li><a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/" style="color:#3b82f6;">AWS Architecture Blog: Exponential Backoff and Jitter</a></li>
+  <li><a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/queue-based-load-leveling.html" style="color:#3b82f6;">Queue-Based Load Leveling Pattern</a></li>
+</ul>
+
+</body>
+</html>

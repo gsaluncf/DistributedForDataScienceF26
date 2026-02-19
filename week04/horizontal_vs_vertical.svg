@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="700" xmlns="http://www.w3.org/2000/svg">
+        <!-- Title -->
+        <text x="600" y="40" font-size="28" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b">
+            Horizontal vs. Vertical Scaling
+        </text>
+
+        <!-- Vertical Scaling Section -->
+        <g transform="translate(50, 100)">
+            <rect x="0" y="0" width="520" height="550" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" rx="8"/>
+            <text x="260" y="40" font-size="22" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e40af">
+                Vertical Scaling (Scale Up)
+            </text>
+
+            <!-- Stage 1: Small machine -->
+            <g transform="translate(30, 80)">
+                <text x="0" y="0" font-size="15" font-weight="bold" font-family="Arial, sans-serif" fill="#1e293b">Stage 1: Small Machine</text>
+                <rect x="0" y="15" width="180" height="120" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="5"/>
+                <text x="90" y="40" font-size="14" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 1</text>
+
+                <!-- 2 cores -->
+                <rect x="20" y="55" width="60" height="35" fill="#1e40af" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="50" y="78" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">Core 1</text>
+
+                <rect x="100" y="55" width="60" height="35" fill="#1e40af" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="130" y="78" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">Core 2</text>
+
+                <!-- RAM -->
+                <rect x="40" y="100" width="100" height="25" fill="#60a5fa" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="90" y="117" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">8 GB RAM</text>
+
+                <text x="90" y="155" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b" font-weight="bold">$50/month</text>
+            </g>
+
+            <!-- Arrow down -->
+            <g transform="translate(260, 220)">
+                <line x1="0" y1="0" x2="0" y2="50" stroke="#1e40af" stroke-width="3" marker-end="url(#arrow-blue)"/>
+                <text x="30" y="30" font-size="13" font-family="Arial, sans-serif" fill="#1e40af" font-weight="bold">Upgrade</text>
+                <text x="30" y="45" font-size="11" font-family="Arial, sans-serif" fill="#64748b">(requires downtime)</text>
+            </g>
+
+            <!-- Stage 2: Bigger machine -->
+            <g transform="translate(30, 290)">
+                <text x="0" y="0" font-size="15" font-weight="bold" font-family="Arial, sans-serif" fill="#1e293b">Stage 2: Bigger Machine</text>
+                <rect x="0" y="15" width="180" height="150" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="5"/>
+                <text x="90" y="40" font-size="14" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 1</text>
+
+                <!-- 8 cores in 2 rows -->
+                <rect x="10" y="55" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="29" y="72" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C1</text>
+
+                <rect x="52" y="55" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="71" y="72" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C2</text>
+
+                <rect x="94" y="55" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="113" y="72" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C3</text>
+
+                <rect x="136" y="55" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="155" y="72" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C4</text>
+
+                <rect x="10" y="84" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="29" y="101" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C5</text>
+
+                <rect x="52" y="84" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="71" y="101" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C6</text>
+
+                <rect x="94" y="84" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="113" y="101" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C7</text>
+
+                <rect x="136" y="84" width="38" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="155" y="101" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C8</text>
+
+                <!-- RAM -->
+                <rect x="40" y="120" width="100" height="25" fill="#60a5fa" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="90" y="137" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">64 GB RAM</text>
+
+                <text x="90" y="175" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b" font-weight="bold">$400/month</text>
+            </g>
+
+            <!-- Pros/Cons -->
+            <g transform="translate(240, 90)">
+                <text x="0" y="0" font-size="14" font-weight="bold" font-family="Arial, sans-serif" fill="#1e40af">Pros &amp; Cons:</text>
+                <text x="0" y="25" font-size="12" font-family="Arial, sans-serif" fill="#16a34a">✓ Simple (no code changes)</text>
+                <text x="0" y="45" font-size="12" font-family="Arial, sans-serif" fill="#dc2626">✗ Expensive (exponential cost)</text>
+                <text x="0" y="65" font-size="12" font-family="Arial, sans-serif" fill="#dc2626">✗ Hard limits (max instance)</text>
+                <text x="0" y="85" font-size="12" font-family="Arial, sans-serif" fill="#dc2626">✗ Single point of failure</text>
+                <text x="0" y="105" font-size="12" font-family="Arial, sans-serif" fill="#dc2626">✗ Requires downtime</text>
+            </g>
+        </g>
+
+        <!-- Horizontal Scaling Section -->
+        <g transform="translate(630, 100)">
+            <rect x="0" y="0" width="520" height="550" fill="#f0f9ff" stroke="#cbd5e1" stroke-width="2" rx="8"/>
+            <text x="260" y="40" font-size="22" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e40af">
+                Horizontal Scaling (Scale Out)
+            </text>
+
+            <!-- Stage 1 -->
+            <g transform="translate(170, 80)">
+                <text x="0" y="0" font-size="15" font-weight="bold" font-family="Arial, sans-serif" fill="#1e293b">Stage 1: One Machine</text>
+                <rect x="0" y="15" width="180" height="120" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="5"/>
+                <text x="90" y="40" font-size="14" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 1</text>
+
+                <rect x="20" y="55" width="60" height="35" fill="#1e40af" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="50" y="78" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">Core 1</text>
+
+                <rect x="100" y="55" width="60" height="35" fill="#1e40af" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="130" y="78" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">Core 2</text>
+
+                <rect x="40" y="100" width="100" height="25" fill="#60a5fa" stroke="#fff" stroke-width="2" rx="3"/>
+                <text x="90" y="117" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif">8 GB RAM</text>
+
+                <text x="90" y="155" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b" font-weight="bold">$50/month</text>
+            </g>
+
+            <!-- Arrow down -->
+            <g transform="translate(260, 220)">
+                <line x1="0" y1="0" x2="0" y2="50" stroke="#1e40af" stroke-width="3" marker-end="url(#arrow-blue)"/>
+                <text x="30" y="30" font-size="13" font-family="Arial, sans-serif" fill="#1e40af" font-weight="bold">Add servers</text>
+                <text x="30" y="45" font-size="11" font-family="Arial, sans-serif" fill="#16a34a">(no downtime!)</text>
+            </g>
+
+            <!-- Stage 2: Multiple machines -->
+            <g transform="translate(30, 290)">
+                <text x="230" y="0" font-size="15" font-weight="bold" font-family="Arial, sans-serif" fill="#1e293b" text-anchor="middle">Stage 2: Three Machines + Load Balancer</text>
+
+                <!-- Load Balancer -->
+                <rect x="180" y="15" width="100" height="40" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="5"/>
+                <text x="230" y="40" font-size="13" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Load Balancer</text>
+
+                <!-- Arrows from LB -->
+                <line x1="205" y1="55" x2="90" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-gray)"/>
+                <line x1="230" y1="55" x2="230" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-gray)"/>
+                <line x1="255" y1="55" x2="370" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-gray)"/>
+
+                <!-- Server 1 -->
+                <rect x="0" y="100" width="130" height="90" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+                <text x="65" y="120" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 1</text>
+                <rect x="15" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="37" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C1</text>
+                <rect x="70" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="92" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C2</text>
+                <rect x="30" y="160" width="70" height="20" fill="#60a5fa" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="65" y="174" font-size="9" text-anchor="middle" fill="white" font-family="Arial, sans-serif">8GB</text>
+
+                <!-- Server 2 -->
+                <rect x="165" y="100" width="130" height="90" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+                <text x="230" y="120" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 2</text>
+                <rect x="180" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="202" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C1</text>
+                <rect x="235" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="257" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C2</text>
+                <rect x="195" y="160" width="70" height="20" fill="#60a5fa" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="230" y="174" font-size="9" text-anchor="middle" fill="white" font-family="Arial, sans-serif">8GB</text>
+
+                <!-- Server 3 -->
+                <rect x="330" y="100" width="130" height="90" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+                <text x="395" y="120" font-size="12" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold">Server 3</text>
+                <rect x="345" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="367" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C1</text>
+                <rect x="400" y="130" width="45" height="25" fill="#1e40af" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="422" y="147" font-size="10" text-anchor="middle" fill="white" font-family="Arial, sans-serif">C2</text>
+                <rect x="360" y="160" width="70" height="20" fill="#60a5fa" stroke="#fff" stroke-width="1.5" rx="2"/>
+                <text x="395" y="174" font-size="9" text-anchor="middle" fill="white" font-family="Arial, sans-serif">8GB</text>
+
+                <text x="230" y="215" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b">6 cores total, 24 GB RAM</text>
+                <text x="230" y="235" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" fill="#1e293b" font-weight="bold">$150/month (3 × $50)</text>
+            </g>
+
+            <!-- Pros -->
+            <g transform="translate(20, 90)">
+                <text x="0" y="0" font-size="14" font-weight="bold" font-family="Arial, sans-serif" fill="#1e40af">Pros &amp; Cons:</text>
+                <text x="0" y="25" font-size="12" font-family="Arial, sans-serif" fill="#16a34a">✓ Cost-efficient (linear)</text>
+                <text x="0" y="45" font-size="12" font-family="Arial, sans-serif" fill="#16a34a">✓ No downtime (add live)</text>
+                <text x="0" y="65" font-size="12" font-family="Arial, sans-serif" fill="#16a34a">✓ Fault tolerant</text>
+                <text x="0" y="85" font-size="12" font-family="Arial, sans-serif" fill="#dc2626">✗ Requires stateless design</text>
+            </g>
+        </g>
+
+        <!-- Arrow markers -->
+        <defs>
+            <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="#1e40af"/>
+            </marker>
+            <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+            </marker>
+        </defs>
+    </svg>

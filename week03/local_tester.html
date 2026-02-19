@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serverless API Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      padding: 40px;
+    }
+    h1 {
+      color: #1e40af;
+      border-left: 4px solid #3b82f6;
+      padding-left: 15px;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #1e293b;
+      margin-bottom: 30px;
+      margin-left: 19px;
+      font-size: 15px;
+    }
+    h2 {
+      color: #1e40af;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+    .config-section {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      color: #1e293b;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+    button {
+      padding: 14px 24px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-post {
+      background: #1e40af;
+      color: white;
+      border-color: #1e40af;
+    }
+    .btn-post:hover {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+    .btn-get {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .btn-get:hover {
+      background: #2563eb;
+      border-color: #2563eb;
+    }
+    .response-section {
+      margin-top: 30px;
+    }
+    .response-box {
+      background: #f1f5f9;
+      color: #1e293b;
+      padding: 20px;
+      border-radius: 5px;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #3b82f6;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .status-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #dc2626;
+    }
+    .status-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #3b82f6;
+    }
+    .example-data {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      padding: 12px;
+      border-radius: 5px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #78350f;
+    }
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #60a5fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Serverless API Tester</h1>
+    <p class="subtitle">Test your Lambda + API Gateway + DynamoDB deployment</p>
+
+    <!-- Configuration Section -->
+    <div class="config-section">
+      <label for="apiUrl">API URL (from sam deploy output)</label>
+      <input type="text" id="apiUrl" placeholder="https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com" />
+      <div class="example-data">
+        Example: https://zvph1236wk.execute-api.us-east-1.amazonaws.com
+      </div>
+    </div>
+
+    <!-- POST Section -->
+    <div>
+      <h2 style="color:#1e40af;margin-bottom:15px;font-size:20px;">Create Item (POST)</h2>
+      <label for="postData">Request Body (JSON)</label>
+      <textarea id="postData" rows="6" placeholder='{"id": "item-001", "name": "Laptop", "price": 999.99}'>{
+  "id": "item-001",
+  "name": "Laptop",
+  "price": 999.99
+}</textarea>
+      <div class="example-data" style="margin-bottom:15px;">
+        Try different items: {"id": "item-002", "name": "Mouse", "price": 29.99}
+      </div>
+    </div>
+
+    <!-- GET Section -->
+    <div style="margin-top:30px;">
+      <h2 style="color:#1e40af;margin-bottom:15px;font-size:20px;">Get Item (GET)</h2>
+      <label for="itemId">Item ID</label>
+      <input type="text" id="itemId" placeholder="item-001" value="item-001" />
+      <div class="example-data">
+        First create an item with POST, then retrieve it with GET
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group" style="margin-top:30px;">
+      <button class="btn-post" onclick="createItem()">POST - Create Item</button>
+      <button class="btn-get" onclick="getItem()">GET - Retrieve Item</button>
+    </div>
+
+    <!-- Response Section -->
+    <div class="response-section">
+      <h2 style="color:#1e40af;margin-bottom:15px;font-size:20px;">Response</h2>
+      <div id="statusBadge"></div>
+      <div class="response-box" id="responseBox">
+Waiting for request...
+
+Instructions:
+1. Paste your API URL from 'sam deploy' output above
+2. Click "POST - Create Item" to create an item in DynamoDB
+3. Click "GET - Retrieve Item" to fetch the item back
+4. Check the response below to see if it worked!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get API URL from input
+    function getApiUrl() {
+      const url = document.getElementById('apiUrl').value.trim();
+      if (!url) {
+        alert('Please enter your API URL first!');
+        return null;
+      }
+      return url.replace(/\/$/, ''); // Remove trailing slash
+    }
+
+    // Create Item (POST)
+    async function createItem() {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) return;
+
+      const postData = document.getElementById('postData').value;
+      const responseBox = document.getElementById('responseBox');
+      const statusBadge = document.getElementById('statusBadge');
+      const container = document.querySelector('.container');
+
+      try {
+        // Validate JSON
+        const jsonData = JSON.parse(postData);
+
+        container.classList.add('loading');
+        responseBox.textContent = 'Sending POST request...\n\nURL: ' + apiUrl + '/items\nMethod: POST\nBody: ' + postData;
+        statusBadge.innerHTML = '<span class="status-badge status-info">Loading...</span>';
+
+        const response = await fetch(apiUrl + '/items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(jsonData)
+        });
+
+        const responseData = await response.json();
+        const status = response.status;
+
+        // Display response
+        statusBadge.innerHTML = `<span class="status-badge ${status >= 200 && status < 300 ? 'status-success' : 'status-error'}">
+          Status: ${status}
+        </span>`;
+
+        responseBox.textContent = `HTTP ${status} ${response.statusText}\n\n` +
+          `Request:\n${JSON.stringify(jsonData, null, 2)}\n\n` +
+          `Response:\n${JSON.stringify(responseData, null, 2)}`;
+
+      } catch (error) {
+        statusBadge.innerHTML = '<span class="status-badge status-error">Error</span>';
+        responseBox.textContent = 'Error:\n\n' + error.message + '\n\nMake sure:\n' +
+          '1. Your API URL is correct\n' +
+          '2. Your Lambda function is deployed\n' +
+          '3. The JSON is valid';
+      } finally {
+        container.classList.remove('loading');
+      }
+    }
+
+    // Get Item (GET)
+    async function getItem() {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) return;
+
+      const itemId = document.getElementById('itemId').value.trim();
+      if (!itemId) {
+        alert('Please enter an Item ID!');
+        return;
+      }
+
+      const responseBox = document.getElementById('responseBox');
+      const statusBadge = document.getElementById('statusBadge');
+      const container = document.querySelector('.container');
+
+      try {
+        container.classList.add('loading');
+        responseBox.textContent = 'Sending GET request...\n\nURL: ' + apiUrl + '/items/' + itemId + '\nMethod: GET';
+        statusBadge.innerHTML = '<span class="status-badge status-info">Loading...</span>';
+
+        const response = await fetch(apiUrl + '/items/' + itemId, {
+          method: 'GET'
+        });
+
+        const responseData = await response.json();
+        const status = response.status;
+
+        // Display response
+        statusBadge.innerHTML = `<span class="status-badge ${status >= 200 && status < 300 ? 'status-success' : 'status-error'}">
+          Status: ${status}
+        </span>`;
+
+        responseBox.textContent = `HTTP ${status} ${response.statusText}\n\n` +
+          `Request: GET /items/${itemId}\n\n` +
+          `Response:\n${JSON.stringify(responseData, null, 2)}`;
+
+      } catch (error) {
+        statusBadge.innerHTML = '<span class="status-badge status-error">Error</span>';
+        responseBox.textContent = 'Error:\n\n' + error.message + '\n\nMake sure:\n' +
+          '1. Your API URL is correct\n' +
+          '2. The item exists (create it with POST first)\n' +
+          '3. CORS is enabled (SAM enables it by default)';
+      } finally {
+        container.classList.remove('loading');
+      }
+    }
+  </script>
+</body>
+</html>
+

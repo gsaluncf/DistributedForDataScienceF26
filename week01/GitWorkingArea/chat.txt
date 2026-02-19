@@ -1,0 +1,413 @@
+I’m going to do an in class session based on this video.  https://youtu.be/Ala6PHlYjmw?si=xT8eLHP30rQoGzK0
+Yes. The easiest reliable pattern on Windows is:
+
+* A single `.bat` that drives Git actions.
+* After each action, it prints the “evidence” you want students to inspect.
+* It pauses until the student presses Space.
+* It self-checks expected state and stops with a clear error if something is off.
+
+Below is a complete, drop-in script. Save it as `git_lab_walkthrough.bat`, put it in an empty folder, then double click it or run from `cmd`.
+
+```bat
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+chcp 65001 >nul
+
+REM ============================================================
+REM Git Lab Walkthrough (Windows .bat)
+REM - Spacebar-style pauses (works in cmd)
+REM - Prints raw .git evidence and git evidence
+REM - Self-checks after each step
+REM ============================================================
+
+REM ---------- helpers ----------
+set "LAB_DIR=git_lab_repo"
+set "MAIN_BRANCH=main"
+
+call :banner "Preflight"
+call :require_git
+call :clean_start
+
+call :banner "Step 1: init repo + first commit"
+call :step_init_and_first_commit
+
+call :banner "Step 2: create feature branch + commit"
+call :step_branch_and_commit
+
+call :banner "Step 3: main commit + merge feature"
+call :step_main_commit_and_merge
+
+call :banner "Step 4: show commit snapshot objects (commit/tree/blob)"
+call :step_inspect_objects
+
+call :banner "Step 5: reflog proof (recovery trail)"
+call :step_reflog_demo
+
+call :done
+exit /b 0
+
+
+REM ============================================================
+REM Steps
+REM ============================================================
+
+:step_init_and_first_commit
+pushd "%LAB_DIR%" || exit /b 1
+
+git init >nul 2>&1
+if errorlevel 1 call :fail "git init failed."
+
+REM Ensure default branch is main for consistency
+git checkout -b %MAIN_BRANCH% >nul 2>&1
+if errorlevel 1 (
+  REM If repo already uses main by default, checkout may fail; attempt rename
+  git branch -M %MAIN_BRANCH% >nul 2>&1
+)
+
+REM Create a file
+> notes.txt (
+  echo Line 1: hello git
+  echo Line 2: initial snapshot
+)
+
+git add notes.txt >nul 2>&1
+if errorlevel 1 call :fail "git add failed."
+
+git commit -m "initial" >nul 2>&1
+if errorlevel 1 call :fail "git commit failed (is user.name/email configured?)."
+
+call :expect_file ".git\HEAD"
+call :expect_file ".git\refs\heads\%MAIN_BRANCH%"
+
+call :print_git_state
+call :print_raw_files
+call :check_on_branch "%MAIN_BRANCH%"
+call :check_clean_worktree
+
+call :pause_step "Inspect .git\HEAD and .git\refs\heads\%MAIN_BRANCH% (they are pointers)."
+popd
+exit /b 0
+
+
+:step_branch_and_commit
+pushd "%LAB_DIR%" || exit /b 1
+
+git switch -c feature1 >nul 2>&1
+if errorlevel 1 call :fail "git switch -c feature1 failed."
+
+>> notes.txt echo Line 3: change on feature1
+git add notes.txt >nul 2>&1
+if errorlevel 1 call :fail "git add failed."
+
+git commit -m "feature change" >nul 2>&1
+if errorlevel 1 call :fail "git commit failed."
+
+call :expect_file ".git\refs\heads\feature1"
+
+call :print_git_state
+call :print_raw_files
+call :check_on_branch "feature1"
+call :check_clean_worktree
+
+call :pause_step "Compare .git\refs\heads\main vs feature1 (two hashes, two pointers)."
+popd
+exit /b 0
+
+
+:step_main_commit_and_merge
+pushd "%LAB_DIR%" || exit /b 1
+
+git switch %MAIN_BRANCH% >nul 2>&1
+if errorlevel 1 call :fail "git switch %MAIN_BRANCH% failed."
+
+>> notes.txt echo Line 3b: change on main
+git add notes.txt >nul 2>&1
+if errorlevel 1 call :fail "git add failed."
+
+git commit -m "main change" >nul 2>&1
+if errorlevel 1 call :fail "git commit failed."
+
+REM Merge
+git merge feature1 -m "merge feature1" >nul 2>&1
+if errorlevel 1 (
+  echo.
+  echo MERGE FAILED (likely conflict). That can be a teaching moment.
+  echo Resolve conflict in notes.txt, then run:
+  echo   git add notes.txt
+  echo   git commit
+  echo Then re-run this script from Step 3, or just continue manually.
+  echo.
+  call :fail "Merge failed. Stopping here so state is not ambiguous."
+)
+
+call :print_git_state
+call :print_raw_files
+call :check_on_branch "%MAIN_BRANCH%"
+call :check_clean_worktree
+
+call :pause_step "Run git cat-file -p HEAD and look for two parents (merge commit) if created."
+popd
+exit /b 0
+
+
+:step_inspect_objects
+pushd "%LAB_DIR%" || exit /b 1
+
+REM Get commit hash
+for /f "delims=" %%H in ('git rev-parse HEAD') do set "HEAD_HASH=%%H"
+
+echo.
+echo [Evidence] Commit object (HEAD)
+git cat-file -p %HEAD_HASH%
+
+REM Extract tree hash from commit
+for /f "tokens=1,2" %%A in ('git cat-file -p %HEAD_HASH% ^| findstr /b "tree " ') do set "TREE_HASH=%%B"
+
+if "%TREE_HASH%"=="" call :fail "Could not find tree hash in commit."
+
+echo.
+echo [Evidence] Tree object (lists files to blob hashes)
+git cat-file -p %TREE_HASH%
+
+REM Extract blob hash for notes.txt from tree
+for /f "tokens=1,2,3,4" %%A in ('git cat-file -p %TREE_HASH% ^| findstr "notes.txt"') do set "BLOB_HASH=%%C"
+
+if "%BLOB_HASH%"=="" call :fail "Could not find blob hash for notes.txt in tree."
+
+echo.
+echo [Evidence] Blob object (raw file contents stored by Git)
+git cat-file -p %BLOB_HASH%
+
+call :pause_step "This proves: commit -> tree -> blob. Git stores snapshots."
+popd
+exit /b 0
+
+
+:step_reflog_demo
+pushd "%LAB_DIR%" || exit /b 1
+
+echo.
+echo [Evidence] reflog (movement trail)
+git reflog --date=iso
+
+REM Quick safety check: reflog must have at least 3 entries
+for /f %%C in ('git reflog ^| find /c /v ""') do set "REFLOG_COUNT=%%C"
+if %REFLOG_COUNT% LSS 3 call :fail "Reflog too short (%REFLOG_COUNT%). Something is off."
+
+call :pause_step "Reflog is your recovery trail. Compare with .git\logs\HEAD."
+popd
+exit /b 0
+
+
+REM ============================================================
+REM Utilities
+REM ============================================================
+
+:banner
+echo.
+echo ============================================================
+echo %~1
+echo ============================================================
+exit /b 0
+
+:require_git
+where git >nul 2>&1
+if errorlevel 1 call :fail "Git not found in PATH. Install Git for Windows and re-run."
+git --version
+exit /b 0
+
+:clean_start
+if exist "%LAB_DIR%\" (
+  echo.
+  echo Existing "%LAB_DIR%" found.
+  echo This script expects a clean run.
+  echo Delete it now or rename it.
+  call :pause_step "Press Space to EXIT so you can clean the folder."
+  exit /b 1
+)
+mkdir "%LAB_DIR%" >nul 2>&1
+if errorlevel 1 call :fail "Could not create %LAB_DIR%."
+exit /b 0
+
+:print_git_state
+echo.
+echo [Git] Current status
+git status -sb
+echo.
+echo [Git] Graph view
+git log --oneline --decorate --graph --all
+exit /b 0
+
+:print_raw_files
+echo.
+echo [Raw] .git\HEAD
+type ".git\HEAD"
+echo.
+echo [Raw] .git\refs\heads\%MAIN_BRANCH%
+if exist ".git\refs\heads\%MAIN_BRANCH%" type ".git\refs\heads\%MAIN_BRANCH%" else echo (missing)
+echo.
+echo [Raw] .git\refs\heads\feature1
+if exist ".git\refs\heads\feature1" type ".git\refs\heads\feature1" else echo (missing)
+echo.
+echo [Raw] .git\logs\HEAD (last 5)
+if exist ".git\logs\HEAD" (
+  for /f "usebackq delims=" %%L in (`powershell -NoProfile -Command "Get-Content -Tail 5 '.git\logs\HEAD'"`) do echo %%L
+) else (
+  echo (missing)
+)
+exit /b 0
+
+:expect_file
+if not exist "%~1" call :fail "Expected file missing: %~1"
+exit /b 0
+
+:check_on_branch
+for /f "delims=" %%B in ('git branch --show-current') do set "CUR_BRANCH=%%B"
+if /i not "%CUR_BRANCH%"=="%~1" call :fail "Expected branch %~1 but on %CUR_BRANCH%"
+exit /b 0
+
+:check_clean_worktree
+git diff --quiet
+if errorlevel 1 call :fail "Working tree has unstaged changes."
+git diff --cached --quiet
+if errorlevel 1 call :fail "Index has staged changes."
+exit /b 0
+
+:pause_step
+echo.
+echo ------------------------------------------------------------
+echo PAUSE: %~1
+echo Press SPACE to continue...
+echo ------------------------------------------------------------
+REM choice works well for "spacebar to continue" on Windows
+choice /c " " /n >nul
+exit /b 0
+
+:fail
+echo.
+echo ********************  ERROR  ********************
+echo %~1
+echo *************************************************
+echo.
+echo Tip: If commit failed due to missing identity, run:
+echo   git config --global user.name "Student Name"
+echo   git config --global user.email "student@example.com"
+echo.
+exit /b 1
+
+:done
+echo.
+echo ============================================================
+echo Complete.
+echo Repo created in: %LAB_DIR%
+echo You can now keep exploring with git cat-file and .git files.
+echo ============================================================
+exit /b 0
+```
+
+### What the “automatic check” is doing
+
+* Confirms Git exists in PATH.
+* Stops if the lab folder already exists (so runs are deterministic).
+* Verifies required `.git` files exist after key operations.
+* Verifies current branch is what the step expects.
+* Verifies clean working tree after commits/merge.
+* Verifies reflog has a minimum number of entries.
+
+### Notes for classroom reliability
+
+* If a student hasn’t set `user.name` and `user.email`, the first commit will fail. The script prints the exact commands to fix it.
+* The merge step stops on conflicts on purpose. If you want the script to *force* a conflict for teaching, I can tweak Step 3 to edit the same exact line on both branches.
+
+If you tell me whether you want a conflict guaranteed (yes/no), I will adjust the script accordingly.
+
+Yes. Below is a **small, separate Windows batch script** whose only job is to prepare the environment before you run the walkthrough. It does not duplicate or rewrite the main script.
+
+Save this as `git_lab_setup_env.bat` and run it once per machine or per student login.
+
+```bat
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+chcp 65001 >nul
+
+REM ============================================================
+REM Git Lab – Environment Setup Script (Windows)
+REM Purpose:
+REM   - Ensure Git identity is configured
+REM   - Normalize default branch to "main"
+REM   - Set predictable pager / output behavior
+REM   - Verify core tools exist
+REM ============================================================
+
+echo ============================================================
+echo Git Lab Environment Setup
+echo ============================================================
+
+REM ---------- verify git ----------
+where git >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Git not found in PATH.
+  echo Install Git for Windows before continuing.
+  exit /b 1
+)
+
+git --version
+
+REM ---------- identity ----------
+for /f "delims=" %%N in ('git config --global user.name') do set "GIT_NAME=%%N"
+for /f "delims=" %%E in ('git config --global user.email') do set "GIT_EMAIL=%%E"
+
+if "%GIT_NAME%"=="" (
+  set /p GIT_NAME=Enter git user.name (e.g. Student Name):
+  git config --global user.name "%GIT_NAME%"
+)
+
+if "%GIT_EMAIL%"=="" (
+  set /p GIT_EMAIL=Enter git user.email (e.g. student@example.com):
+  git config --global user.email "%GIT_EMAIL%"
+)
+
+echo Git identity:
+git config --global user.name
+git config --global user.email
+
+REM ---------- default branch ----------
+git config --global init.defaultBranch main
+echo Default branch set to "main"
+
+REM ---------- clean, readable output ----------
+git config --global core.pager cat
+git config --global color.ui auto
+
+REM ---------- line endings (Windows-friendly) ----------
+git config --global core.autocrlf true
+
+REM ---------- sanity checks ----------
+echo.
+echo Verifying configuration:
+git config --global --list | findstr /i "user.name user.email init.defaultBranch core.pager core.autocrlf"
+
+echo.
+echo ============================================================
+echo Environment ready.
+echo You can now run: git_lab_walkthrough.bat
+echo ============================================================
+
+exit /b 0
+```
+
+### What this setup script guarantees
+
+* Commits will not fail due to missing identity.
+* All repos start on `main`, matching the walkthrough.
+* Git output is non-paged so the pauses in the main script behave predictably.
+* Output is readable and consistent on Windows lab machines.
+* Line ending behavior is predictable for Notepad inspection.
+
+If you want a **non-interactive version** (for lab imaging or IT deployment) that hard-codes a name/email or derives them from the Windows username, I can provide that variant as well.
+
+
+
+One change is we will start before even discussing the details with Making a file , branching making a change and merging.  From there I want to do into the explanations within the video but instead of talking past each item I want each student to look at their actual git instance and look at the various files in the most reasonably raw form (either using the git tool or even better file system/notepad)
+Is there a way we can automate this in some sort of bat file on windows. With a pause (space bar) between each step and a clean output to the console of what we are looking for and also an automatic check to make sure that our tutorial here is running as expected?
+Can I have a short script that will set whatever varriables we need to before we run it.  This is a separate script. Do not rewrite what you just did.

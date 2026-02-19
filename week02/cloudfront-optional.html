@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudFront Optional Extra Credit — HTTPS and Custom Domains</title>
+</head>
+<body>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:20px;margin:20px 0;">
+  <h2 style="color:#92400e;border-left:4px solid #f59e0b;padding-left:15px;margin-top:10px;">⭐ Optional Extra Credit</h2>
+  <p style="color:#1e293b;"><strong>This page is for students who want to go beyond the basic assignment.</strong> You can earn extra credit by adding CloudFront to your S3 website, which enables HTTPS and custom domain support.</p>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Prerequisites:</strong> Complete the basic S3 assignment first (scripts 01-04). This builds on top of that.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What is CloudFront?</h2>
+
+<p style="color:#1e293b;"><strong>Amazon CloudFront</strong> is AWS's Content Delivery Network (CDN). It's a globally distributed network of servers that cache and deliver your content from locations close to your users.</p>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">How CloudFront Works</h3>
+  <ol style="color:#1e293b;">
+    <li><strong>Origin:</strong> Your S3 bucket stores the original files</li>
+    <li><strong>Distribution:</strong> CloudFront creates a global network of edge locations</li>
+    <li><strong>User Request:</strong> When someone visits your site, CloudFront routes them to the nearest edge location</li>
+    <li><strong>Cache:</strong> If content is cached, it's served immediately (fast!)</li>
+    <li><strong>Fetch:</strong> If not cached, CloudFront fetches from S3, caches it, then serves it</li>
+    <li><strong>Subsequent Requests:</strong> Served from cache (even faster!)</li>
+  </ol>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Why Use CloudFront with S3?</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Problem: S3 Website Endpoints Have Limitations</h3>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;">
+    <li><strong>HTTP only:</strong> S3 website endpoints don't support HTTPS</li>
+    <li><strong>Ugly URLs:</strong> <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">bucket-name.s3-website-us-east-1.amazonaws.com</code></li>
+    <li><strong>No custom domains:</strong> Can't use your own domain name easily</li>
+    <li><strong>Single region:</strong> All requests go to one AWS region (slower for global users)</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Solution: CloudFront Adds Professional Features</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;">
+    <li><strong>HTTPS support:</strong> Free SSL/TLS certificates via AWS Certificate Manager</li>
+    <li><strong>Custom domains:</strong> Use your own domain (yourname.com)</li>
+    <li><strong>Global performance:</strong> Content cached at 400+ edge locations worldwide</li>
+    <li><strong>Better security:</strong> DDoS protection, geo-restrictions, signed URLs</li>
+    <li><strong>Cost optimization:</strong> Reduced S3 data transfer costs (CloudFront is cheaper)</li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">How Much Does CloudFront Cost?</h2>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">CloudFront Pricing (2026, us-east-1)</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Data Transfer Out:</strong> $0.085 per GB (first 10 TB/month)</li>
+    <li><strong>HTTPS Requests:</strong> $0.01 per 10,000 requests</li>
+    <li><strong>Cache Invalidations:</strong> First 1,000 paths/month FREE, then $0.005 per path</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:15px;">AWS Free Tier (First 12 Months)</h3>
+  <ul style="color:#1e293b;">
+    <li>1 TB data transfer out per month</li>
+    <li>10,000,000 HTTP/HTTPS requests</li>
+    <li>2,000,000 CloudFront Function invocations</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:15px;">Typical Student Assignment Cost</h3>
+  <p style="color:#1e293b;"><strong>Scenario:</strong> Portfolio site, 1,000 page views, 1 MB per page</p>
+  <ul style="color:#1e293b;">
+    <li>Data Transfer: 1 GB × $0.085 = $0.085</li>
+    <li>Requests: 1,000 × $0.01/10,000 = $0.001</li>
+    <li>Cache Invalidations: FREE (under 1,000 paths)</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>TOTAL: ~$0.09 for the assignment</strong> (likely FREE with free tier)</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Two Options for Extra Credit</h2>
+
+<p style="color:#1e293b;">Choose based on your goals and Week 1 extra credit completion:</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Option 1: Simple CNAME (HTTP Only) — +5 Points</h3>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Best for:</strong> Students who completed Week 1 extra credit and want a quick custom domain setup</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Difficulty:</strong> Easy</li>
+    <li><strong>Time:</strong> 5-10 minutes</li>
+    <li><strong>Cost:</strong> FREE</li>
+    <li><strong>Result:</strong> http://www.yourname.com points to your S3 site</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Limitations:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>HTTP only (browsers show "Not Secure")</li>
+    <li>Subdomain only (www.yourname.com, not yourname.com)</li>
+    <li>No CDN benefits</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Option 2: CloudFront + HTTPS — +10 to +15 Points</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Best for:</strong> Students who want production-ready hosting with HTTPS</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Difficulty:</strong> Moderate</li>
+    <li><strong>Time:</strong> 30-60 minutes</li>
+    <li><strong>Cost:</strong> ~$0.50-2/month (mostly Route 53 if used)</li>
+    <li><strong>Result:</strong> https://yourname.com with valid SSL certificate</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Benefits:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>HTTPS with free SSL certificate</li>
+    <li>Root domain support (yourname.com)</li>
+    <li>Global CDN (faster worldwide)</li>
+    <li>Production-ready architecture</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Points:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>+10 points: CloudFront + HTTPS with external DNS</li>
+    <li>+15 points: CloudFront + HTTPS + Route 53</li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Option 1: Simple CNAME Setup</h2>
+
+<p style="color:#1e293b;"><strong>Prerequisites:</strong> Completed Week 1 extra credit (registered domain), completed basic S3 assignment</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 1: Get Your S3 Website Endpoint</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li>Run <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">04_verify_website.bat</code></li>
+    <li>Copy the URL (e.g., <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">http://bucket-name.s3-website-us-east-1.amazonaws.com</code>)</li>
+    <li>Remove the <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">http://</code> part</li>
+    <li>You should have: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">bucket-name.s3-website-us-east-1.amazonaws.com</code></li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 2: Add CNAME Record to Your Domain</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li>Log into your domain registrar (Namecheap, GoDaddy, Google Domains, etc.)</li>
+    <li>Find DNS settings (usually "DNS Management" or "Advanced DNS")</li>
+    <li>Add a CNAME record:
+      <ul style="margin-top:10px;">
+        <li><strong>Type:</strong> CNAME</li>
+        <li><strong>Host:</strong> www (or any subdomain like "portfolio")</li>
+        <li><strong>Value:</strong> bucket-name.s3-website-us-east-1.amazonaws.com</li>
+        <li><strong>TTL:</strong> 300 (5 minutes) or Auto</li>
+      </ul>
+    </li>
+    <li>Save changes</li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 3: Wait for DNS Propagation</h3>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;">DNS changes take time to propagate worldwide:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Minimum:</strong> 5 minutes</li>
+    <li><strong>Typical:</strong> 15-30 minutes</li>
+    <li><strong>Maximum:</strong> 48 hours (rare)</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;">Check DNS propagation: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">nslookup www.yourname.com</code></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 4: Test Your Custom Domain</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li>Open browser</li>
+    <li>Navigate to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">http://www.yourname.com</code></li>
+    <li>Your S3 website should appear!</li>
+  </ol>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Note:</strong> Browser will show "Not Secure" because it's HTTP only. That's expected for Option 1.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Option 2: CloudFront + HTTPS Setup</h2>
+
+<p style="color:#1e293b;"><strong>Prerequisites:</strong> Completed basic S3 assignment, optionally completed Week 1 extra credit (custom domain)</p>
+
+<p style="color:#1e293b;margin-top:10px;">This is a multi-step process. Follow carefully!</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 1: Create CloudFront Distribution</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li><strong>Go to AWS Console → CloudFront → Create Distribution</strong></li>
+
+    <li style="margin-top:15px;"><strong>Origin Settings:</strong>
+      <ul style="margin-top:5px;">
+        <li><strong>Origin Domain:</strong> Enter your S3 website endpoint manually
+          <br><code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">bucket-name.s3-website-us-east-1.amazonaws.com</code>
+          <br><span style="color:#dc2626;"><strong>IMPORTANT:</strong> Use the website endpoint, NOT the S3 bucket from the dropdown!</span>
+        </li>
+        <li><strong>Protocol:</strong> HTTP only</li>
+        <li><strong>Name:</strong> S3-bucket-name (auto-filled)</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Default Cache Behavior:</strong>
+      <ul style="margin-top:5px;">
+        <li><strong>Viewer Protocol Policy:</strong> Redirect HTTP to HTTPS</li>
+        <li><strong>Allowed HTTP Methods:</strong> GET, HEAD</li>
+        <li><strong>Cache Policy:</strong> CachingOptimized</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Settings:</strong>
+      <ul style="margin-top:5px;">
+        <li><strong>Alternate Domain Names (CNAMEs):</strong> Leave blank for now (add later if using custom domain)</li>
+        <li><strong>Custom SSL Certificate:</strong> Default CloudFront Certificate (for now)</li>
+        <li><strong>Default Root Object:</strong> index.html</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Click "Create Distribution"</strong></li>
+
+    <li style="margin-top:15px;"><strong>Wait for deployment</strong> (10-20 minutes)
+      <ul style="margin-top:5px;">
+        <li>Status will show "Deploying..."</li>
+        <li>When complete, status changes to "Enabled"</li>
+        <li>Note your CloudFront domain: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">d1234abcd.cloudfront.net</code></li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 2: Test CloudFront Distribution</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li>Copy your CloudFront domain (e.g., <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">d1234abcd.cloudfront.net</code>)</li>
+    <li>Open browser and navigate to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">https://d1234abcd.cloudfront.net</code></li>
+    <li>Your website should appear with HTTPS! 🎉</li>
+    <li>Click the padlock icon — you'll see a valid CloudFront SSL certificate</li>
+  </ol>
+</div>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Congratulations!</strong> You now have HTTPS working. If you don't have a custom domain, you can stop here and submit your CloudFront URL for extra credit.</p>
+  <p style="color:#1e293b;margin-top:10px;"><strong>To add a custom domain, continue to Step 3.</strong></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 3: Request SSL Certificate (For Custom Domain)</h3>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>IMPORTANT:</strong> You must request the certificate in the <strong>us-east-1</strong> region for CloudFront, even if your S3 bucket is in a different region!</p>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li><strong>Go to AWS Console → Certificate Manager (ACM)</strong>
+      <ul style="margin-top:5px;">
+        <li>Make sure you're in <strong>us-east-1</strong> region (check top-right corner)</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Click "Request Certificate"</strong></li>
+
+    <li style="margin-top:15px;"><strong>Certificate Type:</strong> Public certificate</li>
+
+    <li style="margin-top:15px;"><strong>Domain Names:</strong>
+      <ul style="margin-top:5px;">
+        <li>Add: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">yourname.com</code></li>
+        <li>Click "Add another name"</li>
+        <li>Add: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">www.yourname.com</code></li>
+        <li><em>This allows both root and www to work</em></li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Validation Method:</strong> DNS validation (recommended)</li>
+
+    <li style="margin-top:15px;"><strong>Click "Request"</strong></li>
+
+    <li style="margin-top:15px;"><strong>DNS Validation:</strong>
+      <ul style="margin-top:5px;">
+        <li>ACM will show CNAME records you need to add</li>
+        <li>For each domain, you'll see a CNAME name and value</li>
+        <li>Copy these — you'll add them to your domain registrar</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Add CNAME Records to Your Domain:</strong>
+      <ul style="margin-top:5px;">
+        <li>Log into your domain registrar</li>
+        <li>Go to DNS settings</li>
+        <li>Add the CNAME records provided by ACM</li>
+        <li>Save changes</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Wait for Validation:</strong>
+      <ul style="margin-top:5px;">
+        <li>ACM will automatically detect the CNAME records</li>
+        <li>Validation takes 5-30 minutes</li>
+        <li>Status will change from "Pending validation" to "Issued"</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 4: Attach SSL Certificate to CloudFront</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li><strong>Go to AWS Console → CloudFront → Distributions</strong></li>
+    <li>Select your distribution</li>
+    <li>Click "Edit" (under General tab)</li>
+    <li><strong>Alternate Domain Names (CNAMEs):</strong>
+      <ul style="margin-top:5px;">
+        <li>Add: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">yourname.com</code></li>
+        <li>Add: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">www.yourname.com</code></li>
+      </ul>
+    </li>
+    <li><strong>Custom SSL Certificate:</strong>
+      <ul style="margin-top:5px;">
+        <li>Click the dropdown</li>
+        <li>Select your certificate (should show yourname.com)</li>
+      </ul>
+    </li>
+    <li>Click "Save changes"</li>
+    <li>Wait for deployment (5-10 minutes)</li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 5: Update DNS to Point to CloudFront</h3>
+
+<p style="color:#1e293b;">You have two options: use your domain registrar's DNS (simpler) or use AWS Route 53 (more powerful).</p>
+
+<h4 style="color:#1d4ed8;margin-top:20px;">Option A: Using Your Domain Registrar (Simpler)</h4>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li><strong>Log into your domain registrar</strong></li>
+
+    <li style="margin-top:15px;"><strong>Add CNAME for www subdomain:</strong>
+      <ul style="margin-top:5px;">
+        <li><strong>Type:</strong> CNAME</li>
+        <li><strong>Host:</strong> www</li>
+        <li><strong>Value:</strong> d1234abcd.cloudfront.net (your CloudFront domain)</li>
+        <li><strong>TTL:</strong> 300</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>For root domain (yourname.com):</strong>
+      <ul style="margin-top:5px;">
+        <li>Check if your registrar supports ALIAS or ANAME records</li>
+        <li>If yes: Create ALIAS/ANAME pointing to CloudFront domain</li>
+        <li>If no: Use Option B (Route 53) instead</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Save changes and wait for DNS propagation (5-60 minutes)</strong></li>
+  </ol>
+</div>
+
+<h4 style="color:#1d4ed8;margin-top:20px;">Option B: Using AWS Route 53 (Recommended for Root Domain)</h4>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li><strong>Go to AWS Console → Route 53 → Hosted Zones</strong></li>
+
+    <li style="margin-top:15px;"><strong>Click "Create Hosted Zone"</strong>
+      <ul style="margin-top:5px;">
+        <li><strong>Domain Name:</strong> yourname.com</li>
+        <li><strong>Type:</strong> Public Hosted Zone</li>
+        <li>Click "Create"</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Note the nameservers</strong>
+      <ul style="margin-top:5px;">
+        <li>Route 53 will show 4 nameservers (e.g., ns-1234.awsdns-56.com)</li>
+        <li>Copy all 4 nameservers</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Update nameservers at your domain registrar:</strong>
+      <ul style="margin-top:5px;">
+        <li>Log into your domain registrar</li>
+        <li>Find "Nameservers" or "DNS Servers" settings</li>
+        <li>Replace existing nameservers with Route 53 nameservers</li>
+        <li>Save changes (takes 24-48 hours to fully propagate)</li>
+      </ul>
+    </li>
+
+    <li style="margin-top:15px;"><strong>Create DNS records in Route 53:</strong>
+      <ul style="margin-top:5px;">
+        <li>Click "Create Record"</li>
+        <li><strong>For root domain (yourname.com):</strong>
+          <ul style="margin-top:5px;">
+            <li>Record name: (leave blank)</li>
+            <li>Record type: A</li>
+            <li>Alias: Yes</li>
+            <li>Route traffic to: CloudFront distribution</li>
+            <li>Select your distribution from dropdown</li>
+            <li>Click "Create records"</li>
+          </ul>
+        </li>
+        <li style="margin-top:10px;"><strong>For www subdomain:</strong>
+          <ul style="margin-top:5px;">
+            <li>Record name: www</li>
+            <li>Record type: A</li>
+            <li>Alias: Yes</li>
+            <li>Route traffic to: CloudFront distribution</li>
+            <li>Select your distribution from dropdown</li>
+            <li>Click "Create records"</li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Step 6: Test Your Custom Domain with HTTPS</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <ol style="color:#1e293b;">
+    <li>Wait for DNS propagation (5 minutes to 48 hours depending on method)</li>
+    <li>Open browser and navigate to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">https://yourname.com</code></li>
+    <li>Your website should appear with HTTPS! 🎉</li>
+    <li>Test <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">https://www.yourname.com</code> — should also work</li>
+    <li>Test <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">http://yourname.com</code> — should redirect to HTTPS</li>
+    <li>Click the padlock icon — should show valid SSL certificate for your domain</li>
+  </ol>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Updating Your Website</h2>
+
+<p style="color:#1e293b;">When you make changes to your website files, you need to update both S3 and CloudFront:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Step 1: Upload to S3</h3>
+  <p style="color:#1e293b;">Run <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">02_sync_site.bat</code> to upload changes to S3</p>
+
+  <h3 style="color:#1d4ed8;margin-top:15px;">Step 2: Invalidate CloudFront Cache</h3>
+  <p style="color:#1e293b;">CloudFront caches content, so you need to tell it to fetch fresh copies:</p>
+  <ol style="color:#1e293b;">
+    <li>Go to AWS Console → CloudFront → Distributions</li>
+    <li>Select your distribution</li>
+    <li>Click "Invalidations" tab</li>
+    <li>Click "Create invalidation"</li>
+    <li>Enter: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/*</code> (invalidates all files)</li>
+    <li>Click "Create invalidation"</li>
+    <li>Wait 1-2 minutes for invalidation to complete</li>
+  </ol>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Alternative (CLI):</strong></p>
+  <pre style="background:#1e293b;color:#f8fafc;padding:10px;border-radius:5px;overflow-x:auto;">aws cloudfront create-invalidation --distribution-id E1234ABCD --paths "/*"</pre>
+  <p style="color:#1e293b;margin-top:5px;"><em>Replace E1234ABCD with your distribution ID (found in CloudFront console)</em></p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Troubleshooting</h2>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#dc2626;margin-top:5px;">Problem: "This site can't be reached"</h3>
+  <p style="color:#1e293b;"><strong>Solution:</strong> DNS not propagated yet. Wait longer or check DNS with: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">nslookup yourname.com</code></p>
+
+  <h3 style="color:#dc2626;margin-top:15px;">Problem: "Certificate doesn't match domain"</h3>
+  <p style="color:#1e293b;"><strong>Solution:</strong> Make sure certificate includes both yourname.com and www.yourname.com, and is attached to CloudFront distribution</p>
+
+  <h3 style="color:#dc2626;margin-top:15px;">Problem: "403 Forbidden" on CloudFront</h3>
+  <p style="color:#1e293b;"><strong>Solution:</strong> Check S3 bucket policy is still public. CloudFront needs to access S3. Make sure you used the S3 website endpoint, not the REST endpoint.</p>
+
+  <h3 style="color:#dc2626;margin-top:15px;">Problem: Changes don't appear on custom domain</h3>
+  <p style="color:#1e293b;"><strong>Solution:</strong> CloudFront caches content. Create cache invalidation or wait 24 hours for cache to expire.</p>
+
+  <h3 style="color:#dc2626;margin-top:15px;">Problem: Root domain doesn't work, only www</h3>
+  <p style="color:#1e293b;"><strong>Solution:</strong> Need ALIAS record (Route 53) or ANAME record (some registrars). CNAME doesn't work for root domain.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Teardown (Avoid Ongoing Charges)</h2>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>IMPORTANT:</strong> After you receive your grade, clean up resources to avoid charges!</p>
+
+  <h3 style="color:#92400e;margin-top:15px;">Step 1: Delete CloudFront Distribution</h3>
+  <ol style="color:#1e293b;">
+    <li>Go to CloudFront → Distributions</li>
+    <li>Select your distribution</li>
+    <li>Click "Disable" (must disable before deleting)</li>
+    <li>Wait 10-15 minutes for status to change to "Disabled"</li>
+    <li>Select distribution again and click "Delete"</li>
+  </ol>
+
+  <h3 style="color:#92400e;margin-top:15px;">Step 2: Delete Route 53 Hosted Zone (if created)</h3>
+  <ol style="color:#1e293b;">
+    <li>Go to Route 53 → Hosted Zones</li>
+    <li>Select your hosted zone</li>
+    <li>Delete all records except NS and SOA</li>
+    <li>Click "Delete hosted zone"</li>
+  </ol>
+
+  <h3 style="color:#92400e;margin-top:15px;">Step 3: Delete S3 Bucket</h3>
+  <p style="color:#1e293b;">Run <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">99_teardown.bat</code></p>
+
+  <h3 style="color:#92400e;margin-top:15px;">Step 4: Keep Your Domain</h3>
+  <p style="color:#1e293b;">You already paid for the domain for a year — keep it for future projects!</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Submission Requirements</h2>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">To Receive Extra Credit, Submit:</h3>
+
+  <h4 style="color:#1d4ed8;margin-top:15px;">Option 1 (Simple CNAME) — +5 Points</h4>
+  <ol style="color:#1e293b;">
+    <li>Custom domain URL (http://www.yourname.com)</li>
+    <li>Screenshot showing your website at custom domain</li>
+  </ol>
+
+  <h4 style="color:#1d4ed8;margin-top:15px;">Option 2 (CloudFront + HTTPS) — +10 Points</h4>
+  <ol style="color:#1e293b;">
+    <li>CloudFront URL (https://d1234abcd.cloudfront.net) OR custom domain URL (https://yourname.com)</li>
+    <li>Screenshot showing:
+      <ul style="margin-top:5px;">
+        <li>Browser address bar with HTTPS URL</li>
+        <li>Padlock icon (click it to show certificate details)</li>
+        <li>Your website content</li>
+      </ul>
+    </li>
+    <li>Brief description of setup (which DNS option you used)</li>
+  </ol>
+
+  <h4 style="color:#1d4ed8;margin-top:15px;">Option 2 with Route 53 — +15 Points</h4>
+  <ol style="color:#1e293b;">
+    <li>All requirements from Option 2 above</li>
+    <li>Screenshot of Route 53 hosted zone showing A records</li>
+    <li>Brief explanation of why you chose Route 53</li>
+  </ol>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What You Learned</h2>
+
+<p style="color:#1e293b;">By completing this extra credit, you gained hands-on experience with:</p>
+
+<ul style="color:#1e293b;">
+  <li><strong>Content Delivery Networks (CDNs):</strong> How CloudFront caches and distributes content globally</li>
+  <li><strong>SSL/TLS Certificates:</strong> How HTTPS works and how to provision certificates</li>
+  <li><strong>DNS Configuration:</strong> CNAME, A, and ALIAS records</li>
+  <li><strong>AWS Certificate Manager:</strong> Free SSL certificates for AWS services</li>
+  <li><strong>AWS Route 53:</strong> Managed DNS service with advanced routing</li>
+  <li><strong>Cache Invalidation:</strong> Managing cached content in CDNs</li>
+  <li><strong>Production Architecture:</strong> How professional websites are deployed</li>
+  <li><strong>Cost Management:</strong> Understanding and optimizing cloud costs</li>
+</ul>
+
+<p style="color:#1e293b;margin-top:20px;">These are valuable real-world skills for web development, DevOps, and cloud engineering!</p>
+
+<p style="color:#1e293b;margin-top:30px;"><a href="index.html" style="color:#3b82f6;">← Back to Week 2 Overview</a> | <a href="lab.html" style="color:#3b82f6;">Back to Lab Instructions</a></p>
+
+</body>
+</html>

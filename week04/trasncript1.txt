@@ -1,0 +1,438 @@
+
+Search in video
+0:00
+hey folks how's everybody doing out
+0:02
+there this week I want to talk about
+0:04
+three of the most famous anonomous laws
+0:06
+in Information Technology eponymous by
+0:09
+the way that just means it's named after
+0:10
+a person and there's a thing called
+0:12
+stigler's law of eponymy which says most
+0:15
+discoveries aren't actually named after
+0:17
+the people who discovered them it was
+0:19
+proposed by Steven Stigler who was a
+0:21
+professor of Economics at the University
+0:22
+of Chicago in 1980 but it was actually
+0:25
+discovered by somebody else a
+0:26
+sociologist called Robert K meron but uh
+0:29
+Stigler had to name after himself
+0:31
+otherwise his law wouldn't work now uh
+0:34
+theonomous laws that I want to talk
+0:35
+about here are Mo's law amal's law and
+0:38
+Conway's law cuz I think those three
+0:40
+laws considered together lead to a
+0:41
+really interesting conclusion about the
+0:43
+way we design and build modern software
+0:45
+systems let's start with Moore Gordon
+0:48
+Moore was the co-founder of Intel and
+0:50
+Fairchild semiconductor and way back in
+0:53
+1965 Moore wrote a paper predicting that
+0:55
+the number of components per integrated
+0:57
+circuit would double every year in 1975
+1:01
+he revised his forecast to doubling
+1:03
+every two years and his prediction was
+1:06
+pretty much spoton nearly 50 years later
+1:08
+if you plot a logarithmic graph of the
+1:10
+total transistor count of CPUs against
+1:13
+the year they were introduced you get
+1:16
+something approximating a straight line
+1:18
+now here's the same graph but this is
+1:20
+the uh average transistors per core you
+1:23
+see how around 2005 the two series
+1:26
+suddenly diverge that's cuz in the early
+1:29
+2000s we began hitting the physical
+1:31
+limit of how many transistors could be
+1:33
+integrated into a single CPU around
+1:36
+about the 4 GHz Mark we kind of hit a
+1:39
+wall in terms of raw clock speed and so
+1:41
+the semiconductor industry hit upon the
+1:43
+bright idea of multicore CPUs basically
+1:46
+put in more than one CPU into the same
+1:48
+package now that's had a profound impact
+1:51
+on the way we create software in the
+1:53
+days before the web computing power was
+1:56
+about scaling up you bought a bigger
+1:58
+Mainframe now it's about scaling out
+2:00
+spinning up dozens maybe hundreds of
+2:03
+instances of your backend services so
+2:05
+your system can handle more
+2:08
+requests every year there are more
+2:10
+people online they use more devices and
+2:11
+more apps to do more things which means
+2:13
+more data more power more computation
+2:15
+the only way to keep up is to build
+2:17
+systems that can scale out to cope with
+2:19
+that demand code needs to parallelize we
+2:22
+need to split our systems out into a
+2:23
+little autonomous units of work that we
+2:25
+can distribute across as many cores as
+2:27
+we have available and then combine the
+2:30
+outputs of all those little operations
+2:32
+into the result that our users expect
+2:34
+and that brings us to amal's law Gan
+2:37
+amdal was the chief architect of the IBM
+2:39
+system 360 and he first presented his
+2:42
+aonomus law back in
+2:44
+1967 amal's law is about the theoretical
+2:47
+performance improvements we can expect
+2:50
+by parallelizing some given workload uh
+2:53
+it's actually this equation here but uh
+2:55
+I like to think of it in terms of
+2:57
+Christmas dinner or Thanksgiving dinner
+2:59
+if that's your thing
+3:00
+if you have one person with one cooker
+3:02
+working alone it'll take 20 hours to
+3:05
+prepare Christmas dinner with all the
+3:06
+trimmings if you add more people with
+3:09
+more cookers you can parallelize this
+3:11
+and so you can get it done faster but if
+3:13
+you want to eat at three you still have
+3:16
+to start by 11:00 a.m. because you can't
+3:18
+roast a turkey in under 4 hours doesn't
+3:20
+matter how many chefs and ovens you've
+3:22
+got and if another 20 people
+3:24
+unexpectedly show up half an hour before
+3:26
+lunch well now you have a problem so
+3:29
+instead of turkey let's serve
+3:30
+traditional Christmas burritos because
+3:33
+you can parallelize burritos you spin up
+3:35
+20 more chefs and you can still be ready
+3:38
+to everyone to eat at 3:00 and that's
+3:40
+the benefit of hosting in the cloud you
+3:42
+can spin up more resources really fast
+3:44
+but the whole point of amal's law is
+3:46
+that if your workload doesn't break down
+3:49
+into small tasks that can happen in
+3:51
+parallel there's a limit to how much you
+3:53
+can scale if you want to go really fast
+3:56
+you've got to build systems without any
+3:57
+turkeys in them and that brings us to
+3:59
+Conway's law first published in 1964
+4:03
+Conway's law is the observation that any
+4:05
+organization that designs a system
+4:07
+defined broadly will produce a design
+4:10
+whose structure is a copy of the
+4:11
+organization's communication structure
+4:14
+kind of like Moos law it's an
+4:15
+observation that has proved remarkably
+4:17
+preent over the last few decades anytime
+4:20
+you have to deal with your bank and they
+4:22
+transfer your call to another department
+4:23
+and you've got to answer all the
+4:24
+security questions again you've just
+4:26
+experienced Conway's law you've got two
+4:28
+departments running two different
+4:30
+software systems created by two
+4:32
+different teams who didn't or who
+4:33
+couldn't talk to each other and so the
+4:35
+software systems they don't talk to each
+4:37
+other either so what's the Conway's law
+4:40
+equivalent of roasting a turkey well
+4:43
+maybe it's a 4-Hour project update
+4:44
+meeting where a bunch of people sit
+4:46
+around and tell each other things they
+4:47
+could have emailed or written down in a
+4:49
+ticket or on a Wiki page uh maybe it's
+4:51
+waiting for someone to reply to your
+4:53
+email or to return your call Cuz uh
+4:55
+they've asked you to build a dashboard
+4:56
+they haven't told you what it needs to
+4:58
+look like or where you can get the data
+4:59
+from maybe it's just sitting on a train
+5:01
+for 2 hours every day cuz the boss has
+5:03
+decided hey everyone needs to get back
+5:05
+into the office one of the underlying
+5:08
+principles of the agile Manifesto is
+5:10
+that the most efficient and effective
+5:12
+method of conveying information to and
+5:14
+within a development team is
+5:16
+face-to-face conversation I think that's
+5:18
+correct but I think it might be
+5:20
+optimizing for the wrong metric
+5:22
+conversation is high bandwidth High
+5:24
+interaction discussion medium it's
+5:26
+brilliant at solving problems and
+5:28
+terrible at capturing the solution
+5:30
+nobody outside that conversation knows
+5:31
+what was said and there's always a risk
+5:33
+the people you're talking to they nod
+5:35
+and yeah they tell you they get it when
+5:37
+actually they haven't understood a
+5:38
+single word you said really effective
+5:41
+distributed teams they optimize
+5:43
+communication for discoverability trade
+5:45
+off a little temporary velocity for
+5:47
+longer term
+5:51
+efficiency think about the kinds of
+5:53
+patterns that produce resilient
+5:56
+distributed systems uh autonomous
+5:58
+microservices command query separation
+6:00
+if you think about how the components in
+6:01
+those systems communicate uh they're not
+6:04
+constantly checking back with
+6:05
+headquarters they have all the
+6:06
+information they need and you leave them
+6:08
+to get on with it or think about
+6:10
+infrastructure as code you know if
+6:12
+you're running terraform palumi bicep
+6:15
+everything that you need to increase
+6:16
+your system capacity scripted documented
+6:20
+repeatable can you add more people to a
+6:22
+team as easily as you can add more VMS
+6:24
+into a
+6:25
+cluster Mo's law says capacity doubles
+6:28
+every 2 years and for the last 20 years
+6:30
+that's only been true thanks to multiple
+6:32
+cores and distributed systems amal's law
+6:35
+says you want to take advantage of
+6:36
+distributed computing you should
+6:38
+eliminate non-p parallelizable tasks and
+6:41
+Conway's law says if you don't want nonp
+6:43
+parallelizable tasks in your structure
+6:45
+of your systems you shouldn't have them
+6:47
+in the structure of your teams or you
+6:49
+know put it in another way meetings
+6:50
+don't scale organizations that have a
+6:53
+lot of meetings will create systems that
+6:55
+don't scale and if you want to win at
+6:57
+the internet that means you got to stop
+6:59
+having me
+7:00
+things now this is some pretty old
+7:03
+school thinking Conway's law was 1964
+7:05
+Moore's law was 1965 amal's law was
+7:08
+1967 and the tech industry generally
+7:11
+isn't great at learning from our own
+7:13
+history we love new shiny things writing
+7:15
+code is more fun than reading it
+7:17
+inventing new stuff is more fun than
+7:19
+studying old stuff but these
+7:21
+observations they come straight out of
+7:23
+one of the most audacious decades in
+7:26
+engineering history you know the 1960s
+7:29
+gave us the Apollo program Boeing 747
+7:31
+Concord the Lockheed SR71 we're talking
+7:34
+about the kind of people that landed
+7:36
+human beings on the moon using slide
+7:38
+rules and number two pencils you know
+7:41
+it's uh it's just possible that they
+7:43
+were on to something folks I hope you
+7:46
+found that interesting you'll take it
+7:48
+easy out there you look after each other
+7:50
+and uh I'll see you next time

@@ -1,0 +1,641 @@
+0:00
+You use Git every single day. Commit,
+0:02
+push, pull. It works until it doesn't.
+0:06
+And then you're googling how to undo git
+0:10
+rebase at 11 p.m. Mass copying commands
+0:12
+from Stack Overflow, praying you don't
+0:15
+make it worse. And an uncomfortable
+0:18
+truth is many experienced developers
+0:20
+don't actually understand Git. They
+0:23
+memorize commands, but they don't know
+0:25
+what's happening underneath. In next few
+0:28
+minutes, let's understand Git better and
+0:31
+never fear it again. Let's start from
+What is a commit?
+0:33
+zero. Forget everything you think you
+0:35
+know. Git is a database and the
+0:38
+fundamental unit of that database is the
+0:40
+commit. So what is a commit? It's a
+0:43
+snapshot, a complete photograph of your
+0:46
+entire project at one moment in time.
+0:48
+Not the changes you made, the entire
+0:51
+state of every file. Each commit
+0:53
+contains three things. One, a pointer to
+0:56
+that complete snapshot, every file
+0:58
+exactly as it existed. Two, metadata,
+1:02
+who created it, when, and the commit
+1:04
+message. Three, a pointer to the parent
+1:07
+commit, the commit that came directly
+1:08
+before. When you make a new commit, get
+1:11
+saves the full state of your project and
+1:13
+links it back to where you were. This
+1:15
+creates a chain. Each commit points to
+1:17
+its parent. Parents point to their
+1:19
+parents all the way back to the very
+1:21
+first commit. That first commit, it's
+1:24
+special. It has no parent. It's the
+1:26
+origin point of your project history.
+1:29
+And later, when you merge branches,
+1:31
+you'll create commits with two parents.
+1:33
+But we'll get there. For now, remember,
+1:36
+commits point backwards, always
+1:38
+backwards. Children know their parents,
+1:41
+but parents never know their future
+1:43
+children.
+1:44
+If everyone just committed one after
+The DAG
+1:46
+another, you'd have a straight line.
+1:48
+Simple history. But real development is
+1:50
+messier. You branch off for a feature. A
+1:53
+colleague branches for a bug fix. Now
+1:55
+you have commits sharing the same parent
+1:57
+but going different directions. Then you
+1:59
+merge. Now you have a commit with two
+2:01
+parents. This structure has a name, a
+2:04
+DAG, directed asylic graph. Sounds
+2:08
+intimidating. It's not. Think of it like
+2:10
+a family tree. Directed means
+2:12
+relationships only go one way. Children
+2:15
+point to parents. Never the reverse. A
+2:18
+cyclic means no loops. Nobody can be
+2:20
+their own grandparent. You can't create
+2:22
+a cycle in history. Graph just means
+2:25
+it's nodes and connections, commits and
+2:27
+the links between them. This graph is
+2:30
+your project's history. Every branch,
+2:32
+every merge, every decision any
+2:34
+developer ever made captured in the
+2:37
+structure. And here's what makes Git
+2:39
+powerful. Because every commit is a
+2:41
+complete snapshot. You can jump to any
+2:43
+point in this graph and see your project
+2:45
+exactly as it existed. No
+2:47
+reconstruction, no playing back changes,
+2:50
+just there.
+2:52
+Now, this graph can get complex. How do
+2:54
+we navigate it? How does Git know which
+2:56
+commits matter? That's where branches
+2:59
+come in. And they're simpler than you'd
+3:01
+believe.
+3:02
+When learning Git, people usually assume
+Branches
+3:04
+branches as these heavy complex things,
+3:07
+a whole separate copy of the codebase
+3:10
+is completely wrong. A branch is just a
+3:12
+sticky note, a pointer, a tiny text file
+3:15
+that contains one piece of information,
+3:18
+the hash of a commit. That's it. When
+3:21
+you create a new branch called feature
+3:23
+login, get creates a small file that
+3:25
+says this branch points to commit A1
+3:27
+B23. Nothing more. Look at this graph.
+3:31
+See these branches? They're just labels
+3:33
+stuck on different commits. The commits
+3:35
+themselves have no idea what branches
+3:38
+exist. Branches don't contain commits.
+3:40
+They point at them. When you make a new
+3:42
+commit while on a branch, get creates
+3:45
+the new commit, pointing back to where
+3:46
+you were, moves the sticky note forward
+3:48
+to the new commit. That's branching. The
+3:51
+entire concept. This is why creating a
+3:53
+branch is instant. You're not copying
+3:55
+anything. You're placing a sticky note.
+3:58
+And what about main? Not special. Just
+4:01
+another sticky note that by convention
+4:03
+we've agreed is the primary line of
+4:05
+work. So we have commits, we have
+4:07
+branches pointing at commits. But how
+4:10
+does Git know where you are, what you're
+4:12
+working on?
+HEAD
+4:13
+Meet head. Head is Git's way of tracking
+4:17
+your location. It's another pointer, but
+4:19
+usually instead of pointing out a
+4:20
+commit, it points at a branch. When
+4:23
+you're on the main branch, head points
+4:25
+to main. Main points to a commit. That's
+4:28
+your current location. Run get checkout
+4:30
+feature and head moves to point at the
+4:33
+feature branch. You're now working on
+4:35
+that branch.
+4:37
+But here's a situation that confuses
+4:39
+people. What if you check out a specific
+4:41
+commit, not a branch, a raw commit hash?
+4:45
+Now head points directly to that commit.
+4:47
+No branch in between. Get calls this
+4:50
+detached head state. Sounds scary. It's
+4:53
+not. If you understand it, here's what
+4:56
+happens. You can still work. You can
+4:58
+still commit, but no branch is following
+5:00
+along. When you switch away, those
+5:03
+commits are orphaned. No branch points
+5:05
+to them. They're floating in space.
+5:07
+Eventually, gets garbage collection will
+5:10
+clean them up. You may have seen the
+5:12
+situation. A developer checked out an
+5:14
+old commit to test something, found a
+5:16
+bug while there, fixed it, committed the
+5:19
+fix, then ran git checkout main to merge
+5:21
+their fix. The fix vanished. It was
+5:24
+never on a branch. They couldn't find
+5:26
+it. It was orphaned, then garbage
+5:28
+collected. Two hours of work gone. This
+5:32
+is why Git warns you, not because you're
+5:34
+broken, but because anything you commit
+5:37
+won't be saved unless you create a
+5:38
+branch to hold it. Before we talk about
+The Staging Area — Git's waiting room
+5:41
+undoing things, we need to understand
+5:43
+one more concept that confuses people.
+5:46
+Git actually has three areas where your
+5:49
+code can live. One, your working
+5:52
+directory, the actual files on your
+5:54
+disk, what you see in your code editor.
+5:55
+Two, the staging area, also known as the
+5:58
+index, a waiting room where you prepare
+6:01
+what will go into your next commit.
+6:03
+Three, the repository, the database of
+6:06
+commits, the permanent history. When you
+6:08
+edit a file, it changes in your working
+6:10
+directory. Git notices but doesn't care
+6:13
+yet. When you run git add, you're moving
+6:15
+those changes to the staging area. I
+6:17
+want this in my next commit. When you
+6:20
+run git commit, git takes everything in
+6:22
+staging and creates a commit permanent
+6:25
+history. Why does this matter? Because
+Checkout vs Reset vs Revert
+6:28
+the commands we're about to discuss
+6:30
+manipulate these layers differently.
+6:32
+Understanding the three layers is the
+6:35
+key to understanding reset.
+6:38
+Three commands. They all seem to undo
+6:40
+things, but they do completely different
+6:43
+operations, and confusing them can cost
+6:46
+you work. Let's go one by one. Checkout
+6:50
+moves head. That's its job. Get checkout
+6:53
+main now points head now points to main.
+6:56
+Get checkout C1 head now points directly
+6:59
+to that commit. Your working directory
+7:01
+updates to match that commit snapshot.
+7:04
+But, and this is important, no commits
+7:07
+change. No branches move. History is
+7:10
+untouched. You're just looking around.
+7:13
+Safe, non-destructive, just moving your
+7:16
+viewpoint.
+7:17
+Now, let's talk about something more
+7:19
+dangerous. Reset moves a branch. When
+7:23
+you're on main and run get reset C1,
+7:26
+you're saying move main to point at this
+7:29
+commit. The commits that were ahead
+7:32
+still exist in the database, but
+7:34
+orphaned. No branch pointing to them.
+7:37
+Now, here's where reset gets nuanced. It
+7:40
+has three modes, and each one affects
+7:42
+the three areas differently.
+7:44
+Soft reset moves the branch. Staging
+7:48
+area unchanged. Working directory
+7:51
+unchanged. Your undone changes appear
+7:54
+staged and ready to commit again. When
+7:57
+to use it? You made three commits but
+8:00
+want to combine them into one. Soft
+8:02
+reset then recommit. Mixed reset the
+8:05
+default moves the branch staging area
+8:09
+reset to match the target commit. Your
+8:11
+changes still exist in your files, just
+8:14
+unstaged.
+8:16
+When to use it? You committed something
+8:17
+but want to restage it differently.
+8:20
+Maybe split it into multiple commits.
+8:23
+Hard reset moves the branch. Staging
+8:26
+area reset. Working directory reset.
+8:29
+Your files change. Uncommitted work gone
+8:32
+from your disk. I have watched
+8:34
+developers lose days of work because
+8:37
+they ran gitreset.
+8:39
+thinking they could undo it. You can't.
+8:42
+Not easily. The orphan commits
+8:45
+recoverable for a while if you know get
+8:47
+secrets, but your uncommitted changes.
+8:49
+The stuff you never committed, gone
+8:52
+forever. When to use it? You want to
+8:55
+completely abandon work and start fresh.
+8:57
+You're sure.
+9:00
+Revert takes a completely different
+9:02
+philosophy. It doesn't move anything. It
+9:05
+doesn't abandon anything. Revert creates
+9:08
+a new commit that does the opposite of
+9:11
+an old commit. Commit C added 50 lines.
+9:16
+Get revert C creates commit D that
+9:18
+removes those same 50 lines. History is
+9:21
+preserved. The original commit still
+9:23
+exists. You've just recorded we decided
+9:26
+to undo what we did earlier. When to use
+9:29
+it? You need to undo something that's
+9:31
+already been pushed and shared. You
+9:33
+can't rewrite shared history, but you
+9:35
+can add to it.
+9:37
+Quick summary. Checkout only moved head
+9:41
+is safe. Exploring history. Reset moves
+9:45
+branch and potentially working directory
+9:48
+can be risky. Reshape local work.
+9:51
+Revert. Nothing moves. New commit
+9:54
+created is safe to undo shared history.
+9:57
+Finally, the command that confuses most
+Why rebase "rewrites history"
+9:59
+junior developers. Rebase. Let's set the
+10:03
+scene. You created a feature branch from
+10:05
+Maine. You made commits B and C.
+10:08
+Meanwhile, Maine moved forward with
+10:10
+commits X and Y. You have two options to
+10:13
+integrate. Option one, merge. Create a
+10:16
+merge commit with two parents. History
+10:18
+shows the truth. Two parallel lines of
+10:20
+work that join together. Option two,
+10:24
+rebase. Take your commits and replay
+10:26
+them on top of the new main. But you
+10:29
+must understand this. A commit's
+10:32
+identity is its hash. That hash is
+10:34
+generated from the content, the
+10:36
+metadata, and the parent pointer. Change
+10:39
+any of those, including the parent, and
+10:42
+you get a completely different hash, a
+10:45
+different commit. Git can't move
+10:47
+commits. That's not a thing. So what
+10:50
+rebase actually does is look at commit
+10:53
+B, calculate the changes it introduced,
+10:56
+create a new commit B1 with those same
+10:59
+changes, but with Y as its parent
+11:01
+instead of the original base. Look at
+11:03
+commit C, calculate its changes, create
+11:06
+a new commit C1 with those changes
+11:09
+sitting on top of B1. Move your feature
+11:11
+branch to point at C1. The old B and C
+11:15
+orphaned. They'll eventually be garbage
+11:17
+collected. This is what rebasing
+11:20
+actually does. This is why you never
+11:22
+rebase commits that others have seen. If
+11:25
+your colleague has the old commits and
+11:27
+you push new commits with the same
+11:29
+content but different hashes, Git sees
+11:31
+them as completely unrelated work.
+11:34
+Merging becomes a nightmare. Duplicate
+11:36
+changes appear. Conflicts explode. But
+11:40
+on local branches that you haven't
+11:41
+shared, rebase is powerful. It keeps
+11:44
+history linear and clean. Just know the
+11:46
+trade-off. You're choosing a clean story
+11:49
+over the messy truth. One last thing
+The Reflog — your safety net
+11:52
+before we go. You've made a mistake. You
+11:55
+reset hard. You rebased wrong. Commits
+11:58
+are gone.
+12:00
+Run get ref log. The ref log shows
+12:03
+everywhere head has pointed recently.
+12:06
+Every checkout, every commit, every
+12:08
+reset. Those lost commits from your
+12:10
+reset, the old commits before you
+12:12
+rebased, they're probably still here.
+12:15
+Find the hash. create a branch pointing
+12:17
+to it and you've recovered your work.
+12:20
+Git almost never truly deletes anything
+12:22
+immediately. It just hides things. The
+12:25
+ref log is your map. One caveat, ref log
+12:29
+entries expire usually 90 days for
+12:32
+reachable commits, 30 for unreachable,
+12:34
+so don't wait months. But if disaster
+12:37
+struck 5 minutes ago, you're probably
+12:39
+fine. Let's step back. Git is a database
+Outro
+12:44
+of snapshots. Commits point to parents
+12:47
+forming a graph. Branches and head are
+12:50
+just pointers. Sticky notes telling Git
+12:52
+what matters and where you are. Checkout
+12:55
+moves your view. Reset moves branches.
+12:58
+Revert adds corrective history. Rebase
+13:01
+replays commits with new parents. And
+13:04
+when everything goes wrong, ref log. The
+13:08
+next time something breaks, you won't be
+13:10
+copying Stack Overflow commands and
+13:12
+praying. You'll be thinking in graphs
+13:14
+and pointers. You'll know exactly what
+13:17
+happened and exactly how to fix it.
+13:20
+Don't forget to like and share if you
+13:21
+found this helpful. Thanks for watching.
+13:23
+See you in the next one.

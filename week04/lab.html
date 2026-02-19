@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 4 Design Exercise — Scaling Scenarios</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Design Exercise</h2>
+    <p style="color:#1e293b;">Write a 1–2 page critique comparing two approaches to scale a workload. Support arguments with concepts (Amdahl/Gustafson, back-pressure, idempotency) and map to AWS services.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Scenario</h3>
+  <p style="color:#1e293b;">You receive CSV files (~5 GB/day) uploaded sporadically. Within 5 minutes of arrival, you must parse, validate, and store records into a queryable store; a downstream system reads aggregated results each hour. Failures must not lose data. Costs should scale with use.</p>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Approach A (Event-driven serverless)</h3>
+  <ul style="color:#1e293b;">
+    <li>S3 put event → EventBridge → Step Functions</li>
+    <li>Lambda for chunk parse; SQS for fan-out/back-pressure</li>
+    <li>Write Parquet to S3; manifest in DynamoDB for idempotency</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Approach B (Always-on cluster)</h3>
+  <ul style="color:#1e293b;">
+    <li>EC2 Auto Scaling Group or EMR cluster</li>
+    <li>Daemon watches S3, triggers batch job</li>
+    <li>Writes to S3 (Parquet) and notifies downstream</li>
+  </ul>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Prompt</h3>
+    <ol style="color:#1e293b;">
+      <li>Compare throughput, latency, and tail behavior at peak.</li>
+      <li>Discuss idempotency and failure handling (DLQs, retries).</li>
+      <li>Evaluate cost (idle vs per-request), and operational burden.</li>
+      <li>Recommend one approach; list 2 risks and mitigations.</li>
+    </ol>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Submission</h3>
+    <ul style="color:#1e293b;">
+      <li>Upload PDF (1–2 pages). Include citations to docs as needed.</li>
+      <li>Optional diagram (1 page max) not counted against length.</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/wellarchitected/latest/performance-efficiency-pillar/performance-efficiency-pillar.html">AWS Well-Architected</a></li>
+      <li><a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">Backoff and Jitter</a></li>
+      <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html">SQS Developer Guide</a></li>
+      <li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html">Step Functions</a></li>
+    </ul>
+  </div>
+</body>
+</html>

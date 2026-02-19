@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 6 — Data at Scale: pandas limits → Polars</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 6 Overview (Tue Mar 3, Thu Mar 5)</h2>
+    <p style="color:#1e293b;">Understand performance and memory characteristics of pandas at scale, then reproduce the same transformations in Polars and compare runtimes and memory footprints. Prepare for Spark by building intuition about columnar execution and pushdown.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tuesday — pandas at scale</h3>
+  <ul style="color:#1e293b;">
+    <li>Vectorization vs Python loops; common bottlenecks.</li>
+    <li>Memory profiling and dtype optimization.</li>
+    <li>Parquet IO in pandas.</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Thursday — Polars intro + benchmarking</h3>
+  <ul style="color:#1e293b;">
+    <li>Eager vs lazy APIs; predicate pushdown and projection pruning.</li>
+    <li>Re-run Tuesday tasks in Polars; add micro-benchmarks.</li>
+  </ul>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Readings</h3>
+    <ul>
+      <li><a href="https://pandas.pydata.org/docs/user_guide/enhancingperf.html">pandas: Performance</a></li>
+      <li><a href="https://pandas.pydata.org/docs/user_guide/scale.html">pandas: Scaling and memory</a></li>
+      <li><a href="https://pandas.pydata.org/docs/user_guide/io.html#parquet">pandas: Parquet IO</a></li>
+      <li><a href="https://docs.pola.rs/">Polars User Guide</a></li>
+      <li><a href="https://docs.pola.rs/user-guide/lazy/intro/">Polars Lazy intro</a></li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Deliverables (due Sun Mar 8, 11:59 pm)</h3>
+    <ol>
+      <li>Notebook: pandas vs Polars implementations with timing assertions.</li>
+      <li>Short memo (<=300 words): when to switch from pandas to Polars.</li>
+    </ol>
+  </div>
+
+  <p style="color:#1e293b;">See <a href="lab.html">lab instructions</a> and <a href="quiz-seeds.md">quiz seeds</a>.</p>
+</body>
+</html>

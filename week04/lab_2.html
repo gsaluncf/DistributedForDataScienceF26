@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4 Lab 2 - Messaging Lab: The Pizza Shop</title>
+</head>
+
+<body>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Lab 2: The Pizza
+            Shop &mdash; A Live Messaging Exercise</h2>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;">This is not a solo lab. You will work as an entire
+            class to operate a distributed pizza shop. Half of you are <strong>customers</strong> placing orders. The
+            other half are <strong>cooks</strong> fulfilling them. Everyone connects to the same pair of SQS queues,
+            and the only way you communicate is through <strong>messages</strong>.</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HOW IT WORKS -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">How It Works</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Your instructor has created two shared SQS queues for the
+        class:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Queue</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Who Writes?</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Who Reads?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-weight:bold;">
+                    pizza-orders</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Incoming orders from customers</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#3b82f6;font-weight:bold;">Customers</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;font-weight:bold;">Cooks</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-weight:bold;">
+                    pizza-results</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Completion confirmations from cooks
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;font-weight:bold;">Cooks</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#3b82f6;font-weight:bold;">Customers</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Architecture SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 700 280" style="max-width:700px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Customer group -->
+            <rect x="10" y="30" width="130" height="220" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="75" y="55" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">Customers</text>
+            <text x="75" y="100" text-anchor="middle" fill="#64748b" font-size="10">👤 Alice</text>
+            <text x="75" y="120" text-anchor="middle" fill="#64748b" font-size="10">👤 Bob</text>
+            <text x="75" y="140" text-anchor="middle" fill="#64748b" font-size="10">👤 Carol</text>
+            <text x="75" y="160" text-anchor="middle" fill="#94a3b8" font-size="10">...</text>
+            <text x="75" y="185" text-anchor="middle" fill="#3b82f6" font-size="9">sqs_customer.ipynb</text>
+
+            <!-- Order Queue -->
+            <rect x="210" y="60" width="180" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="300" y="85" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">pizza-orders
+            </text>
+            <text x="300" y="102" text-anchor="middle" fill="#92400e" font-size="9">ORDER QUEUE</text>
+
+            <!-- Response Queue -->
+            <rect x="210" y="170" width="180" height="55" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="300" y="195" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">pizza-results
+            </text>
+            <text x="300" y="212" text-anchor="middle" fill="#065f46" font-size="9">RESPONSE QUEUE</text>
+
+            <!-- Cook group -->
+            <rect x="460" y="30" width="130" height="220" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="525" y="55" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">Cooks</text>
+            <text x="525" y="100" text-anchor="middle" fill="#047857" font-size="10">👨‍🍳 Chef Dan</text>
+            <text x="525" y="120" text-anchor="middle" fill="#047857" font-size="10">👨‍🍳 Chef Eve</text>
+            <text x="525" y="140" text-anchor="middle" fill="#047857" font-size="10">👨‍🍳 Chef Frank</text>
+            <text x="525" y="160" text-anchor="middle" fill="#94a3b8" font-size="10">...</text>
+            <text x="525" y="185" text-anchor="middle" fill="#10b981" font-size="9">sqs_cook.ipynb</text>
+
+            <!-- Arrows -->
+            <line x1="140" y1="87" x2="210" y2="87" stroke="#f59e0b" stroke-width="2" marker-end="url(#labArrow)" />
+            <line x1="390" y1="87" x2="460" y2="87" stroke="#f59e0b" stroke-width="2" marker-end="url(#labArrow)" />
+            <line x1="460" y1="197" x2="390" y2="197" stroke="#10b981" stroke-width="2" marker-end="url(#labArrow)" />
+            <line x1="210" y1="197" x2="140" y2="197" stroke="#10b981" stroke-width="2" marker-end="url(#labArrow)" />
+
+            <defs>
+                <marker id="labArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Each order carries a <strong>Correlation ID</strong>
+        &mdash; a unique ticket number. When a cook finishes, they post the result back to the response queue with that
+        same ID. The customer polls the response queue looking for their specific ID. This is how a customer knows
+        <em>their</em> pizza is done, even though dozens of customers are all sharing the same queue.
+    </p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- PREREQUISITES -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Before You Start</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Prerequisites</h3>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Requirement</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How to Check</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS credentials in
+                        Colab</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">You set these up in Lab 1. If you see
+                    <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">Connected as:
+                        arn:aws:sts::...</code> in the first cell, you are good.
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Queue URLs from your
+                        instructor</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Your instructor will share two URLs in
+                    class. You will paste them into the notebook.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Your role assignment</strong>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Your instructor will tell you whether
+                    you are a <strong>Customer</strong> or a <strong>Cook</strong>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Setting Up Credentials in Colab</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">This is the same process you used in Lab 1. If your secrets
+        are still saved, you can skip this.</p>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Step 1: Find Your Credentials</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Open a terminal and run:</p>
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">cat ~/.aws/credentials</pre>
+        </div>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">You should see:</p>
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">[default]
+aws_access_key_id = AKIA...............
+aws_secret_access_key = Y+Co...............</pre>
+        </div>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Copy each value (everything <em>after</em> the
+            <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">=</code> sign, without leading spaces).
+        </p>
+    </div>
+
+    <div style="background-color:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#166534;margin-top:5px;">Step 2: Add Secrets in Colab</h3>
+        <ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>In Colab, click the <strong>🔑 key icon</strong> in the left sidebar</li>
+            <li>Click <strong>+ Add new secret</strong></li>
+            <li>Create secrets with these exact names and paste the matching values:</li>
+        </ol>
+
+        <table style="width:100%;border-collapse:collapse;margin:15px 0;border:1px solid #86efac;">
+            <thead>
+                <tr style="background-color:#dcfce7;">
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Secret Name (exact)
+                    </th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Value</th>
+                    <th style="padding:12px;text-align:left;border:1px solid #86efac;color:#166534;">Required?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:13px;">
+                        AWS_ACCESS_KEY_ID</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;">Starts with <code
+                            style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">AKIA...</code></td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#10b981;font-weight:bold;">Yes</td>
+                </tr>
+                <tr style="background-color:#f0fdf4;">
+                    <td
+                        style="padding:12px;border:1px solid #86efac;color:#1e293b;font-family:monospace;font-size:13px;">
+                        AWS_SECRET_ACCESS_KEY</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#1e293b;">Long string of letters, numbers,
+                        and symbols</td>
+                    <td style="padding:12px;border:1px solid #86efac;color:#10b981;font-weight:bold;">Yes</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <ol start="4" style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>Toggle the <strong>Notebook access</strong> switch <strong>ON</strong> for each secret</li>
+        </ol>
+    </div>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#92400e;margin-top:5px;">Never hardcode credentials</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Do not paste your AWS keys directly into code cells.
+            Always use Colab Secrets or environment variables. If you accidentally commit credentials to GitHub, rotate
+            them immediately in the AWS Console.</p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- OPEN NOTEBOOKS -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Open Your Notebook</h2>
+
+    <p style="color:#1e293b;font-size:16px;line-height:1.6;">Open the notebook that matches your assigned role:</p>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin:30px 0;">
+        <div
+            style="flex:1;min-width:250px;background-color:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:20px;text-align:center;">
+            <h3 style="color:#1e40af;margin-top:5px;">🛒 Customer Notebook</h3>
+            <p style="color:#64748b;font-size:14px;margin:10px 0;">Place orders and wait for your pizza</p>
+            <a href="https://colab.research.google.com/github/gsaluncf/publicfiles/blob/main/DistributedForDS2026/weeks/week04/sqs_customer.ipynb"
+                target="_blank"
+                style="display:inline-block;background-color:#3b82f6;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:bold;margin-top:10px;">Open
+                Customer Notebook</a>
+        </div>
+        <div
+            style="flex:1;min-width:250px;background-color:#d1fae5;border:2px solid #10b981;border-radius:12px;padding:20px;text-align:center;">
+            <h3 style="color:#065f46;margin-top:5px;">👨‍🍳 Cook Notebook</h3>
+            <p style="color:#64748b;font-size:14px;margin:10px 0;">Pull orders and cook pizzas</p>
+            <a href="https://colab.research.google.com/github/gsaluncf/publicfiles/blob/main/DistributedForDS2026/weeks/week04/sqs_cook.ipynb"
+                target="_blank"
+                style="display:inline-block;background-color:#10b981;color:#ffffff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:bold;margin-top:10px;">Open
+                Cook Notebook</a>
+        </div>
+    </div>
+
+    <p style="color:#64748b;font-size:13px;text-align:center;">If the links do not work, download the notebooks from the
+        course GitHub repository and upload them to Colab manually.</p>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- WHAT YOU WILL DO -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What You Will Do</h2>
+
+    <h3 style="color:#3b82f6;margin-top:25px;">If you are a Customer</h3>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#eff6ff;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What You Do</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What You Learn</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Connect</strong> to AWS and
+                    paste the queue URLs</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How producers connect to shared queues
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Enter your name and pick
+                        toppings</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Composing a message body as JSON</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Submit orders</strong> to the
+                    order queue</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Using <code
+                        style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">send_message()</code> and
+                    Correlation IDs</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Wait for your pizza</strong>
+                    &mdash; poll the response queue for your Correlation ID</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The Correlation ID pattern in practice
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#10b981;margin-top:25px;">If you are a Cook</h3>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#d1fae5;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#065f46;">Step</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#065f46;">What You Do</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#065f46;">What You Learn</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Connect</strong> to AWS and
+                    paste the queue URLs</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">How consumers connect to shared queues
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Enter your cook name</strong>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Identifying yourself in a distributed
+                    system</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Pull orders</strong> from the
+                    order queue</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Using <code
+                        style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">receive_message()</code> and
+                    Visibility Timeouts</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>"Cook" and respond</strong>
+                    &mdash; post a result to the response queue with the same Correlation ID</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Completing the request-response loop
+                    via queues</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- DISCUSSION -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">After the Exercise:
+        Class Discussion</h2>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Questions to consider</h3>
+        <ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>Did every customer get exactly <strong>one</strong> response? Or did some get duplicates? Why?</li>
+            <li>What happened when there were more customers than cooks? Did orders pile up?</li>
+            <li>What would happen if a cook's notebook crashed mid-processing? Would the order be lost?</li>
+            <li>How is this different from everyone sharing a Google Sheet?</li>
+        </ol>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- DELIVERABLE -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Deliverable</h2>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#92400e;margin-top:5px;">What to submit</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Customers:</strong> Screenshot showing your
+            order being sent and the confirmation received (with your cook's name).</p>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Cooks:</strong> Screenshot showing the orders
+            you pulled from the queue and the completion messages you sent back.</p>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Upload your screenshot to the Canvas assignment.</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CLEANUP -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Cleanup Checklist</h2>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Before you close Colab</h3>
+        <ul style="color:#1e293b;">
+            <li>Your instructor will delete the shared queues after class &mdash; you do <strong>not</strong> need to
+                delete them yourself.</li>
+            <li>Confirm you have taken your screenshot for submission.</li>
+            <li>If you created any test queues during solo experimentation, delete those with the cleanup cell.</li>
+        </ul>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- INSTRUCTOR SETUP (HIDDEN IN PRODUCTION) -->
+    <!-- ========================================== -->
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <div style="background-color:#fef2f2;border:2px solid #ef4444;border-radius:8px;padding:20px;margin:20px 0;">
+        <h2 style="color:#b91c1c;border-left:4px solid #ef4444;padding-left:15px;margin-top:5px;">Instructor Setup
+            (Not for Students)</h2>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">Before class, create the two shared queues:</p>
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">import boto3
+
+sqs = boto3.client('sqs', region_name='us-east-1')
+
+# Create order queue
+orders = sqs.create_queue(
+    QueueName='pizza-orders',
+    Attributes={'VisibilityTimeout': '60', 'MessageRetentionPeriod': '3600'}
+)
+print(f"ORDER_QUEUE_URL = '{orders['QueueUrl']}'")
+
+# Create response queue
+results = sqs.create_queue(
+    QueueName='pizza-results',
+    Attributes={'VisibilityTimeout': '10', 'MessageRetentionPeriod': '3600'}
+)
+print(f"RESPONSE_QUEUE_URL = '{results['QueueUrl']}'")
+
+# Share both URLs with students</pre>
+        </div>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">After class, delete both queues:</p>
+        <div
+            style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;">
+            <pre style="margin:0;">sqs.delete_queue(QueueUrl=ORDER_QUEUE_URL)
+sqs.delete_queue(QueueUrl=RESPONSE_QUEUE_URL)
+print("Both queues deleted.")</pre>
+        </div>
+    </div>
+
+</body>
+
+</html>

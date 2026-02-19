@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS S3 Overview — What, Why, and How Much</title>
+</head>
+<body>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Understanding AWS and Cloud Storage</h2>
+  <p style="color:#1e293b;">Before we dive into S3, let's understand what AWS is, why it matters for data scientists, and why we're starting with storage rather than compute.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What is AWS (Amazon Web Services)?</h2>
+
+<p style="color:#1e293b;">AWS is Amazon's cloud computing platform — essentially, you rent computing resources (servers, storage, databases, etc.) from Amazon's massive data centers instead of buying and maintaining your own hardware.</p>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">The Cloud Computing Shift</h3>
+  <p style="color:#1e293b;"><strong>Traditional approach (pre-2006):</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Buy physical servers (expensive upfront costs)</li>
+    <li>Set up and maintain your own data center</li>
+    <li>Pay for peak capacity even when idle</li>
+    <li>Wait weeks/months for new hardware</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Cloud approach (AWS, Azure, Google Cloud):</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Rent exactly what you need, when you need it</li>
+    <li>Someone else handles hardware, security, maintenance</li>
+    <li>Pay only for what you use (pay-as-you-go)</li>
+    <li>Spin up resources in seconds, not weeks</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Learn more:</strong> <a href="https://aws.amazon.com/what-is-aws/" target="_blank">What is AWS?</a> | <a href="https://aws.amazon.com/what-is-cloud-computing/" target="_blank">What is Cloud Computing?</a></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">AWS Market Position</h3>
+<ul style="color:#1e293b;">
+  <li><strong>32% cloud market share</strong> (2026) — larger than Microsoft Azure + Google Cloud combined</li>
+  <li><strong>200+ services</strong> — from basic storage to AI/ML, databases, IoT, and quantum computing</li>
+  <li><strong>Used by millions</strong> — startups, Fortune 500s, governments, researchers</li>
+  <li><strong>Career relevance:</strong> AWS skills appear in 60%+ of cloud and data engineering job postings</li>
+</ul>
+<p style="color:#1e293b;margin-top:10px;"><strong>Source:</strong> <a href="https://aws.amazon.com/about-aws/" target="_blank">AWS Overview</a></p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Why AWS Matters for Data Scientists</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;">Modern data science happens in the cloud because:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Datasets are too big</strong> for your laptop (multi-terabyte training data)</li>
+    <li><strong>Processing is too slow</strong> on local machines (distributed computing needed)</li>
+    <li><strong>Collaboration requires shared infrastructure</strong> (team access to data/models)</li>
+    <li><strong>Production systems need reliability</strong> (24/7 uptime, auto-scaling)</li>
+    <li><strong>Cost efficiency</strong> — rent a $50,000 GPU cluster for 2 hours instead of buying it</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world examples:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Training large language models (GPUs/TPUs in the cloud)</li>
+    <li>Processing genomic data (petabyte-scale analysis)</li>
+    <li>Running A/B tests on millions of users (distributed systems)</li>
+    <li>Serving ML models to mobile apps (auto-scaling APIs)</li>
+  </ul>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;"></h2>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Why Start with Storage (S3) Instead of Compute?</h3>
+  <p style="color:#1e293b;">We're starting with S3 (storage) rather than EC2 (servers) because:</p>
+
+  <ol style="color:#1e293b;">
+    <li><strong>Simpler mental model:</strong> Storage is easier to understand than virtual servers</li>
+    <li><strong>Immediate results:</strong> Upload a file, get a URL — instant gratification</li>
+    <li><strong>Lower cost/risk:</strong> Forgetting to delete a file costs pennies; forgetting to stop a server costs dollars per hour</li>
+    <li><strong>Foundation for everything:</strong> Every AWS service reads/writes data somewhere — usually S3</li>
+    <li><strong>Real-world relevance:</strong> Data scientists interact with S3 daily, even if they never touch EC2</li>
+  </ol>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>The learning path:</strong></p>
+  <ul style="color:#1e293b;">
+    <li><strong>Week 2 (now):</strong> S3 — store and serve static files</li>
+    <li><strong>Week 3-4:</strong> Databases — structured data storage</li>
+    <li><strong>Week 5+:</strong> Compute (EC2, Lambda) — processing that data</li>
+    <li><strong>Later:</strong> Distributed systems (Spark, EMR) — big data processing</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">S3's Role in Data Workflows</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;">In professional data science, S3 is typically used for:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Data lakes:</strong> Central repository for raw data (CSV, Parquet, JSON, images)</li>
+    <li><strong>Model artifacts:</strong> Trained models, checkpoints, experiment logs</li>
+    <li><strong>ETL pipelines:</strong> Input/output for Spark, Airflow, Glue jobs</li>
+    <li><strong>Backup and archival:</strong> Long-term storage with automatic lifecycle management</li>
+    <li><strong>Static assets:</strong> Model documentation, dashboards, visualization exports</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><em>This lab focuses on the simplest use case (static website hosting), but the concepts apply directly to data engineering workflows.</em></p>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Learn more:</strong> <a href="https://aws.amazon.com/big-data/datalakes-and-analytics/what-is-a-data-lake/" target="_blank">What is a Data Lake?</a> | <a href="https://aws.amazon.com/solutions/case-studies/data-analytics/" target="_blank">AWS Data Analytics Case Studies</a></p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">What is AWS S3?</h2>
+
+<p style="color:#1e293b;">Amazon S3 (Simple Storage Service) is AWS's object storage service — a massive, globally distributed file system in the cloud that can store and retrieve any amount of data from anywhere on the web.</p>
+
+<p style="color:#1e293b;margin-top:10px;"><strong>Official documentation:</strong> <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html" target="_blank">AWS S3 User Guide</a> | <a href="https://aws.amazon.com/s3/" target="_blank">S3 Product Page</a></p>
+
+<!-- REST OF YOUR EXISTING CONTENT STARTS HERE -->
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Characteristics</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Store any type of file:</strong> HTML, CSS, JavaScript, images, videos, data files, backups, etc.</li>
+    <li><strong>Access via URLs:</strong> Every object gets a unique URL for HTTP/HTTPS access</li>
+    <li><strong>Pay-as-you-go:</strong> Only pay for storage used + requests made + data transferred</li>
+    <li><strong>99.999999999% durability:</strong> That's 11 nines — your files won't get lost (<a href="https://aws.amazon.com/s3/storage-classes/" target="_blank">S3 Storage Classes</a>)</li>
+    <li><strong>Automatic scaling:</strong> No capacity planning needed — S3 grows with your needs</li>
+    <li><strong>Global availability:</strong> Choose from 30+ AWS regions worldwide (<a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/" target="_blank">AWS Regions</a>)</li>
+  </ul>
+</div>
+
+<!-- Continue with your existing content from here -->
+
+<!-- ===================== Added: Other AWS Services Overview ===================== -->
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Beyond S3: Other AWS Services You'll Use</h2>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Compute</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Amazon EC2</strong> — virtual servers you control. Run long‑lived apps, custom environments, or GPU instances for ML. <a href="https://aws.amazon.com/ec2/" target="_blank">EC2 product page</a></li>
+    <li><strong>AWS Lambda</strong> — serverless functions that run on demand. Great for event‑driven tasks and APIs without managing servers. <a href="https://aws.amazon.com/lambda/" target="_blank">Lambda product page</a></li>
+    <li><strong>Amazon ECS/EKS</strong> — container orchestration (ECS) and managed Kubernetes (EKS) for microservices. <a href="https://aws.amazon.com/containers/" target="_blank">Containers on AWS</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Databases and Storage</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Amazon RDS</strong> — managed relational databases (PostgreSQL, MySQL, etc.). <a href="https://aws.amazon.com/rds/" target="_blank">RDS product page</a></li>
+    <li><strong>Amazon DynamoDB</strong> — serverless NoSQL key‑value database with single‑digit ms latency. <a href="https://aws.amazon.com/dynamodb/" target="_blank">DynamoDB product page</a></li>
+    <li><strong>Amazon Aurora</strong> — high‑performance MySQL/PostgreSQL‑compatible database. <a href="https://aws.amazon.com/rds/aurora/" target="_blank">Aurora product page</a></li>
+    <li><strong>Amazon EFS</strong> — shared POSIX file system for Linux workloads. <a href="https://aws.amazon.com/efs/" target="_blank">EFS product page</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Data Integration and Orchestration</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>AWS Glue</strong> — serverless ETL and data catalog for analytics. <a href="https://aws.amazon.com/glue/" target="_blank">Glue product page</a></li>
+    <li><strong>AWS Step Functions</strong> — visual workflows to coordinate Lambda/EC2/Glue jobs. <a href="https://aws.amazon.com/step-functions/" target="_blank">Step Functions product page</a></li>
+    <li><strong>Amazon EventBridge</strong> — event bus to connect apps and AWS services. <a href="https://aws.amazon.com/eventbridge/" target="_blank">EventBridge product page</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Analytics and Big Data</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Amazon Athena</strong> — serverless SQL on S3 (pay per query). <a href="https://aws.amazon.com/athena/" target="_blank">Athena product page</a></li>
+    <li><strong>Amazon EMR</strong> — managed Hadoop/Spark for large‑scale data processing. <a href="https://aws.amazon.com/emr/" target="_blank">EMR product page</a></li>
+    <li><strong>Amazon Redshift</strong> — cloud data warehouse for BI/analytics. <a href="https://aws.amazon.com/redshift/" target="_blank">Redshift product page</a></li>
+    <li><strong>Amazon Kinesis</strong> — real‑time data streaming and processing. <a href="https://aws.amazon.com/kinesis/" target="_blank">Kinesis product page</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Machine Learning and AI</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Amazon SageMaker</strong> — end‑to‑end platform to build, train, and deploy ML models. <a href="https://aws.amazon.com/sagemaker/" target="_blank">SageMaker product page</a></li>
+    <li><strong>Amazon Bedrock</strong> — foundation models and generative AI APIs (serverless). <a href="https://aws.amazon.com/bedrock/" target="_blank">Bedrock product page</a></li>
+    <li><strong>Amazon Comprehend</strong> — NLP for text analysis (entities, sentiment). <a href="https://aws.amazon.com/comprehend/" target="_blank">Comprehend product page</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Networking, Delivery, and APIs</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Amazon CloudFront</strong> — global CDN for low‑latency content delivery with HTTPS & custom domains. <a href="https://aws.amazon.com/cloudfront/" target="_blank">CloudFront product page</a></li>
+    <li><strong>Amazon Route 53</strong> — DNS, domain registration, and traffic routing. <a href="https://aws.amazon.com/route53/" target="_blank">Route 53 product page</a></li>
+    <li><strong>Amazon API Gateway</strong> — build and manage secure APIs at scale. <a href="https://aws.amazon.com/api-gateway/" target="_blank">API Gateway product page</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Security, Identity, and Monitoring</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>AWS IAM</strong> — users, roles, and permissions for secure access control. <a href="https://aws.amazon.com/iam/" target="_blank">IAM product page</a></li>
+    <li><strong>AWS KMS</strong> — manage encryption keys for data at rest/in transit. <a href="https://aws.amazon.com/kms/" target="_blank">KMS product page</a></li>
+    <li><strong>AWS Secrets Manager</strong> — store and rotate app secrets safely. <a href="https://aws.amazon.com/secrets-manager/" target="_blank">Secrets Manager product page</a></li>
+    <li><strong>Amazon CloudWatch</strong> — metrics, logs, alarms, dashboards. <a href="https://aws.amazon.com/cloudwatch/" target="_blank">CloudWatch product page</a></li>
+    <li><strong>AWS CloudTrail</strong> — audit trail of API calls in your account. <a href="https://aws.amazon.com/cloudtrail/" target="_blank">CloudTrail product page</a></li>
+    <li><strong>AWS Cost Explorer & Budgets</strong> — track and control spend. <a href="https://aws.amazon.com/aws-cost-management/aws-cost-explorer/" target="_blank">Cost Explorer</a> | <a href="https://aws.amazon.com/aws-cost-management/aws-budgets/" target="_blank">Budgets</a></li>
+  </ul>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">When to Choose What (Quick Cheats)</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>EC2 vs. Lambda:</strong> Long‑running, custom OS → EC2. Event‑driven, short tasks → Lambda.</li>
+    <li><strong>RDS vs. DynamoDB:</strong> Joins/SQL/transactions → RDS. High scale, key‑value, serverless → DynamoDB.</li>
+    <li><strong>Athena vs. Redshift:</strong> Ad‑hoc SQL directly on S3 → Athena. BI warehouse with fast repeated queries → Redshift.</li>
+    <li><strong>S3 website vs. CloudFront:</strong> S3 is fine to start; add CloudFront for HTTPS, speed, and custom domains.</li>
+  </ul>
+</div>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">Where This Course Goes Next</h3>
+  <ol style="color:#1e293b;">
+    <li>Finish the Week 2 lab: <a href="lab.html" target="_blank" style="color:#3b82f6;">S3 Static Website Lab</a></li>
+    <li>Review account protections: <a href="../week01/aws-account-setup.html" target="_blank" style="color:#3b82f6;">Week 1 — AWS Account Setup</a></li>
+    <li>Preview compute topics: EC2 and Lambda deployment patterns (coming soon)</li>
+  </ol>
+</div>
+
+<p style="color:#1e293b;margin-top:30px;"><a href="index.html" style="color:#3b82f6;">← Back to Week 2 Overview</a></p>
+
+</body>
+</html>

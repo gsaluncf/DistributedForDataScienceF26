@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 2 — AWS S3 Static Website Hosting</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 2 Overview (Tue Feb 3, Thu Feb 5)</h2>
+    <p style="color:#1e293b;">This week introduces cloud object storage and static website hosting using Amazon S3. You will deploy a live website to AWS, configure public access policies, and learn both AWS Console and CLI workflows. Optional extra credit includes CloudFront CDN integration and custom domain configuration.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tuesday — AWS S3 Fundamentals</h3>
+  <ul style="color:#1e293b;">
+    <li>Concepts: Object storage, buckets, static website hosting, bucket policies, public vs private access.</li>
+    <li>AWS S3 overview: What it is, why it matters, cost structure, alternatives (GitHub Pages, Netlify, Vercel).</li>
+    <li>Practice: Create S3 bucket via Console UI, enable static website hosting, upload files.</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Thursday — Deployment Automation & Best Practices</h3>
+  <ul style="color:#1e293b;">
+    <li>AWS CLI for S3: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws s3 sync</code>, bucket policies, automation scripts.</li>
+    <li>Cost management: Understanding S3 pricing, setting up billing alerts, teardown procedures.</li>
+    <li>Optional: CloudFront CDN, HTTPS, custom domains (continuation of Week 1 extra credit).</li>
+  </ul>
+
+  <div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#15803d;margin-top:5px;">Learning Resources</h3>
+    <ol>
+      <li><a href="s3-overview.html">AWS S3 Overview</a> — What is S3, why use it, cost breakdown, alternatives</li>
+      <li><a href="lab.html">Lab Instructions</a> — Step-by-step deployment guide (Console UI + CLI methods)</li>
+      <li><a href="cloudfront-optional.html">CloudFront Integration (Optional)</a> — CDN, HTTPS, custom domains</li>
+    </ol>
+  </div>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Prerequisites</h3>
+    <p style="color:#1e293b;">Before starting this week's assignment, ensure you have:</p>
+    <ul style="color:#1e293b;">
+      <li>Completed Week 1 AWS CLI setup and verification</li>
+      <li>AWS account with valid credentials configured (<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws configure</code>)</li>
+      <li>Verified AWS CLI access: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws sts get-caller-identity</code></li>
+      <li>Basic understanding of HTML, CSS, and JavaScript</li>
+      <li>Text editor for customizing website files</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Official AWS Documentation</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html">Hosting a static website using Amazon S3</a></li>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/HostingWebsiteOnS3Setup.html">Tutorial: Configuring a static website on Amazon S3</a></li>
+      <li><a href="https://docs.aws.amazon.com/cli/latest/reference/s3/sync.html">AWS CLI: aws s3 sync</a></li>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html">Blocking public access to your Amazon S3 storage</a></li>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html">Website endpoints</a></li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Deliverables (due Sun Feb 8, 11:59 pm)</h3>
+    <ol>
+      <li><strong>S3 Static Website:</strong> Deploy a customized static website to S3 and submit the public URL.</li>
+      <li><strong>Screenshot:</strong> Provide a screenshot showing your live website with the S3 endpoint URL visible in the browser.</li>
+      <li><strong>Customization:</strong> Modify the starter site files (not just default content). Use an LLM assistant to enhance your site.</li>
+      <li><strong>Teardown Confirmation:</strong> After grading, run the teardown script and confirm resource deletion to avoid AWS charges.</li>
+    </ol>
+    <p style="color:#1e293b;margin-top:10px;"><strong>Submission format:</strong></p>
+    <ul style="color:#1e293b;">
+      <li>S3 website endpoint URL (e.g., <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">http://bucket-name.s3-website-us-east-1.amazonaws.com</code>)</li>
+      <li>Screenshot (PNG or JPG)</li>
+      <li>Brief description of customizations made (2-3 sentences)</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f3f4f6;border:1px dashed #9ca3af;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Optional Extra Credit (up to +15 points)</h3>
+    <ul style="color:#1e293b;">
+      <li><strong>+5 points:</strong> Use an LLM assistant (ChatGPT, GitHub Copilot, Cursor, Augment) to significantly enhance your site with advanced features (dark mode, animations, interactive elements).</li>
+      <li><strong>+10 points:</strong> Configure CloudFront CDN with HTTPS support for your S3 website.</li>
+      <li><strong>+15 points:</strong> Connect a custom domain (from Week 1 extra credit) to your S3 website using CloudFront and Route 53 or external DNS.</li>
+    </ul>
+    <p style="color:#1e293b;margin-top:10px;"><em>Note: Extra credit submissions require additional documentation explaining your implementation.</em></p>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Learning Objectives</h2>
+    <p style="color:#1e293b;">By the end of this week, you will be able to:</p>
+    <ul style="color:#1e293b;">
+      <li>Explain what AWS S3 is and when to use it for static website hosting</li>
+      <li>Create and configure S3 buckets using both AWS Console and CLI</li>
+      <li>Enable static website hosting and configure index/error documents</li>
+      <li>Manage bucket policies and public access settings</li>
+      <li>Deploy and update website files using <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws s3 sync</code></li>
+      <li>Understand S3 pricing model and implement cost management practices</li>
+      <li>Properly tear down AWS resources to avoid unnecessary charges</li>
+      <li>Compare S3 with alternative hosting solutions (GitHub Pages, Netlify, Vercel)</li>
+      <li>Optionally integrate CloudFront CDN for HTTPS and custom domains</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Important: Cost Management</h3>
+    <p style="color:#1e293b;">This assignment uses real AWS resources that incur charges. However, costs are minimal:</p>
+    <ul style="color:#1e293b;">
+      <li><strong>Expected cost:</strong> Less than $0.01 if resources are deleted within one week</li>
+      <li><strong>S3 storage:</strong> ~$0.0002/month for starter site (~10 KB)</li>
+      <li><strong>S3 requests:</strong> ~$0.0004 per 1,000 page views</li>
+      <li><strong>Data transfer:</strong> First 100 GB/month is FREE</li>
+    </ul>
+    <p style="color:#1e293b;margin-top:10px;"><strong style="color:#1e40af;">CRITICAL:</strong> After your assignment is graded, run the <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">99_teardown.bat</code> script to delete all resources. Failure to do so may result in ongoing charges.</p>
+  </div>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Getting Started</h3>
+    <ol style="color:#1e293b;">
+      <li><strong>Accept the GitHub Classroom assignment:</strong> <a href="https://classroom.github.com/a/uES2n9dh" target="_blank">Click here to accept</a></li>
+      <li>Clone your personal repository to your local machine</li>
+      <li>Read the <a href="s3-overview.html">AWS S3 Overview</a> to understand the service</li>
+      <li>Follow the <a href="lab.html">Lab Instructions</a> step-by-step</li>
+      <li>Customize your site using the LLM Enhancement Zone guidance</li>
+      <li>Deploy to S3 and test your live website</li>
+      <li>Submit your URL and screenshot to Canvas</li>
+      <li>After grading, run teardown script to clean up resources</li>
+    </ol>
+  </div>
+
+  <p style="color:#1e293b;">See <a href="lab.html">detailed lab instructions</a> for step-by-step guidance on both AWS Console and CLI methods.</p>
+</body>
+</html>

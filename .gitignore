@@ -1,0 +1,47 @@
+# Default to ignoring everything
+*
+
+# Un-ignore directories so we can traverse them
+!*/
+
+# Whitelist specific file types for students/public
+!*.html
+!*.htm
+!*.ipynb
+!*.py
+!*.md
+!*.txt
+!*.css
+!*.js
+!*.png
+!*.jpg
+!*.jpeg
+!*.gif
+!*.svg
+!*.docx
+!*.pdf
+!*.yaml
+!*.yml
+
+# Configuration and System files to explicitly keep
+!README.md
+!.gitignore
+
+# Explicitly ignore sensitive files and system junk (overriding the whitelist if necessary)
+_secrets.json
+.env
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+env/
+venv/
+
+# Agent Scratch Directory - prevents random agent code from going to Git
+_agent_scratch/

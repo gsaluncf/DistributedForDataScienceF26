@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 4 — Scaling Fundamentals & AWS Patterns</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 4 Overview (Tue Feb 17, Thu Feb 19)</h2>
+    <p style="color:#1e293b;">Explore the why and how of scaling: throughput vs latency, Amdahl/Gustafson laws, queues/back-pressure, idempotency, and consistency trade-offs. Map concepts to AWS services and patterns (SQS/SNS, EventBridge, ALB/ASG).</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tuesday — Concepts</h3>
+  <ul style="color:#1e293b;">
+    <li>Throughput, latency, tail latency, p95/p99.</li>
+    <li>Amdahl vs Gustafson; horizontal vs vertical scaling.</li>
+    <li>Retries, exponential backoff with jitter; idempotency tokens.</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Thursday — AWS patterns</h3>
+  <ul style="color:#1e293b;">
+    <li>SQS (at-least-once), DLQs, SNS fan-out, EventBridge routing.</li>
+    <li>ALB + Auto Scaling Groups; Multi-AZ basics.</li>
+    <li>Designing for back-pressure and failure domains.</li>
+  </ul>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Readings</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/wellarchitected/latest/performance-efficiency-pillar/performance-efficiency-pillar.html">AWS Well-Architected: Performance Efficiency</a></li>
+      <li><a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">Exponential backoff and jitter</a></li>
+      <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html">SQS Developer Guide</a></li>
+      <li><a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html">EventBridge overview</a></li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Deliverables (due Sun Feb 22, 11:59 pm)</h3>
+    <ol>
+      <li>Short design critique (1–2 pages): compare two scale-out approaches for the provided scenario.</li>
+      <li>Canvas concept quiz (10 questions) covering this week.</li>
+    </ol>
+  </div>
+
+  <p style="color:#1e293b;">See <a href="lab.html">design exercise</a> and <a href="quiz-seeds.md">quiz seeds</a>.</p>
+</body>
+</html>

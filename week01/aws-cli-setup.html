@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS CLI Setup & Verification - Week 1</title>
+</head>
+<body>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">AWS CLI Setup & Verification</h2>
+    <p>Install the AWS Command Line Interface (CLI) and verify your setup. This is your assignment submission!</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">What is AWS CLI?</h2>
+
+<p>The AWS CLI is a command-line tool that lets you interact with AWS services from your terminal. It's essential for automation, scripting, and efficient cloud management.</p>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Prerequisites</h2>
+
+<p>Before starting, make sure you have completed the <strong>AWS Account Setup</strong> guide and have:</p>
+<ul>
+    <li>✓ Created your AWS account</li>
+    <li>✓ Set up billing alerts</li>
+    <li>✓ Created an IAM user with AdministratorAccess</li>
+    <li>✓ Created and saved your access keys (Access Key ID and Secret Access Key)</li>
+</ul>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 1: Install AWS CLI</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Windows</h3>
+<ol>
+    <li>Open PowerShell as Administrator</li>
+    <li>Run this command to download and install AWS CLI:
+        <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2-2.33.4.msi</pre>
+    </li>
+    <li>Follow the installation wizard (use default settings)</li>
+    <li>Close and reopen PowerShell</li>
+</ol>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Alternative: Manual Download</h3>
+    <p>If the command above doesn't work, you can manually download the installer:</p>
+    <ul>
+        <li><a href="https://awscli.amazonaws.com/AWSCLIV2-2.33.4.msi" target="_blank">AWS CLI MSI Installer for Windows (v2.33.4)</a></li>
+    </ul>
+    <p>Run the downloaded file and follow the installation wizard.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">macOS</h3>
+<ol>
+    <li>Open Terminal</li>
+    <li>Download and install AWS CLI:
+        <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /</pre>
+    </li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Linux</h3>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install</pre>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 2: Verify Installation</h2>
+
+<p>Open a new terminal and run:</p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">aws --version</pre>
+
+<p>You should see output like: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">aws-cli/2.x.x Python/3.x.x</code></p>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 3: Configure AWS CLI</h2>
+
+<p>Now we'll configure the AWS CLI with your access keys from the account setup.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Run AWS Configure</h3>
+
+<p>In your terminal, run:</p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">aws configure</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Enter Your Credentials</h3>
+
+<p>You'll be prompted for four values. Enter them as follows:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
+AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+Default region name [None]: us-east-1
+Default output format [None]: json</pre>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Important Notes</h3>
+    <ul>
+        <li><strong>Access Key ID:</strong> Paste your actual Access Key ID (starts with "AKIA...")</li>
+        <li><strong>Secret Access Key:</strong> Paste your actual Secret Access Key (long random string)</li>
+        <li><strong>Region:</strong> Use <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">us-east-1</code> (most AWS services are available here)</li>
+        <li><strong>Output format:</strong> Use <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">json</code> (easiest to read)</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What Just Happened?</h3>
+
+<p>The <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws configure</code> command created two files:</p>
+
+<ul>
+    <li><strong>Credentials file:</strong> Stores your access keys
+        <ul>
+            <li>Windows: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">C:\Users\YourName\.aws\credentials</code></li>
+            <li>Mac/Linux: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">~/.aws/credentials</code></li>
+        </ul>
+    </li>
+    <li><strong>Config file:</strong> Stores your default region and output format
+        <ul>
+            <li>Windows: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">C:\Users\YourName\.aws\config</code></li>
+            <li>Mac/Linux: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">~/.aws/config</code></li>
+        </ul>
+    </li>
+</ul>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 4: Test Your Configuration (ASSIGNMENT)</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Verify Your Identity</h3>
+
+<p>Run this command to verify your AWS CLI is configured correctly:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">aws sts get-caller-identity</pre>
+
+<p>You should see output like:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">{
+    "UserId": "AIDAXXXXXXXXXXXXXXXXX",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/your-name-admin"
+}</pre>
+
+<div style="background-color: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #15803d; margin-top: 5px;">Success!</h3>
+    <p>If you see your account information with your IAM username, your AWS CLI is configured correctly!</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Test S3 Access</h3>
+
+<p>Try listing your S3 buckets (should be empty for now):</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">aws s3 ls</pre>
+
+<p>If you see no errors (even if the output is empty), you're ready to go!</p>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Assignment Submission Required</h3>
+    <p><strong>What to submit:</strong> Copy the entire output from the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">aws sts get-caller-identity</code> command and paste it into the Canvas assignment.</p>
+    <p><strong>Points:</strong> 100 points</p>
+    <p><strong>Due:</strong> Sunday, February 1, 11:59 PM</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Troubleshooting</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "Unable to locate credentials"</h3>
+
+<p>This means your credentials weren't saved correctly. Try running <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws configure</code> again and make sure you paste your keys correctly.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "The security token included in the request is invalid"</h3>
+
+<p>Your access keys may be incorrect. Double-check that you:</p>
+<ul>
+    <li>Copied the entire Access Key ID (starts with "AKIA")</li>
+    <li>Copied the entire Secret Access Key</li>
+    <li>Didn't include any extra spaces or quotes</li>
+</ul>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "aws: command not found"</h3>
+
+<p>The AWS CLI is not in your PATH. Try:</p>
+<ul>
+    <li>Close and reopen your terminal</li>
+    <li>On Windows, make sure you opened a <strong>new</strong> PowerShell window after installation</li>
+    <li>Reinstall AWS CLI if the problem persists</li>
+</ul>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Summary & Next Steps</h2>
+
+<div style="background-color: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #15803d; margin-top: 5px;">Checklist: What You Should Have</h3>
+    <ul>
+        <li>✓ AWS CLI installed and verified with <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws --version</code></li>
+        <li>✓ Credentials configured with <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws configure</code></li>
+        <li>✓ Successfully ran <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws sts get-caller-identity</code></li>
+        <li>✓ Submitted verification output to Canvas</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What's Next?</h3>
+
+<p>You're now ready to start using AWS services! In the upcoming labs, you'll use the CLI to:</p>
+<ul>
+    <li>Create and manage S3 buckets for distributed storage</li>
+    <li>Deploy Lambda functions for serverless computing</li>
+    <li>Work with DynamoDB tables for distributed databases</li>
+    <li>Set up message queues with SQS for asynchronous communication</li>
+</ul>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Security Reminder</h3>
+    <p>Never share your AWS credentials or commit them to Git. Treat them like passwords!</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<div style="text-align: center; margin: 20px 0;">
+    <p><a href="aws-account-setup.html">← Previous: AWS Account Setup</a> | <a href="index.html">Back to Week 1</a></p>
+</div>
+
+</body>
+</html>

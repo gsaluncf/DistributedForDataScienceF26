@@ -1,0 +1,233 @@
+# Image Search and Integration Guide
+
+## Your Mission
+You are performing a SECOND PASS on educational Canvas LMS content. Your ONLY job is to find and insert high-quality, relevant images from reliable sources. The content has already been written - you are now enhancing it with visual elements.
+
+## Critical Rules
+
+### NEVER Use Placeholders
+- **NEVER** use placeholder URLs like `image-url.png`, `your-image-here.jpg`, or `[INSERT IMAGE]`
+- **NEVER** leave TODO comments about images
+- If you cannot find a suitable image after searching, leave that section without an image rather than using a placeholder
+- Every image URL you insert MUST be a real, working URL from a reliable source
+
+### Minimum Image Requirements
+- **Minimum 3-5 images per lecture/page**
+- **At least 1 image per major section** (H2 heading)
+- **Prefer more images over fewer** - visual content improves learning
+- If a lecture has 6 major sections, aim for 6-8 images total
+
+### Image Quality Standards
+- Images must be relevant and directly support the content
+- Prefer official sources (AWS docs, vendor documentation, educational sites)
+- Images should be clear and readable (avoid tiny, blurry, or low-resolution images)
+- Diagrams and architecture images are better than generic stock photos
+- Images must be publicly accessible (no login required, no paywalls)
+
+## Image Search Protocol
+
+### Step 1: Analyze the Content
+Read through the entire document and identify:
+1. What is the main topic? (e.g., "AWS Lambda", "Serverless Architecture", "DynamoDB")
+2. What are the major sections/concepts?
+3. What visual elements would help explain each concept?
+4. Are there comparisons, workflows, or architectures that need diagrams?
+
+### Step 2: Prioritize Image Types
+For each section, determine what type of image would be most helpful:
+
+**Architecture Diagrams** - For system design, infrastructure, service interactions
+- Search: "[service name] architecture diagram"
+- Search: "[topic] reference architecture"
+- Example: "AWS Lambda architecture diagram", "serverless architecture diagram"
+
+**Workflow/Process Diagrams** - For sequential processes, lifecycles, request flows
+- Search: "[process name] workflow diagram"
+- Search: "[service] execution flow"
+- Example: "Lambda execution lifecycle", "API Gateway request flow"
+
+**Comparison Charts** - For comparing technologies, approaches, or options
+- Search: "[A] vs [B] comparison diagram"
+- Search: "[topic] comparison chart"
+- Example: "REST API vs HTTP API comparison", "traditional vs serverless comparison"
+
+**Component Diagrams** - For explaining parts of a system
+- Search: "[service name] components diagram"
+- Search: "[technology] internal structure"
+- Example: "DynamoDB table structure", "Lambda function components"
+
+**Screenshots** - For UI/console instructions or visual examples
+- Search: "[service] console screenshot"
+- Search: "[tool] interface example"
+- Example: "AWS Lambda console", "SAM CLI output"
+
+**Conceptual Illustrations** - For abstract concepts
+- Search: "[concept] illustration"
+- Search: "[idea] visual explanation"
+- Example: "cold start vs warm start", "serverless benefits illustration"
+
+### Step 3: Search Strategy
+For EACH image you need, follow this search order:
+
+1. **Official AWS Documentation** (if AWS-related) use similar if not AWS
+   - Use web-search for: "site:docs.aws.amazon.com [topic] diagram"
+   - Use web-search for: "site:aws.amazon.com [service] architecture"
+   - Example: "site:docs.aws.amazon.com lambda architecture diagram"
+
+2. **Official AWS Blogs** use similar if not AWS
+   - Use web-search for: "site:aws.amazon.com/blogs [topic] diagram"
+   - Example: "site:aws.amazon.com/blogs serverless architecture"
+
+3. **AWS Architecture Center** use similar if not AWS
+   - Use web-search for: "site:aws.amazon.com/architecture [topic]"
+   - Example: "site:aws.amazon.com/architecture serverless reference"
+
+4. **Vendor Documentation** (for non-AWS topics)
+   - Use web-search for: "site:[vendor].com [topic] diagram"
+   - Example: "site:microsoft.com azure functions architecture"
+
+5. **Educational Tech Sites**
+   - Use web-search for: "site:dev.to [topic] architecture"
+   - Use web-search for: "[topic] diagram tutorial"
+
+6. **General Search** (last resort)
+   - Use web-search for: "[topic] architecture diagram"
+   - Use web-search for: "[concept] visual explanation"
+
+### Step 4: Verify Image URLs
+Before inserting an image:
+- The URL should end in an image extension (.png, .jpg, .jpeg, .svg, .gif)
+- The URL should be from a reliable domain
+- The URL should be publicly accessible (test if unsure)
+- Prefer HTTPS URLs over HTTP
+- *important* MAKE SURE THERE ARE no-404s in the response..even sometimes when you have the right URL, it may be a 404 so you need to check with a seperate web search
+
+
+
+### Step 5: Insert Images with Proper Formatting
+Use the exact format from the style guide:
+
+```html
+<div style="text-align: center; margin: 20px 0;">
+<img style="max-width: 100%; height: auto; border: 1px solid #cbd5e1; border-radius: 8px;" src="ACTUAL_IMAGE_URL_HERE" alt="Descriptive alt text explaining what the image shows" />
+<p style="color: #64748b; font-size: 13px; margin-top: 10px;">Descriptive caption (Source: AWS Documentation)</p>
+</div>
+```
+
+**Alt text requirements:**
+- Describe what the image shows, not just the topic
+- Good: "AWS Lambda execution flow showing cold start and warm start phases"
+- Bad: "Lambda diagram"
+
+**Caption requirements:**
+- Briefly describe the image content
+- Always include source attribution
+- Example: "AWS Lambda architecture showing event sources, function execution, and destinations (Source: AWS Documentation)"
+
+## Common Topics and Search Queries
+
+### AWS Lambda
+- "AWS Lambda architecture diagram"
+- "Lambda execution lifecycle diagram"
+- "Lambda cold start warm start diagram"
+- "site:docs.aws.amazon.com lambda how it works"
+
+### Serverless Architecture
+- "serverless architecture diagram"
+- "serverless vs traditional architecture comparison"
+- "AWS serverless reference architecture"
+- "site:aws.amazon.com/architecture serverless"
+
+### API Gateway
+- "AWS API Gateway architecture diagram"
+- "API Gateway request flow diagram"
+- "HTTP API vs REST API comparison"
+- "site:docs.aws.amazon.com apigateway"
+
+### DynamoDB
+- "DynamoDB architecture diagram"
+- "DynamoDB table structure diagram"
+- "DynamoDB partition key diagram"
+- "site:docs.aws.amazon.com dynamodb"
+
+### AWS SAM
+- "AWS SAM workflow diagram"
+- "SAM deployment process diagram"
+- "SAM vs CloudFormation comparison"
+- "site:docs.aws.amazon.com sam"
+
+### General Cloud/DevOps
+- "infrastructure as code diagram"
+- "CI/CD pipeline diagram"
+- "cloud architecture patterns"
+- "microservices architecture diagram"
+
+## Workflow Example
+
+Here's how you should approach a lecture on "AWS Lambda and Serverless":
+
+1. **Read the content** - Identify 6 major sections
+2. **Plan images** - Decide you need 7-8 images
+3. **Search systematically**:
+   - Section 1 (Intro to Serverless): Search for "serverless architecture diagram"
+   - Section 2 (Lambda Basics): Search for "AWS Lambda architecture diagram"
+   - Section 3 (Lambda Execution): Search for "Lambda execution lifecycle"
+   - Section 4 (API Gateway): Search for "API Gateway Lambda integration diagram"
+   - Section 5 (DynamoDB): Search for "DynamoDB architecture diagram"
+   - Section 6 (SAM): Search for "AWS SAM workflow diagram"
+   - Section 7 (Security): Search for "AWS IAM Lambda permissions diagram"
+4. **Insert each image** with proper formatting, alt text, and captions
+5. **Verify** - Count total images (should be 7-8), check all URLs are real
+
+## Quality Checklist
+
+Before finishing, verify:
+- [ ] Minimum 3-5 images inserted (more for longer content)
+- [ ] At least 1 image per major section
+- [ ] All image URLs are real (no placeholders)
+- [ ] All images have descriptive alt text
+- [ ] All images have captions with source attribution
+- [ ] Images are from reliable sources (AWS docs, official blogs, educational sites)
+- [ ] Images are relevant and directly support the content
+- [ ] All images use the correct HTML formatting from the style guide
+- [ ] No TODO comments or placeholder text left in the document
+
+## What NOT to Do
+
+❌ **DON'T** insert one image and stop
+❌ **DON'T** use placeholder URLs
+❌ **DON'T** use generic stock photos when diagrams are available
+❌ **DON'T** skip sections without images
+❌ **DON'T** use images from unreliable sources
+❌ **DON'T** forget alt text or captions
+❌ **DON'T** use vague alt text like "diagram" or "image"
+❌ **DON'T** leave the document without verifying image count
+
+## What TO Do
+
+✅ **DO** search thoroughly for each section
+✅ **DO** prioritize official documentation sources
+✅ **DO** use descriptive alt text and captions
+✅ **DO** insert multiple images throughout the document
+✅ **DO** verify all URLs are real and working
+✅ **DO** use architecture diagrams and technical illustrations
+✅ **DO** attribute sources properly
+✅ **DO** aim for visual richness (more images = better learning)
+✅ **DO** Check to make sure the image actually exists at the URL...sometimes the URL will be correct but the image will be a 404...this happens a lot with AWS documentation
+
+
+
+## Success Criteria
+
+You have succeeded when:
+1. The document has 3-5+ images (or more for longer content)
+2. Every major section has supporting visual content
+3. All images are from reliable, official sources
+4. All images have proper formatting, alt text, and captions
+5. Zero placeholder URLs or TODO comments remain
+6. The visual content significantly enhances understanding of the topic
+
+## Remember
+
+Your job is to make the content MORE visual and engaging. Don't be conservative with images - educational content benefits from rich visual support. If you find a good, relevant image, include it!
+

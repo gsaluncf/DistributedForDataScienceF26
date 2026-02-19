@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdFlow Command Reference</title>
+</head>
+
+<body>
+
+    <div
+        style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">AdFlow Command
+            Reference Sheet</h2>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">A consolidated lookup of CLI commands, SAM
+            patterns, and Console paths used in this project. Everything here builds on what you have done in weeks 1-4.
+            Replace <code
+                style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">YOURID</code>
+            with your chosen student ID.</p>
+    </div>
+
+    <!-- SAM Commands -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">SAM (Serverless
+        Application Model)</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Build the project</strong>
+                </td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam build</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Deploy (first time,
+                        interactive)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam deploy --guided --stack-name adflow-YOURID</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Deploy (subsequent, uses
+                        saved config)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam deploy</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Invoke Lambda locally (for
+                        debugging)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam local invoke WorkerFunction -e event.json</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>View stack
+                        outputs</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws cloudformation describe-stacks --stack-name adflow-YOURID --query "Stacks[0].Outputs"</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Tear down
+                        everything</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam delete --stack-name adflow-YOURID</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- SQS Commands -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">SQS (Simple Queue
+        Service)</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Get queue URL</strong>
+                </td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs get-queue-url --queue-name adflow-YOURID-input</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Check message
+                        count</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs get-queue-attributes --queue-url QUEUE_URL --attribute-names ApproximateNumberOfMessages
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Send a test
+                        message</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs send-message --queue-url QUEUE_URL --message-body '{"test": true}'</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Receive messages
+                        (peek)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs receive-message --queue-url QUEUE_URL --max-number-of-messages 5</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Purge all
+                        messages</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs purge-queue --queue-url QUEUE_URL</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>List all queues
+                        (filtered)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws sqs list-queues --queue-name-prefix adflow-YOURID</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div
+        style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">SQS in Python (boto3)</h3>
+        <div
+            style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 10px 0; font-family: monospace; font-size: 13px;">
+            <pre style="margin: 0;">import boto3, json
+
+sqs = boto3.client("sqs")
+
+# Send a message
+sqs.send_message(
+    QueueUrl="https://sqs.us-east-1.amazonaws.com/123456/adflow-YOURID-input",
+    MessageBody=json.dumps({"opportunity_id": "test-001", ...}),
+)
+
+# Receive messages
+response = sqs.receive_message(QueueUrl=QUEUE_URL, MaxNumberOfMessages=10)
+for msg in response.get("Messages", []):
+    body = json.loads(msg["Body"])
+    # process...
+    sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=msg["ReceiptHandle"])</pre>
+        </div>
+    </div>
+
+    <!-- DynamoDB Commands -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">DynamoDB</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Describe table</strong>
+                </td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws dynamodb describe-table --table-name adflow-YOURID-results</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Count items</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws dynamodb scan --table-name adflow-YOURID-results --select COUNT</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Get one item</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws dynamodb get-item --table-name adflow-YOURID-results --key '{"opportunity_id": {"S":
+                    "test-001"}}'</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Scan first 5
+                        items</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws dynamodb scan --table-name adflow-YOURID-results --limit 5</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Delete table</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws dynamodb delete-table --table-name adflow-YOURID-results</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div
+        style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">DynamoDB in Python (boto3)</h3>
+        <div
+            style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 10px 0; font-family: monospace; font-size: 13px;">
+            <pre style="margin: 0;">import boto3
+from decimal import Decimal
+
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("adflow-YOURID-results")
+
+# Write an item
+table.put_item(Item={
+    "opportunity_id": "test-001",
+    "winning_advertiser_id": "adv_001",
+    "winning_bid_amount": Decimal("3.50"),
+    "winning_score": Decimal("6.7375"),
+    "score_margin": Decimal("0.9625"),
+    "processed_at": "2025-03-10T20:15:01Z",
+})
+
+# Read an item
+item = table.get_item(Key={"opportunity_id": "test-001"})["Item"]
+
+# Scan all items into a list
+items = table.scan()["Items"]
+
+# Load into a Pandas DataFrame
+import pandas as pd
+df = pd.DataFrame(items)
+df["winning_bid_amount"] = df["winning_bid_amount"].astype(float)</pre>
+        </div>
+        <p style="color: #64748b; font-size: 13px;">Remember: DynamoDB stores numbers as Decimal, not float. Convert
+            with <code
+                style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">Decimal(str(value))</code>
+            when writing and <code
+                style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.astype(float)</code>
+            when reading into Pandas.</p>
+    </div>
+
+    <!-- Lambda Commands -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Lambda</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Check function
+                        exists</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws lambda get-function --function-name adflow-YOURID-worker</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Invoke synchronously (for
+                        testing)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws lambda invoke --function-name adflow-YOURID-worker --payload file://event.json output.json</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>View environment
+                        variables</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws lambda get-function-configuration --function-name adflow-YOURID-worker --query
+                    "Environment.Variables"</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>List event source
+                        mappings</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws lambda list-event-source-mappings --function-name adflow-YOURID-worker</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Update code (after sam
+                        build)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam deploy</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CloudWatch Logs -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">CloudWatch Logs
+    </h2>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Your Lambda writes all <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">logger.info()</code>
+        and <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">logger.error()</code>
+        output to CloudWatch. This is the primary debugging tool once your Lambda is deployed.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Live tail (follow new
+                        logs)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws logs tail /aws/lambda/adflow-YOURID-worker --follow</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Search for "Batch
+                        complete"</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws logs filter-log-events --log-group-name /aws/lambda/adflow-YOURID-worker --filter-pattern "Batch
+                    complete"</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Search for errors</strong>
+                </td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    aws logs filter-log-events --log-group-name /aws/lambda/adflow-YOURID-worker --filter-pattern
+                    "ERROR"</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>AWS Console path</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-size: 13px;">CloudWatch > Log
+                    groups > /aws/lambda/adflow-YOURID-worker</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div
+        style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">Logging Best Practices</h3>
+        <div
+            style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 10px 0; font-family: monospace; font-size: 13px;">
+            <pre style="margin: 0;">import logging
+import time
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Measure and log performance
+start = time.perf_counter()
+# ... do work ...
+elapsed_ms = (time.perf_counter() - start) * 1000
+logger.info("Processed %s in %.1f ms", opportunity_id, elapsed_ms)
+
+# Log structured data
+logger.info(
+    "Batch complete: %d/%d succeeded in %.1f ms | failures=%d",
+    success_count, total_count, elapsed_ms, failure_count,
+)
+
+# NEVER use print() in Lambda - use logger instead
+# print() works but does not include timestamp or log level</pre>
+        </div>
+    </div>
+
+    <!-- Testing -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Testing</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Install test
+                        dependencies</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    pip install moto[sqs,dynamodb] pytest</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Run all tests
+                        (verbose)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    pytest worker/tests/ -v</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Run one test
+                        class</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    pytest worker/tests/test_handler.py::TestComputeScore -v</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Run with print
+                        output</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    pytest worker/tests/ -v -s</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Cleanup -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Cleanup</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Cleanup script (purge +
+                        recreate table)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    python cleanup.py --student-id YOURID --region us-east-1</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Purge queues only (skip
+                        table)</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    python cleanup.py --student-id YOURID --skip-table</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Tear down entire
+                        stack</strong></td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">
+                    sam delete --stack-name adflow-YOURID</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div
+        style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">Cost Safety Reminders</h3>
+        <ul style="color: #1e293b; font-size: 15px; line-height: 1.8;">
+            <li>Always run <code
+                    style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">sam delete</code>
+                when you are finished for the day</li>
+            <li>DynamoDB uses PAY_PER_REQUEST billing - you pay only for what you use</li>
+            <li>Lambda has a generous free tier (1M requests/month) - you will not exceed it</li>
+            <li>SQS free tier covers 1M requests/month - cleanup to avoid message retention costs</li>
+            <li>Check your AWS billing dashboard if anything looks unexpected</li>
+        </ul>
+    </div>
+
+    <!-- AWS Console Quick Paths -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">AWS Console Quick
+        Paths</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Service</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Console Path
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Your Lambda
+                        function</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Lambda > Functions >
+                    adflow-YOURID-worker</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Lambda environment
+                        variables</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Lambda > Functions >
+                    adflow-YOURID-worker > Configuration > Environment variables</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>SQS queues</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">SQS > Queues > filter by
+                    "adflow-YOURID"</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>DynamoDB table</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">DynamoDB > Tables >
+                    adflow-YOURID-results > Explore items</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>CloudWatch logs</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">CloudWatch > Log groups >
+                    /aws/lambda/adflow-YOURID-worker</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>CloudFormation
+                        stack</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">CloudFormation > Stacks >
+                    adflow-YOURID</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+
+</html>

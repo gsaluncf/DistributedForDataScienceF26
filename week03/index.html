@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 3 — Serverless: API Gateway + Lambda + DynamoDB</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 3 Overview (Tue Feb 10, Thu Feb 12)</h2>
+    <p style="color:#1e293b;">Build and deploy a minimal Python API on AWS using API Gateway and Lambda, with persistence in DynamoDB. Learn local testing, logging, and basic observability.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tuesday — Foundations</h3>
+  <ul style="color:#1e293b;">
+    <li>Lambda execution model; event structure; cold starts.</li>
+    <li>API Gateway (HTTP APIs) basics and integrations.</li>
+    <li>CloudWatch logs and metrics for Lambda.</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Thursday — Persistence with DynamoDB</h3>
+  <ul style="color:#1e293b;">
+    <li>Table design: partition/sort keys, access patterns.</li>
+    <li>Throughput (on-demand vs provisioned), hot partitions.</li>
+    <li>Integrate Lambda handlers with DynamoDB (put/get).</li>
+  </ul>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Readings</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html">Create your first Lambda</a></li>
+      <li><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html">API Gateway — HTTP APIs</a></li>
+      <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html">CloudWatch logs for Lambda</a></li>
+      <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html">DynamoDB core components</a></li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Deliverables (due Sun Feb 15, 11:59 pm)</h3>
+    <ol>
+      <li>Deployed API endpoint URL and a Postman collection with sample requests.</li>
+      <li>Evidence of DynamoDB table with at least 3 records (screenshot permitted).</li>
+      <li>Unit tests passing in GitHub Actions (link to run).</li>
+    </ol>
+  </div>
+
+  <p style="color:#1e293b;">See <a href="lab.html">lab instructions</a> and <a href="quiz-seeds.md">quiz seeds</a>.</p>
+</body>
+</html>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 1 - Building a Real-Time Ad Selection Pipeline</title>
+</head>
+
+<body>
+
+    <!-- Title Bar -->
+    <div
+        style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Project 1 -
+            Building a Real-Time Ad Selection Pipeline</h2>
+        <p style="color: #1e293b; font-size: 16px; line-height: 1.6;">Distributed Systems for Data Science - New College
+            of Florida</p>
+        <p style="color: #64748b; font-size: 14px;">You are a data scientist at AdFlow, a mid-sized ad platform serving
+            mobile publishers. Your job is to deploy the Lambda worker that sits in the middle of a real-time bidding
+            pipeline - reading ad opportunities from a queue, running a quality-adjusted scoring function to pick
+            winners, and posting results as fast as possible.</p>
+    </div>
+
+    <!-- Part 1: Background -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 1: Background
+        - How Online Ads Actually Work</h2>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">1.1 The Problem: Showing the Right Ad in Milliseconds</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Every time you open an app or a website and see an
+        advertisement, a small distributed computing event just happened. In the time it took the page to load - usually
+        under 100 milliseconds - the platform answered a surprisingly hard question:</p>
+
+    <div
+        style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">The Core Question</h3>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Given what we know about this user, this piece of
+            content, and the advertisers currently competing for this slot - which ad should we show right now?</p>
+    </div>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">There are thousands of advertisers who might want this
+        slot. Each has a different budget, a different target audience, and different restrictions on where their ads
+        can appear. The platform has to evaluate all of them, rank them, and return a winner - before the user notices
+        the page has loaded.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">1.2 The Three Players</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Three parties are involved in every ad that gets
+        shown:</p>
+    <ul style="color: #1e293b; font-size: 15px; line-height: 1.8;">
+        <li><strong style="color: #1e40af;">The Publisher</strong> - the app or website hosting the ad. They have a slot
+            on the screen and want to fill it with something that earns them money without driving users away.</li>
+        <li><strong style="color: #1e40af;">The Advertiser</strong> - a company competing to show their ad. An
+            advertiser might say: "I want to reach fitness-interested users aged 25-40, and I will pay up to $5.00 per
+            thousand impressions."</li>
+        <li><strong style="color: #1e40af;">The Ad Platform</strong> - the system in the middle. It receives the
+            opportunity from the publisher, collects bids from advertisers, picks a winner, and delivers the ad. This is
+            what you are building.</li>
+    </ul>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">1.3 What an Ad Opportunity Looks Like</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">When a user opens an app, the publisher sends the ad
+        platform a structured signal. Advertisers have already pre-registered their bids for various audience segments,
+        so the platform assembles a list of competing bids automatically:</p>
+
+    <div
+        style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 13px;">
+        <pre style="margin: 0;">{
+  "opportunity_id": "a3f9c821",
+  "timestamp": "2024-11-14T14:32:07Z",
+  "user_id": "u_99182",
+  "content_category": "sports",
+  "device_type": "mobile",
+  "region": "southeast",
+  "bids": [
+    { "advertiser_id": "adv_001", "bid_amount": 3.20, "category": "sportswear" },
+    { "advertiser_id": "adv_002", "bid_amount": 4.10, "category": "fast_food" },
+    { "advertiser_id": "adv_003", "bid_amount": 2.85, "category": "sportswear" }
+  ]
+}</pre>
+    </div>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Each bid represents an advertiser saying "I want this
+        slot and I will pay this amount." The platform decides who wins.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">1.4 Why the Highest Bid Doesn't Always Win</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The obvious answer - take the highest bid - turns out
+        to be bad business. In the example above, <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">adv_002</code>
+        is offering $4.10 but wants to show a fast food ad in the middle of a sports article. A user deep in sports
+        content is unlikely to engage with that ad. Meanwhile, <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">adv_001</code>
+        is offering $3.20 for a sportswear ad - a far better fit.</p>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Real ad platforms account for this by adjusting raw
+        bids based on contextual signals. This adjustment is called a <strong style="color: #1e40af;">scoring
+            function</strong>. Instead of ranking advertisers by raw bid amount, the platform computes a score for each
+        bid that reflects both what the advertiser is willing to pay and how good a fit their ad is for this moment.</p>
+
+    <div
+        style="background-color: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h4 style="color: #059669; margin-top: 5px;">Key Concept: Scoring Over Raw Bids</h4>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;"><code
+                style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">score = bid_amount x relevance_multiplier x time_of_day_bonus x device_bonus</code>
+        </p>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The winner is the advertiser with the highest
+            score - not the highest raw bid.</p>
+    </div>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">1.5 Why This Requires Distributed Computing</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">A mid-sized ad platform might handle several million
+        ad opportunities per hour - each one requiring bid evaluation in under 100 milliseconds. No single machine can
+        keep up. The standard solution is to queue incoming opportunities and distribute them across many Lambda
+        functions running in parallel.</p>
+
+    <hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+    <!-- Part 2: Your Task -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 2: Your Task
+    </h2>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">You will build the complete pipeline end-to-end. Speed
+        matters - ad selection results that arrive late are worthless. Your Lambda must consume each batch, compute a
+        winner, and post a timestamped result before the next batch arrives.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">2.1 The Flow</h3>
+    <ol style="color: #1e293b; font-size: 15px; line-height: 1.8;">
+        <li>You create your own SQS input queue, results queue, and DynamoDB table following the naming convention.</li>
+        <li>You write and deploy a Lambda function that reads batches from the input queue, applies the scoring and
+            selection logic, and posts results to the results queue with a <code
+                style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">processed_at</code>
+            timestamp.</li>
+        <li>Your Lambda also persists each result to your DynamoDB table.</li>
+        <li>You query DynamoDB to produce an analytical report.</li>
+    </ol>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">2.2 The Opportunity Message Format</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Field</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Type</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    opportunity_id</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Unique identifier for this ad slot
+                </td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    timestamp</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">ISO 8601 string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">When the opportunity occurred</td>
+            </tr>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    user_id</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Anonymized user identifier</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    content_category</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Category of surrounding content:
+                    sports, news, entertainment, finance, lifestyle</td>
+            </tr>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    device_type</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">mobile or desktop</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    region</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">northeast, southeast, midwest,
+                    west, international</td>
+            </tr>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    bids</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">list of objects</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Each bid has: advertiser_id,
+                    bid_amount (USD CPM), category</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="color: #64748b; font-size: 14px;">Each opportunity will have between 3 and 8 competing bids. Bid amounts
+        range from $1.00 to $8.00 CPM.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">2.3 The Result Message Format</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Field</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Type</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    opportunity_id</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Copied from the input message</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    winning_advertiser_id</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">The advertiser whose bid won</td>
+            </tr>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    winning_bid_amount</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">float</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">The raw bid amount of the winner
+                    (USD CPM)</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    winning_score</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">float</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">The computed score that won the
+                    auction</td>
+            </tr>
+            <tr>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    score_margin</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">float</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Winning score minus second-place
+                    score</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    processed_at</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">ISO 8601 string</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Timestamp of when your Lambda
+                    processed this result</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">2.4 The Scoring Function</h3>
+
+    <div
+        style="background-color: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h4 style="color: #059669; margin-top: 5px;">Scoring Formula</h4>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6; font-family: monospace;">score = bid_amount x
+            relevance_multiplier x time_bonus x device_bonus</p>
+    </div>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;"><strong style="color: #1e40af;">Relevance
+            Multiplier</strong> - rewards bids whose advertiser category matches the content being viewed:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Content Category
+                </th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Advertiser
+                    Category</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Multiplier</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">sports</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">sportswear</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.4</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">sports</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">energy_drink</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.3</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">finance</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">fintech</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.5</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">finance</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">insurance</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.3</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">entertainment</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">streaming</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.4</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">entertainment</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">gaming</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.3</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">lifestyle</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">beauty</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.3</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">lifestyle</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">travel</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.2</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">any</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">any other combination</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.0</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;"><strong style="color: #1e40af;">Time Bonus</strong> -
+        applies based on the hour extracted from the opportunity's UTC timestamp:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Hour Range (UTC)
+                </th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Bonus</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Rationale</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">06:00 - 09:00</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.20</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Morning commute - high mobile
+                    engagement</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">12:00 - 14:00</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.15</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Lunch browsing</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">19:00 - 23:00</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.25</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Evening peak - highest engagement
+                </td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">All other hours</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">1.00</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">No adjustment</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;"><strong style="color: #1e40af;">Device Bonus</strong>
+        - apply 1.1 for mobile, 1.0 for desktop.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Worked Example</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Opportunity: content_category = sports, device_type =
+        mobile, timestamp hour = 20:00 UTC.</p>
+
+    <div
+        style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 13px;">
+        <pre style="margin: 0;">Bid A: adv_001, bid_amount=3.50, category=sportswear
+Bid B: adv_002, bid_amount=4.20, category=fast_food
+
+Score A = 3.50 x 1.4 (sports/sportswear) x 1.25 (evening) x 1.1 (mobile) = 6.74
+Score B = 4.20 x 1.0 (no match)          x 1.25 (evening) x 1.1 (mobile) = 5.78
+
+Winner: adv_001 - despite submitting the lower raw bid</pre>
+    </div>
+
+    <hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+    <!-- Part 3: Setup and Deployment -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 3: Setup and
+        Deployment</h2>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">3.1 Naming Convention</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Choose a short student ID (your name or initials) and
+        use it everywhere. All resources follow this pattern:</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Resource</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Name</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Example (gsalu)
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">SQS Input Queue</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-{id}-input</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-gsalu-input</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">SQS Results Queue</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-{id}-results</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-gsalu-results</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">DynamoDB Table</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-{id}-results</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-gsalu-results</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Lambda Function</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-{id}-worker</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    adflow-gsalu-worker</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">CloudWatch Logs</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    /aws/lambda/adflow-{id}-worker</td>
+                <td
+                    style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">
+                    /aws/lambda/adflow-gsalu-worker</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">3.2 Deploy with SAM</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The provided SAM template creates all your AWS
+        resources. Deploy with:</p>
+    <div
+        style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 13px;">
+        <pre style="margin: 0;">sam build
+sam deploy --guided --stack-name adflow-YOURID</pre>
+    </div>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">When prompted for <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">StudentId</code>,
+        enter your chosen ID. After deployment, note the outputs - you will need the queue URLs for the test apparatus.
+    </p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">3.3 Verify End-to-End</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Before moving to the coding tasks, confirm the full
+        pipeline is wired correctly:</p>
+    <ol style="color: #1e293b; font-size: 15px; line-height: 1.8;">
+        <li>Check CloudWatch Logs - your Lambda should be invoking without errors.</li>
+        <li>Check the results queue - messages should appear after each Lambda invocation.</li>
+        <li>Check DynamoDB - rows should be accumulating in your table.</li>
+    </ol>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">3.4 Project Structure</h3>
+    <div
+        style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">
+        <pre>adflow-YOURID/
+  template.yaml              # SAM template (creates all AWS resources)
+  worker/
+    lambda_handler.py         # YOUR CODE - implement the four tasks
+    requirements.txt          # Dependencies (boto3)
+    tests/
+      test_handler.py         # Test suites - all must pass before deploy
+  analysis/
+    analysis.ipynb            # Analyst report (Q1-Q4)
+  cleanup.py                  # Queue purge + table recreate
+  README.md</pre>
+    </div>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">3.5 Testing Locally Before Deploying</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The starter code includes local mocks for SQS and
+        DynamoDB using the moto library. Run the provided tests before packaging and deploying - a Lambda that fails
+        locally will fail in AWS.</p>
+    <div
+        style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 13px;">
+        <pre style="margin: 0;">pip install moto[sqs,dynamodb] pytest
+pytest worker/tests/ -v</pre>
+    </div>
+
+    <hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+    <!-- Part 4: The Bid Engine -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 4: The Bid
+        Engine</h2>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The Lambda worker skeleton contains four functions to
+        implement. The Lambda receives batches of opportunity messages from SQS, computes a winner for each, and posts
+        results. Speed and correctness both matter.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Task 1: compute_score()</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Implement the scoring formula from Section 2.4. The
+        function receives a single bid dict and the full opportunity dict and returns a float score. Handle edge cases:
+        what is the correct behavior if a category is not in the relevance lookup? What if a field is missing?</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Task 2: select_winner()</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Given all the bids for a single opportunity, return
+        the winning bid along with its score and the second-highest score. Both scores are required fields in the result
+        message.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Task 3: process_opportunity()</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">This is where throughput is determined. For every
+        opportunity: parse the message, determine the winner, and post a result message to the results queue with all
+        required fields from Section 2.3, including the <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">processed_at</code>
+        timestamp. You must also persist the result to DynamoDB. Think carefully about the order of operations and what
+        gets measured.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Task 4: lambda_handler()</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">A single malformed message must not stall the entire
+        batch. Implement partial batch failure handling so that failed message IDs are returned to SQS for retry while
+        the rest of the batch commits. Look up the SQS <code
+            style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">batchItemFailures</code>
+        response format - the key name and structure must be exact or SQS will retry the entire batch.</p>
+
+    <hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+    <!-- Part 5: Analyst Report -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 5: Analyst
+        Report</h2>
+
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Once your Lambda has been running and results have
+        accumulated in DynamoDB, query the table and produce a report. Your audience is the business analysts on the
+        AdFlow team. They are not engineers - they want to understand how the selection algorithm is performing. Each
+        finding should include the code that produced it and 2-3 sentences of plain-language interpretation.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Question 1: How Often Does the Highest Bidder Lose?</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Across all 500 auctions, what percentage were won by
+        an advertiser who did not submit the highest raw bid? Break this down by content category. Which categories show
+        the largest gap between the highest bidder and the actual winner?</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Question 2: Which Advertiser Categories Benefit Most From Scoring?
+    </h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Compare each advertiser category's average raw bid to
+        their win rate. Which categories win more often than their average bid would predict? Which win less often?</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Question 3: Time of Day and Revenue</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Plot total platform revenue (sum of winning bid
+        amounts) by hour of day. Then plot average score margin by hour of day. During peak hours when the time bonus is
+        active, does competition between advertisers appear to increase or decrease?</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Question 4: The Fairness Question</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">A small advertiser with a typical bid of $2.00 argues
+        that the scoring function still systematically favors deep-pocketed competitors - even when the small
+        advertiser's content match is better. Using the data, evaluate this claim. Under what conditions, if any, can a
+        $2.00 bid beat a $6.00 bid?</p>
+
+    <div
+        style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">Hint</h3>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Work through the math first. An advertiser with
+            bid_amount=2.00 and a perfect category match (multiplier=1.5) versus an advertiser with bid_amount=6.00 and
+            no match (multiplier=1.0). What does each score look like? Then check whether this scenario actually occurs
+            in your results.</p>
+    </div>
+
+    <hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+    <!-- Part 6: Deliverables and Grading -->
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 6:
+        Deliverables and Grading</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Deliverable</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Weight</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">What We Are
+                    Looking For</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Infrastructure
+                        setup</strong> - DynamoDB table, Lambda deployment, SQS trigger</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">20%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">All components correctly
+                    configured and end-to-end pipeline verified</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Scoring function</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">15%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Correct formula, clean edge case
+                    handling</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Winner selection</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">15%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Returns winner and both scores
+                    correctly</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Batch processing</strong>
+                    - results posted to queue and DynamoDB</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">20%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Correct result schema, partial
+                    failure handling, low latency</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Analyst report Q1 and
+                        Q2</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">15%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Correct computation,
+                    plain-language interpretation</td>
+            </tr>
+            <tr style="background-color: #f8fafc;">
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Analyst report Q3 and
+                        Q4</strong></td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">15%</td>
+                <td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Chart quality, analytical depth on
+                    the fairness question</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div
+        style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h3 style="color: #1d4ed8; margin-top: 5px;">A Note on What This Is</h3>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">The company name and data are synthetic, but the
+            system design is not. Google, Meta, and Amazon all operate pipelines structurally similar to what you are
+            building. The scoring function here is a simplified version of what the industry calls quality-adjusted
+            bidding or eCPM ranking. If this domain interests you, real-time bidding (RTB) and header bidding are worth
+            reading about.</p>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Internals: Understanding Git as a Database</title>
+</head>
+<body>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Introduction: Git is a Database</h2>
+    <p>Most people think of Git as a "version control system" - and it is! But understanding <strong style="color: #1e40af;">what Git actually is</strong> will make you a much more confident developer.</p>
+    <p><strong style="color: #1e40af;">Git is a database of snapshots.</strong> Every commit is a complete picture of your project at that moment in time. Branches are just pointers (like sticky notes) to commits. The history forms a DAG (Directed Acyclic Graph) where commits point backwards to their parents.</p>
+    <p><strong>In this walkthrough, you'll:</strong></p>
+    <ul>
+        <li>See the <strong style="color: #1e40af;">raw .git files</strong> that Git uses to store everything</li>
+        <li>Prove that <strong style="color: #1e40af;">branches are just pointers</strong> (text files with commit hashes)</li>
+        <li>Explore the <strong style="color: #1e40af;">Git object database</strong> (commits → trees → blobs)</li>
+        <li>Understand the <strong style="color: #1e40af;">DAG structure</strong> and merge commits</li>
+        <li>Learn about <strong style="color: #1e40af;">reflog</strong> - your safety net</li>
+    </ul>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">The Complete Git Workflow (Local + Remote)</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p>In a typical Git workflow with GitHub (or other remote repositories), you work with both <strong>local</strong> and <strong>remote</strong> repositories:</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 15px;">Local Workflow (What We're Focusing On Today)</h3>
+    <ol>
+        <li><strong>Working Directory</strong> - Your actual files on disk</li>
+        <li><strong>Staging Area (Index)</strong> - Files ready to be committed (<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git add</code>)</li>
+        <li><strong>Local Repository</strong> - Committed snapshots in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/</code> (<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git commit</code>)</li>
+    </ol>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Remote Workflow (For Reference - Not Covered Today)</h3>
+    <ol start="4">
+        <li><strong>Remote Repository</strong> - Shared repository on GitHub/GitLab/etc.</li>
+    </ol>
+
+    <p><strong>Common remote commands:</strong></p>
+    <ul>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git push</code> - Upload your local commits to the remote repository</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git pull</code> - Download commits from remote and merge them into your current branch</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git fetch</code> - Download commits from remote but don't merge (safer than pull)</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone</code> - Copy a remote repository to your local machine</li>
+    </ul>
+
+    <p style="background-color: #fef3c7; border: 1px solid #f59e0b; padding: 10px; border-radius: 5px; margin-top: 15px;"><strong>Note:</strong> This walkthrough focuses on <strong>local Git operations only</strong>. We're exploring what happens inside the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git</code> directory on your machine. Remote operations (push/pull) build on top of these fundamentals.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Key Concepts: Understanding Git's Vocabulary</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Commit</h3>
+    <p>A <strong style="color: #1e40af;">snapshot</strong> - a complete photograph of your entire project at one moment in time. Not the changes you made, but the <strong>entire state</strong> of every file.</p>
+    <p>Each commit contains:</p>
+    <ul>
+        <li><strong>A pointer to a complete snapshot</strong> - every file exactly as it existed</li>
+        <li><strong>Metadata</strong> - who created it, when, and the commit message</li>
+        <li><strong>A pointer to the parent commit</strong> - the commit that came directly before</li>
+    </ul>
+    <p><em style="color: #64748b;">Commits point backwards, always backwards. Children know their parents, but parents never know their future children.</em></p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Branch</h3>
+    <p>A <strong style="color: #1e40af;">pointer</strong> to a commit. That's it! A branch is literally just a text file containing a 40-character commit hash.</p>
+    <p>Think of branches as <strong>sticky notes</strong> you put on commits. When you make a new commit on a branch, Git moves that sticky note forward to point to the new commit.</p>
+    <p><strong>Example:</strong> The file <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/main</code> contains something like: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">3b23f2b570aad614eb577f1beeac0e8719851aa6</code></p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">HEAD</h3>
+    <p>A <strong style="color: #1e40af;">pointer to a pointer</strong>. HEAD tells Git "where you are right now" - which branch you're currently on.</p>
+    <p>Usually, HEAD points to a branch (like <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code>), and that branch points to a commit. This is <strong>two levels of indirection</strong>:</p>
+    <p style="margin-left: 20px;"><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">HEAD</code> → <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">refs/heads/main</code> → <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">3b23f2b...</code> (commit hash)</p>
+    <p><strong>Example:</strong> The file <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/HEAD</code> contains: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">ref: refs/heads/main</code></p>
+    <p><em style="color: #64748b;">Sometimes HEAD can point directly to a commit (called "detached HEAD state"), but usually it points to a branch.</em></p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Staging Area (Index)</h3>
+    <p>The <strong style="color: #1e40af;">"waiting room"</strong> for changes before they become a commit. When you run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git add</code>, you're putting files in this waiting room.</p>
+    <p>The staging area is stored in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/index</code> (a binary file). You can see what's staged with <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git ls-files --stage</code>.</p>
+    <p><strong>Three states of a file:</strong></p>
+    <ul>
+        <li><strong>Untracked</strong> - File exists but Git doesn't know about it</li>
+        <li><strong>Staged</strong> - File is in the waiting room (index), ready to be committed</li>
+        <li><strong>Committed</strong> - File is safely stored in the Git database</li>
+    </ul>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">DAG (Directed Acyclic Graph)</h3>
+    <p>The <strong style="color: #1e40af;">structure of Git history</strong>. It's a graph where:</p>
+    <ul>
+        <li><strong>Directed</strong> - Arrows point in one direction (commits point to parents)</li>
+        <li><strong>Acyclic</strong> - No loops (you can't go in circles)</li>
+        <li><strong>Graph</strong> - Commits can have multiple children (branches) and multiple parents (merges)</li>
+    </ul>
+    <p>When you merge two branches, you create a <strong>merge commit</strong> with two parents. This is what makes the graph branch and merge.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Git Objects (The Database)</h3>
+    <p>Git stores everything as <strong style="color: #1e40af;">objects</strong> in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/objects/</code>. There are three types:</p>
+    <ul>
+        <li><strong>Blob</strong> - A file's content (just the raw data, no filename)</li>
+        <li><strong>Tree</strong> - A directory listing (maps filenames to blobs or other trees)</li>
+        <li><strong>Commit</strong> - Points to a tree + metadata + parent commit(s)</li>
+    </ul>
+    <p>The chain: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">Commit</code> → <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">Tree</code> → <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">Blob</code></p>
+    <p>Objects are stored at: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/objects/&lt;first-2-chars&gt;/&lt;remaining-38-chars&gt;</code></p>
+    <p><em style="color: #64748b;">Files are compressed with zlib. Use <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git cat-file -p &lt;hash&gt;</code> to read them.</em></p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Reflog (Your Safety Net)</h3>
+    <p>A <strong style="color: #1e40af;">log of everywhere HEAD has been</strong>. Every time you commit, checkout, merge, rebase, or do anything that moves HEAD, Git records it in the reflog.</p>
+    <p>The reflog is stored in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/logs/HEAD</code> (a plain text file!).</p>
+    <p><strong>Why it matters:</strong> If you accidentally delete a branch or reset to the wrong commit, the reflog lets you find and recover "lost" commits. Nothing is truly lost if it's in the reflog.</p>
+    <p><em style="color: #64748b;">Reflog entries expire after 90 days by default, but that's usually plenty of time to recover from mistakes.</em></p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Merge Conflict</h3>
+    <p>What happens when Git can't automatically combine changes from two branches. This occurs when:</p>
+    <ul>
+        <li>Both branches modified the <strong>same lines</strong> in the same file</li>
+        <li>Git doesn't know which version to keep</li>
+    </ul>
+    <p><strong>Conflict markers:</strong></p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 13px;"><<<<<<< HEAD
+Your changes on the current branch
+=======
+Changes from the branch you're merging
+>>>>>>> branch-name</pre>
+    <p>You must manually edit the file to resolve the conflict, then <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git add</code> and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git commit</code> to complete the merge.</p>
+
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 1: Initialize Repository + First Commit</h2>
+
+<p>This step is broken into micro-steps so you can see <strong style="color: #1e40af;">exactly what Git creates</strong> at each stage.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1A: Initialize Git Repository</h3>
+
+<p><strong style="color: #1e40af;">Command:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git init
+# Initialize a new Git repository in current directory</pre>
+
+<p><strong style="color: #1e40af;">What to observe:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">dir /a
+.git
+
+dir .git
+HEAD
+config
+description
+hooks/
+info/
+objects/
+refs/</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">The .git Directory</h3>
+    <p>The <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git</code> directory is where Git stores <strong style="color: #1e40af;">EVERYTHING</strong>. This is the database!</p>
+    <ul>
+        <li><strong>HEAD</strong> - Points to current branch</li>
+        <li><strong>objects/</strong> - The database (commits, trees, blobs)</li>
+        <li><strong>refs/</strong> - Branch and tag pointers</li>
+        <li><strong>config</strong> - Repository configuration</li>
+        <li><strong>hooks/</strong> - Scripts that run on Git events</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1B: Check Current Branch (Before Creating Main)</h3>
+
+<p><strong style="color: #1e40af;">Commands:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git branch --show-current
+# Show which branch we're currently on
+
+type .git\HEAD
+# Look at the raw file to see what HEAD points to</pre>
+
+<p><strong style="color: #1e40af;">What to observe:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git branch --show-current
+[No output - no branch yet, we need to make a commit first]
+
+type .git\HEAD
+ref: refs/heads/main</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">HEAD Before First Commit</h3>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">HEAD</code> is just a text file!</p>
+    <p>Right now it points to <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">refs/heads/main</code>, but that branch doesn't exist yet!</p>
+    <p>The file <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/main</code> won't be created until we make our first commit.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1C: Create Main Branch and Create a File</h3>
+
+<p><strong style="color: #1e40af;">Commands:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git checkout -b main
+# -b = create new branch named 'main' and switch to it
+
+echo "Line 1: hello git" > notes.txt
+echo "Line 2: initial snapshot" >> notes.txt
+# Create a file with some content</pre>
+
+<p><strong style="color: #1e40af;">What to observe:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git status
+On branch main
+
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        notes.txt
+
+nothing added to commit but untracked files present (use "git add" to track)</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Untracked Files</h3>
+    <p>The file exists in your working directory, but Git doesn't know about it yet!</p>
+    <p>It's in the <strong style="color: #1e40af;">"Untracked files"</strong> section - Git sees it but isn't tracking changes to it.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1D: Stage the File (Add to "Waiting Room")</h3>
+
+<p><strong style="color: #1e40af;">Command:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git add notes.txt
+# Stage the file - put it in the "waiting room" for next commit</pre>
+
+<p><strong style="color: #1e40af;">What to observe:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git status
+On branch main
+
+No commits yet
+
+Changes to be committed:
+  (use "git rm --cached <file>..." to unstage)
+        new file:   notes.txt
+
+git ls-files --stage
+100644 477271fcad3d98e464e27a9b953b89b899efa93e 0	notes.txt</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">The Staging Area (Index)</h3>
+    <p>Now the file is in <strong style="color: #1e40af;">"Changes to be committed"</strong> - it's staged!</p>
+    <p>The staging area is stored in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/index</code> (a binary file).</p>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git ls-files --stage</code> shows what's staged in a readable format.</p>
+    <p>Notice the <strong style="color: #1e40af;">blob hash</strong> (477271f...) - this is what will be stored when you commit!</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1E: Commit the Staged Changes</h3>
+
+<p><strong style="color: #1e40af;">Command:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git commit -m "initial commit"
+# -m = commit message describing what changed</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1F: Verify the Commit and Explore What Changed</h3>
+
+<p><strong style="color: #1e40af;">1. Check Git status and log:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git status -sb
+## main
+
+git log --oneline --decorate --graph --all
+* 3b23f2b (HEAD -> main) initial commit
+
+git branch --show-current
+main</pre>
+
+<p><strong style="color: #1e40af;">2. Look at the RAW .git files AFTER the commit:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type .git\HEAD
+ref: refs/heads/main
+
+type .git\refs\heads\main
+3b23f2b570aad614eb577f1beeac0e8719851aa6
+
+dir .git\refs\heads
+main</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Two Levels of Indirection</h3>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/HEAD</code> → points to branch (<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">refs/heads/main</code>)</p>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/main</code> → points to commit (<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">3b23f2b...</code>)</p>
+    <p><strong style="color: #1e40af;">NOTICE:</strong> The main branch file NOW EXISTS and contains a commit hash! Before the commit, this file didn't exist.</p>
+    <p><strong style="color: #1e40af;">Branches are just pointers!</strong> They're literally text files with 40-character hashes in them.</p>
+</div>
+
+<p><strong style="color: #1e40af;">3. Verify your working directory:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type notes.txt
+Line 1: hello git
+Line 2: initial snapshot</pre>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 2: Create Feature Branch + Commit</h2>
+
+<p>This step is broken into micro-steps so you can see <strong style="color: #1e40af;">exactly what Git creates</strong> when you branch and commit.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2A: Create New Branch and Verify</h3>
+
+<p><strong style="color: #1e40af;">Command:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git switch -c feature1
+# -c = create new branch 'feature1' and switch to it
+# (switch is the modern version of checkout)</pre>
+
+<p><strong style="color: #1e40af;">What to observe - Verify which branch you're on:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git branch --show-current
+feature1
+
+type .git\HEAD
+ref: refs/heads/feature1
+
+type .git\refs\heads\feature1
+3b23f2b570aad614eb577f1beeac0e8719851aa6</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Branch Created - What Just Happened?</h3>
+    <p><strong style="color: #1e40af;">HEAD moved!</strong> It now points to <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">refs/heads/feature1</code> instead of <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">refs/heads/main</code></p>
+    <p><strong style="color: #1e40af;">New branch file created!</strong> Git created <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/feature1</code> with the same commit hash as main</p>
+    <p>Both branches point to the <strong>same commit</strong> right now - they'll diverge when we make a new commit on feature1</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2B: Check Object Database BEFORE Making Changes</h3>
+
+<p><strong style="color: #1e40af;">Let's count how many objects are in the database right now:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">dir .git\objects /s /b | find /c /v ""
+3
+
+dir .git\objects
+3b/
+47/
+info/
+pack/</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Object Database Baseline</h3>
+    <p>Right now we have <strong style="color: #1e40af;">3 objects</strong> in the database:</p>
+    <ul>
+        <li>1 commit object (initial commit)</li>
+        <li>1 tree object (directory snapshot)</li>
+        <li>1 blob object (notes.txt content)</li>
+    </ul>
+    <p>Watch how this grows when we make a new commit!</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2C: Make Changes and Commit</h3>
+
+<p><strong style="color: #1e40af;">Commands:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">echo "Line 3: change on feature1" >> notes.txt
+# Append a new line to notes.txt
+
+git add notes.txt
+# Stage the modified file
+
+git commit -m "feature change"
+# Create a snapshot with this message</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2D: Check Object Database AFTER Commit</h3>
+
+<p><strong style="color: #1e40af;">Count objects again:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">dir .git\objects /s /b | find /c /v ""
+6
+
+dir .git\objects
+3b/
+47/
+5e/
+9e/
+c7/
+info/
+pack/</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Object Database Grew!</h3>
+    <p>We went from <strong style="color: #1e40af;">3 objects to 6 objects</strong> - we added 3 new objects:</p>
+    <ul>
+        <li><strong>1 new commit object</strong> (9e...) - the "feature change" commit</li>
+        <li><strong>1 new tree object</strong> (c7...) - new directory snapshot</li>
+        <li><strong>1 new blob object</strong> (5e...) - updated notes.txt content</li>
+    </ul>
+    <p><strong>Remember:</strong> Git stores complete snapshots, not diffs! Even though we only changed one line, Git stored the entire file content again.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2E: Verify Branch Pointers Changed</h3>
+
+<p><strong style="color: #1e40af;">Check the graph:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git log --oneline --decorate --graph --all
+* 9e58175 (HEAD -> feature1) feature change
+* 3b23f2b (main) initial commit</pre>
+
+<p><strong style="color: #1e40af;">Compare the branch pointers:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type .git\HEAD
+ref: refs/heads/feature1
+
+type .git\refs\heads\main
+3b23f2b570aad614eb577f1beeac0e8719851aa6
+
+type .git\refs\heads\feature1
+9e58175e49bd2a5b344547688c7c68fedc31176f</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Branches Are Just Pointers</h3>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code> now have <strong style="color: #1e40af;">DIFFERENT commit hashes</strong>!</p>
+    <ul>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> still points to <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">3b23f2b</code> (initial commit)</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code> now points to <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">9e58175</code> (feature change)</li>
+    </ul>
+    <p>They're pointing to different commits in the database. That's all a branch is - a pointer!</p>
+    <p>When you commit, Git just updates the text file in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/</code> with the new commit hash.</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 3: Merge with Conflict</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What We're Doing</h3>
+<p>We'll switch back to <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code>, make a conflicting change on the same line, and then merge <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code> into <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code>. This will create a <strong style="color: #1e40af;">merge commit with two parents</strong>, demonstrating the DAG structure.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Commands to Run</h3>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git switch main
+# Switch back to main branch
+
+# Edit notes.txt to create conflict on line 3
+echo "Line 1: hello git" > notes.txt
+echo "Line 2: initial snapshot" >> notes.txt
+echo "Line 3: change on main - CONFLICT" >> notes.txt
+
+git add notes.txt
+# Stage the conflicting change
+
+git commit -m "main change"
+# Commit on main branch
+
+git merge feature1
+# Try to merge feature1 into main - this will create a CONFLICT</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What to Observe</h3>
+
+<p><strong style="color: #1e40af;">1. Conflict markers in the file:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type notes.txt
+Line 1: hello git
+Line 2: initial snapshot
+<<<<<<< HEAD
+Line 3: change on main - CONFLICT
+=======
+Line 3: change on feature1
+>>>>>>> feature1</pre>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Understanding Conflict Markers</h3>
+    <p><strong style="color: #dc2626;">IMPORTANT:</strong> These conflict markers are <strong>ACTUALLY IN THE FILE</strong>! Git modified notes.txt and inserted these markers directly into the file content.</p>
+    <p><strong>What each marker means:</strong></p>
+    <ul>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;"><<<<<<< HEAD</code> - Start of your current branch's version (main)</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">=======</code> - Separator between the two conflicting versions</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">>>>>>>> feature1</code> - End of the incoming branch's version</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">How to Resolve the Conflict</h3>
+
+<p><strong style="color: #1e40af;">Step 1: Decide what you want to keep</strong></p>
+<p>In this case, we want to <strong>keep BOTH lines</strong> (both changes are important).</p>
+
+<p><strong style="color: #1e40af;">Step 2: Manually edit notes.txt to remove the conflict markers and keep what you want</strong></p>
+<p>Open notes.txt in a text editor and change it from this:</p>
+<pre style="background-color: #fef2f2; border: 1px solid #ef4444; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 13px;">Line 1: hello git
+Line 2: initial snapshot
+<<<<<<< HEAD
+Line 3: change on main - CONFLICT
+=======
+Line 3: change on feature1
+>>>>>>> feature1</pre>
+
+<p>To this (markers removed, both lines kept):</p>
+<pre style="background-color: #f0fdf4; border: 1px solid #22c55e; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 13px;">Line 1: hello git
+Line 2: initial snapshot
+Line 3: change on main - CONFLICT
+Line 3: change on feature1</pre>
+
+<p><strong style="color: #1e40af;">Step 3: Stage the resolved file</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 13px;">git add notes.txt
+# Tell Git "I've resolved the conflict in this file"</pre>
+
+<p><strong style="color: #1e40af;">Step 4: Complete the merge with a commit</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 13px;">git commit -m "merge feature1 (resolved conflict)"
+# This creates the merge commit with TWO parents</pre>
+
+<p><strong style="color: #1e40af;">2. After resolving the conflict and committing, check the graph:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git log --oneline --decorate --graph --all
+*   0f1de9b (HEAD -> main) merge feature1 (resolved conflict)
+|\
+| * 9e58175 (feature1) feature change
+* | 96c9e98 main change
+|/
+* 3b23f2b initial commit</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">The DAG (Directed Acyclic Graph)</h3>
+    <p>Look at the graph! The merge commit <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">0f1de9b</code> has <strong style="color: #1e40af;">TWO parents</strong>:</p>
+    <ul>
+        <li>One parent is <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">96c9e98</code> (main change)</li>
+        <li>The other parent is <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">9e58175</code> (feature change)</li>
+    </ul>
+    <p>This is the <strong style="color: #1e40af;">DAG structure</strong> - commits point backwards to their parents, forming a graph of history.</p>
+</div>
+
+<p><strong style="color: #1e40af;">3. Check the branch pointers again:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type .git\refs\heads\main
+0f1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+
+type .git\refs\heads\feature1
+9e58175e49bd2a5b344547688c7c68fedc31176f</pre>
+
+<p>Notice: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> moved forward (new commit), but <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code> stayed the same!</p>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 4: Git Objects - The Database</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What We're Doing</h3>
+<p>Now we'll <strong style="color: #1e40af;">prove that Git is a database</strong> by inspecting the actual objects Git stores. Every commit points to a tree, and every tree points to blobs (files).</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Commands to Run</h3>
+
+<p><strong style="color: #1e40af;">Step 1: Get the current commit hash</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git rev-parse HEAD
+# This will output a 40-character hash like: 0f1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+# Copy this hash - you'll need it for the next command</pre>
+
+<p><strong style="color: #1e40af;">Step 2: Explore the commit object (replace with YOUR hash from step 1)</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 0f1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+# -p = pretty-print the object
+# Replace the hash above with YOUR commit hash from step 1
+# This shows commit metadata and a tree hash - copy that tree hash!</pre>
+
+<p><strong style="color: #1e40af;">Step 3: Explore the tree object (replace with YOUR tree hash from step 2)</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 5e500705d075bc053d2200e43a6f80148eaccd5f
+# Replace with YOUR tree hash from step 2
+# This shows the directory listing with blob hashes - copy a blob hash!</pre>
+
+<p><strong style="color: #1e40af;">Step 4: Explore the blob object (replace with YOUR blob hash from step 3)</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 477271fcad3d98e464e27a9b953b89b899efa93e
+# Replace with YOUR blob hash from step 3
+# This shows the actual file content Git stored</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What to Observe</h3>
+
+<p><strong style="color: #1e40af;">1. The commit object (with TWO parents!):</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 0f1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+tree 5e500705d075bc053d2200e43a6f80148eaccd5f
+parent 96c9e985ebc7cd747afe4ce15654e64af1d55e2b
+parent 9e58175e49bd2a5b344547688c7c68fedc31176f
+author Student <> 1769015339 -0500
+committer Student <> 1769015339 -0500
+
+merge feature1 (resolved conflict)</pre>
+
+<p><strong style="color: #1e40af;">2. The tree object (directory listing):</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 5e500705d075bc053d2200e43a6f80148eaccd5f
+100644 blob 477271fcad3d98e464e27a9b953b89b899efa93e	notes.txt</pre>
+
+<p><strong style="color: #1e40af;">3. The blob object (file content):</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git cat-file -p 477271fcad3d98e464e27a9b953b89b899efa93e
+Line 1: hello git
+Line 2: initial snapshot
+Line 3: change on main - CONFLICT
+Line 3: change on feature1</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Commit → Tree → Blob</h3>
+    <p><strong style="color: #1e40af;">Commit object</strong> contains:</p>
+    <ul>
+        <li>Pointer to a tree (the snapshot)</li>
+        <li>Parent commit(s) - merge commits have TWO parents!</li>
+        <li>Author and committer info</li>
+        <li>Commit message</li>
+    </ul>
+    <p><strong style="color: #1e40af;">Tree object</strong> contains:</p>
+    <ul>
+        <li>List of files and their blob hashes</li>
+        <li>Subdirectories (which are also trees)</li>
+    </ul>
+    <p><strong style="color: #1e40af;">Blob object</strong> contains:</p>
+    <ul>
+        <li>The actual file content (compressed with zlib)</li>
+    </ul>
+    <p><strong>Git stores SNAPSHOTS, not diffs!</strong> Each commit has a complete picture of all files.</p>
+</div>
+
+<p><strong style="color: #1e40af;">4. WHERE are these files stored on disk?</strong></p>
+
+<p>Git stores objects as actual files on your hard drive. Let's verify they exist!</p>
+
+<p><strong style="color: #1e40af;">Understanding the storage pattern:</strong></p>
+<p>Git takes the 40-character hash and splits it:</p>
+<ul>
+    <li><strong>First 2 characters</strong> = directory name in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git\objects\</code></li>
+    <li><strong>Remaining 38 characters</strong> = filename</li>
+</ul>
+
+<p><strong style="color: #1e40af;">Commands to run (use YOUR hashes from above):</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">dir .git\objects\0f
+# Should show: 1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+# (This is your commit object file)
+
+dir .git\objects\5e
+# Should show: 500705d075bc053d2200e43a6f80148eaccd5f
+# (This is your tree object file)
+
+dir .git\objects\47
+# Should show: 7271fcad3d98e464e27a9b953b89b899efa93e
+# (This is your blob object file)</pre>
+
+<p><strong style="color: #1e40af;">What you'll observe:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">Commit object: .git\objects\0f\1de9ba4b5270ed44b2b1e390e3fa750420eeb1
+  [EXISTS - verified]
+
+Tree object:   .git\objects\5e\500705d075bc053d2200e43a6f80148eaccd5f
+  [EXISTS - verified]
+
+Blob object:   .git\objects\47\7271fcad3d98e464e27a9b953b89b899efa93e
+  [EXISTS - verified]</pre>
+
+<p><em style="color: #64748b;">Note: These files are compressed with zlib, so you can't just open them in a text editor. That's why we use <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git cat-file -p</code> to read them!</em></p>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Step 5: Reflog - Your Safety Net</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What We're Doing</h3>
+<p>The <strong style="color: #1e40af;">reflog</strong> (reference log) records every movement of HEAD. This is your safety net - even if you "lose" a commit, it's probably still in the reflog!</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Commands to Run</h3>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git reflog
+# Show the history of where HEAD has pointed - your safety net
+
+type .git\logs\HEAD
+# The raw file that stores reflog - Git is just files!</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What to Observe</h3>
+
+<p><strong style="color: #1e40af;">1. The reflog output:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git reflog
+0f1de9b HEAD@{0}: commit (merge): merge feature1 (resolved conflict)
+96c9e98 HEAD@{1}: commit: main change
+3b23f2b HEAD@{2}: checkout: moving from feature1 to main
+9e58175 HEAD@{3}: commit: feature change
+3b23f2b HEAD@{4}: checkout: moving from main to feature1
+3b23f2b HEAD@{5}: commit (initial): initial commit</pre>
+
+<p><strong style="color: #1e40af;">2. The raw reflog file:</strong></p>
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">type .git\logs\HEAD
+3b23f2b... 3b23f2b... Student <> 1769015310 -0500	checkout: moving from main to feature1
+3b23f2b... 9e58175... Student <> 1769015311 -0500	commit: feature change
+9e58175... 3b23f2b... Student <> 1769015322 -0500	checkout: moving from feature1 to main
+3b23f2b... 96c9e98... Student <> 1769015322 -0500	commit: main change
+96c9e98... 0f1de9b... Student <> 1769015339 -0500	commit (merge): merge feature1</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Git Rarely Deletes Anything</h3>
+    <p>The reflog shows <strong style="color: #1e40af;">every movement of HEAD</strong> - every commit, every checkout, every merge.</p>
+    <p>If you accidentally delete a branch or reset to the wrong commit, you can use the reflog to find the "lost" commit hash and recover it!</p>
+    <p><strong>Example recovery:</strong></p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">git reflog  # Find the commit hash you want
+git checkout <hash>  # Go back to that commit
+git branch recovery-branch  # Create a branch to save it</pre>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Advanced Topics: How Git Moves Pointers</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p>Now that you understand Git's internals, let's explore how different Git commands move pointers around. This is the key to understanding merge, rebase, reset, and other advanced operations.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">How Merge Moves Pointers</h3>
+
+<p>When you merge two branches, Git creates a <strong style="color: #1e40af;">new commit with TWO parents</strong> and moves the current branch pointer to that new commit.</p>
+
+<p><strong style="color: #1e40af;">Example scenario:</strong></p>
+<ul>
+    <li>You're on <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> (pointing to commit A)</li>
+    <li>You run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git merge feature1</code></li>
+    <li>Git creates a new merge commit M with two parents: A (from main) and B (from feature1)</li>
+    <li>Git moves the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> pointer to commit M</li>
+    <li>The <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code> pointer stays where it was (pointing to B)</li>
+</ul>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">Before merge:
+main → A
+feature1 → B
+
+After merge:
+main → M (merge commit with parents A and B)
+feature1 → B (unchanged)</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Fast-Forward Merge</h3>
+    <p>If there's no divergence (main hasn't moved since you created the branch), Git can do a <strong style="color: #1e40af;">fast-forward merge</strong>:</p>
+    <ul>
+        <li>No new commit is created</li>
+        <li>Git just moves the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> pointer forward to point to the same commit as <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">feature1</code></li>
+        <li>This is just moving a pointer - no new objects created!</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What is Rebase?</h3>
+
+<p><strong style="color: #1e40af;">Rebase "replays" your commits on top of another branch.</strong> But here's the critical part: <strong>Git cannot move commits</strong>. Commits are immutable - their hash is based on their content, metadata, and parent pointer.</p>
+
+<p><strong style="color: #1e40af;">What rebase actually does:</strong></p>
+<ol>
+    <li>Looks at each commit on your branch (e.g., commits B and C)</li>
+    <li>Calculates the <strong>changes</strong> (diff) each commit introduced</li>
+    <li>Creates <strong>brand new commits</strong> (B' and C') with those same changes, but with a different parent</li>
+    <li>Moves your branch pointer to the new commits</li>
+    <li>The old commits (B and C) become orphaned and will eventually be garbage collected</li>
+</ol>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">Before rebase:
+main → X → Y
+feature1 → A → B → C
+
+After rebase:
+main → X → Y
+feature1 → X → Y → B' → C' (new commits with same changes but different parents)
+
+Old commits B and C still exist (in reflog) but are orphaned</pre>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Why "Rebase Rewrites History"</h3>
+    <p><strong style="color: #dc2626;">NEVER rebase commits that others have seen!</strong></p>
+    <p>Because rebase creates <strong>new commits with different hashes</strong>, if your colleague has the old commits and you push the new ones:</p>
+    <ul>
+        <li>Git sees them as completely different commits (different hashes)</li>
+        <li>Your colleague will have duplicates when they pull</li>
+        <li>Conflicts will explode</li>
+        <li>History becomes a mess</li>
+    </ul>
+    <p><strong style="color: #1e40af;">Safe use of rebase:</strong> Only rebase local branches that you haven't shared with others. It keeps history linear and clean.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Merge vs Rebase: The Trade-off</h3>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p><strong style="color: #1e40af;">Merge:</strong></p>
+    <ul>
+        <li>Creates a merge commit with two parents</li>
+        <li>Preserves the true history - shows parallel lines of work</li>
+        <li>Safe to use on shared branches</li>
+        <li>History can get messy with lots of merge commits</li>
+        <li><strong>Choosing truth over cleanliness</strong></li>
+    </ul>
+
+    <p style="margin-top: 20px;"><strong style="color: #1e40af;">Rebase:</strong></p>
+    <ul>
+        <li>Creates new commits with different parents</li>
+        <li>Makes history linear and clean (looks like work happened sequentially)</li>
+        <li>Dangerous on shared branches (rewrites history)</li>
+        <li>Perfect for cleaning up local work before sharing</li>
+        <li><strong>Choosing a clean story over the messy truth</strong></li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Other Pointer-Moving Commands</h3>
+
+<p><strong style="color: #1e40af;">git reset:</strong> Moves the current branch pointer to a different commit</p>
+<ul>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git reset --soft HEAD~1</code> - Move branch pointer back one commit, keep changes staged</li>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git reset --mixed HEAD~1</code> - Move branch pointer back, unstage changes (default)</li>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git reset --hard HEAD~1</code> - Move branch pointer back, discard all changes (dangerous!)</li>
+</ul>
+
+<p style="margin-top: 15px;"><strong style="color: #1e40af;">git checkout:</strong> Moves HEAD to point to a different branch or commit</p>
+<ul>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git checkout feature1</code> - Move HEAD to point to feature1 branch</li>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git checkout <hash></code> - Move HEAD to point directly to a commit (detached HEAD)</li>
+    <li>Doesn't move branch pointers, just changes your "view"</li>
+</ul>
+
+<p style="margin-top: 15px;"><strong style="color: #1e40af;">git revert:</strong> Creates a NEW commit that undoes changes</p>
+<ul>
+    <li>Doesn't move any pointers backwards</li>
+    <li>Safe for shared history - adds corrective commits instead of rewriting</li>
+    <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git revert <hash></code> - Create new commit that undoes the changes from <hash></li>
+</ul>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Remember: It's All About Pointers</h3>
+    <ul>
+        <li><strong>Branches</strong> are pointers to commits</li>
+        <li><strong>HEAD</strong> is a pointer to a branch (or commit)</li>
+        <li><strong>Checkout</strong> moves your view (HEAD)</li>
+        <li><strong>Reset</strong> moves branch pointers</li>
+        <li><strong>Merge</strong> creates a new commit and moves the current branch pointer</li>
+        <li><strong>Rebase</strong> creates new commits and moves the current branch pointer</li>
+        <li><strong>Revert</strong> adds new commits without moving pointers backwards</li>
+    </ul>
+    <p style="margin-top: 15px;"><strong style="color: #1e40af;">And when everything goes wrong?</strong> Use <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git reflog</code> to find the commit you need and recover your work!</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Summary: Key Takeaways</h2>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What You've Learned</h3>
+    <ul>
+        <li><strong style="color: #1e40af;">Git is a database of snapshots</strong> - Each commit stores a complete picture of your project</li>
+        <li><strong style="color: #1e40af;">Branches are just pointers</strong> - Text files in <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/</code> containing commit hashes</li>
+        <li><strong style="color: #1e40af;">HEAD points to your current branch</strong> - It's a file that says "ref: refs/heads/main"</li>
+        <li><strong style="color: #1e40af;">The DAG structure</strong> - Commits point backwards to parents; merge commits have TWO parents</li>
+        <li><strong style="color: #1e40af;">Commit → Tree → Blob</strong> - The object database structure</li>
+        <li><strong style="color: #1e40af;">Objects are stored in .git/objects/</strong> - First 2 chars = directory, rest = filename, compressed with zlib</li>
+        <li><strong style="color: #1e40af;">Reflog is your safety net</strong> - Records every HEAD movement; use it to recover "lost" commits</li>
+    </ul>
+</div>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Keep Exploring</h3>
+    <p>Try these commands in your repository:</p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">git log --oneline --graph --all  # Visualize the DAG
+git cat-file -p HEAD  # Inspect the current commit
+git cat-file -p HEAD^  # Inspect the parent commit
+git reflog  # See everywhere you've been
+ls .git/refs/heads/  # List all branch pointer files
+git cat-file -t <hash>  # Check object type (commit/tree/blob)</pre>
+</div>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Check your understanding</h3>
+    <ul>
+        <li>What is stored in the file <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">.git/refs/heads/main</code>?</li>
+        <li>How many parents does a merge commit have?</li>
+        <li>What's the difference between a commit object, a tree object, and a blob object?</li>
+        <li>Where are Git objects physically stored on disk?</li>
+        <li>If you accidentally delete a branch, how can you recover it?</li>
+        <li>Does Git store diffs or snapshots?</li>
+    </ul>
+</div>
+
+</body>
+</html>

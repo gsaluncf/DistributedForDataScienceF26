@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 1 Lab — Git Conflict Kata + GitHub Pages</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 1 Lab</h2>
+    <p style="color:#1e293b;">You'll practice resolving a merge conflict and publishing a simple GitHub Pages site from a branch. Submit your Pull Request link and Pages URL to Canvas.</p>
+  </div>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Setup links (Windows users: PowerShell)</h3>
+    <ul>
+      <li><a href="../../aws-cli-install.html" target="_blank" rel="noopener">Install & configure AWS CLI v2</a> (includes PowerShell commands).</li>
+      <li><a href="https://classroom.github.com/" target="_blank" rel="noopener">GitHub Classroom</a> — accept the invite link in Canvas.</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Key terms</h3>
+    <ul>
+      <li><strong style="color:#1e40af;">Branch</strong>: A movable pointer to a commit; lets you work on changes in isolation.</li>
+      <li><strong style="color:#1e40af;">Pull Request (PR)</strong>: A proposal to merge changes into a target branch with review.</li>
+      <li><strong style="color:#1e40af;">Merge conflict</strong>: When two changes touch the same lines and Git cannot auto-merge.</li>
+      <li><strong style="color:#1e40af;">GitHub Pages</strong>: Static site hosting directly from a repo branch (e.g., <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/docs</code> on <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">main</code>).</li>
+    </ul>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part A — Git Conflict Kata (PR with conflict)</h3>
+  <ol style="color:#1e293b;">
+    <li>Accept the GitHub Classroom assignment (link in Canvas). Clone the repo.</li>
+    <li>Create a feature branch: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">git checkout -b feature/update-bio</code>.</li>
+    <li>Edit the indicated lines in <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/bio/README.md</code> and commit.</li>
+    <li>Do <em>not</em> push yet. Switch to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">main</code>, pull latest, and apply the instructor's conflicting change from upstream (already pushed).</li>
+    <li>Push your feature branch, open a Pull Request to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">main</code>. Observe the merge conflict.</li>
+    <li>Resolve the conflict locally:
+      <ul>
+        <li>Checkout your branch; run <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">git fetch origin &amp;&amp; git merge origin/main</code>.</li>
+        <li>Open the conflicted file, remove conflict markers, keep intended content.</li>
+        <li>Commit the resolution and push.</li>
+      </ul>
+    </li>
+    <li>Ensure CI (autograding) passes. Request a review; merge the PR.</li>
+  </ol>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+    <ul>
+      <li>What causes a merge conflict and how can you minimize them?</li>
+      <li>What is the difference between a fast-forward merge and a merge commit?</li>
+    </ul>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part B — Publish a GitHub Pages site from a branch</h3>
+  <ol style="color:#1e293b;">
+    <li>Create a folder named <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">docs/</code> in your repo; add an <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">index.html</code> with your name and course.</li>
+    <li>Commit and push to <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">main</code> (or use a <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">gh-pages</code> branch).</li>
+    <li>In GitHub repo → Settings → Pages: set Source to <strong>Deploy from a branch</strong>, pick <strong>main</strong> and <strong>/docs</strong> (or <strong>gh-pages</strong> root). Save.</li>
+    <li>Wait for build; visit the Pages URL shown (e.g., <em>https://org.github.io/repo/</em>).</li>
+  </ol>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">What to submit</h3>
+    <ul style="color:#1e293b;">
+      <li>Pull Request URL showing the resolved conflict and merged state.</li>
+      <li>GitHub Pages public URL.</li>
+      <li>Screenshot of <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">aws sts get-caller-identity</code> (Account ID partially redacted).</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+    <ul>
+      <li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site">Creating a GitHub Pages site</a></li>
+      <li><a href="https://docs.github.com/en/pages/configuring-a-publishing-source-for-your-github-pages-site">Publishing source</a></li>
+      <li><a href="https://git-scm.com/docs/git-merge">git merge</a></li>
+    </ul>
+  </div>
+</body>
+</html>

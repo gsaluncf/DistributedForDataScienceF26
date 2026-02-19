@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 3 Lecture 1 - Serverless Architecture & AWS SAM</title>
+</head>
+<body>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Lecture 1: Serverless Architecture & AWS SAM</h2>
+  <p style="color:#1e293b;font-size:16px;line-height:1.6;">This week marks a major shift in how we build applications. Last week, you deployed a static website to S3. This week, you'll build a complete serverless API that can handle user requests, execute business logic, and persist data to a database. Instead of managing servers, you'll write code that AWS runs automatically in response to HTTP requests.</p>
+  <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:10px;">We'll use AWS SAM (Serverless Application Model) to deploy everything with just 3 commands instead of 25+ manual steps.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: From Client-Server to Serverless</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Week 2 Recap: Static Website Architecture</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Last week, we built a static website hosted on S3. This architecture had clear limitations:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Component</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Limitation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Client (Browser)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Requests HTML/CSS/JS files</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">All logic runs in browser</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Server (S3)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Serves static files</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No backend processing</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Database</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">None</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No persistent storage</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">This works for portfolios and documentation sites, but real applications need backend capabilities like user authentication, database queries, business logic, and API integrations.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Traditional Server Architecture vs. Serverless</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">In a traditional setup, you run a web server (Node.js, Django, Flask) on a virtual machine. You're responsible for everything.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Concern</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Traditional Servers</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Serverless</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Provisioning</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Choose instance types, configure OS, install dependencies</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>AWS handles automatically</strong></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scaling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Manually add/remove servers based on traffic</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Automatic (1 to 10,000 requests)</strong></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Maintenance</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Patch OS, update libraries, monitor health</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>AWS handles automatically</strong></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Cost</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Pay 24/7, even when idle</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Pay only for execution time (milliseconds)</strong></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Availability</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Handle crashes, load balancing, failover</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Built-in redundancy across data centers</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Important: "Serverless" Doesn't Mean No Servers</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Servers still exist. AWS runs your code on physical machines. The term "serverless" means <strong>you</strong> don't manage servers. AWS handles provisioning, scaling, patching, and monitoring automatically.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: The AWS Ecosystem - A Lot of Products</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Challenge: AWS Has 200+ Services</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">AWS offers an overwhelming number of services. For our serverless API, we need just 3 core services:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Service</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Analogy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS Lambda</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Runs your code (compute)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The engine that processes requests</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>API Gateway</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Handles HTTP requests (routing)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The front door that receives requests</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Stores data (database)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The filing cabinet for persistent storage</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">But to make these work together, you also need supporting services like IAM (permissions), CloudWatch (logs), and CloudFormation (infrastructure as code).</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Manual Way: 25+ Steps</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">If you were to set this up manually using the AWS CLI or Console, you'd need to execute over 25 commands in the correct order. Here's a sample:</p>
+
+
+
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Command</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">aws dynamodb create-table...</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Create DynamoDB table</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2-5</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">aws iam create-role...</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Create IAM role and policies</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">6-8</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">zip, aws lambda create-function...</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Package and deploy Lambda</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">9-15</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">aws apigatewayv2 create-api...</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Create API Gateway and routes</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">16+</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">aws lambda add-permission...</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Grant permissions, configure CORS, test</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">This is tedious, error-prone, and hard to reproduce. If you make a mistake, you have to manually clean up and start over.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Infrastructure as Code: A Better Approach</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Infrastructure as Code (IaC)</strong> means defining your infrastructure in a configuration file instead of running manual commands. Benefits include:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Benefit</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Reproducible</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deploy the same infrastructure multiple times (dev, staging, prod)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Version Controlled</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Track changes in Git, review with pull requests</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Automated</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deploy with CI/CD pipelines</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Self-Documenting</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The template shows exactly what's deployed</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: AWS SAM - Serverless Made Easy</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What is AWS SAM?</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>AWS SAM (Serverless Application Model)</strong> is an open-source framework for building serverless applications. It's an extension of AWS CloudFormation with simplified syntax for serverless resources.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Feature</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">CloudFormation</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">AWS SAM</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Syntax</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Verbose, requires many lines</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Simplified for serverless</strong></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Local Testing</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Not supported</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>sam local start-api</strong></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Deployment</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Manual packaging required</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>sam build & sam deploy</strong></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Best For</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Any AWS infrastructure</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Serverless applications</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Installing AWS SAM CLI</h3>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Required: Install SAM CLI</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Before you can deploy serverless applications, you need to install the AWS SAM CLI. Follow the official installation guide:</p>
+  <p style="margin-top:10px;"><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" style="color:#3b82f6;font-size:15px;font-weight:bold;">AWS SAM CLI Installation Guide</a></p>
+  <p style="color:#1e293b;font-size:14px;margin-top:10px;">After installation, verify with: <code style="background:#e2e8f0;padding:2px 6px;border-radius:3px;">sam --version</code></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The SAM Workflow: 3 Simple Commands</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Instead of 25+ manual steps, SAM reduces deployment to just 3 commands:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Command</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:14px;"><strong>sam build</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Packages your Lambda code and dependencies</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:14px;"><strong>sam deploy --guided</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Deploys your application to AWS (prompts for configuration)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:14px;"><strong>sam delete</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Removes all deployed resources (cleanup)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">That's it! SAM handles all the complexity: creating IAM roles, configuring API Gateway, deploying Lambda, setting up DynamoDB, and wiring everything together.</p>
+
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: Lambda Functions - How They Work</h3>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What is AWS Lambda?</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>AWS Lambda</strong> is a compute service that runs your code in response to events. You upload your code, and Lambda handles everything else: provisioning servers, scaling, patching, monitoring.</p>
+
+<div style="text-align:center;margin:20px 0;">
+  <img src="https://d1.awsstatic.com/product-marketing/Lambda/Diagrams/product-page-diagram_Lambda-HowItWorks.68a0bcacfcf46fccf04b97f16b686ea44494303f.png" alt="AWS Lambda How It Works" style="max-width:100%;height:auto;border:1px solid #cbd5e1;border-radius:8px;">
+  <p style="color:#64748b;font-size:13px;margin-top:10px;">AWS Lambda execution model (Source: AWS)</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Lambda Handler Pattern</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Every Lambda function has a <strong>handler</strong> - the entry point that AWS calls when your function is invoked:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">def lambda_handler(event, context):
+    """
+    event: Contains data about the triggering event (HTTP request, S3 upload, etc.)
+    context: Provides runtime information (request ID, memory limit, etc.)
+    """
+    return {
+        'statusCode': 200,
+        'body': 'Hello from Lambda!'
+    }</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Parameter</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Description</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>event</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Data about the triggering event</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">event['body'], event['pathParameters']</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>context</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Runtime information</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">context.request_id, context.memory_limit_in_mb</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Lambda Execution Model</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Understanding how Lambda executes your code is crucial for writing efficient functions:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Phase</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Duration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Cold Start</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Download code, start runtime, initialize global variables</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">100-1000ms</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Warm Start</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reuse existing container, skip initialization</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1-10ms</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Execution</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Run your handler function</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Depends on your code</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Optimization Tip: Initialize Outside the Handler</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Code outside the handler runs once per container (cold start). Code inside the handler runs on every invocation. Initialize database connections, import libraries, and load configuration outside the handler for better performance.</p>
+</div>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;"># GOOD: Initialize once (cold start only)
+import boto3
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('items')
+
+def lambda_handler(event, context):
+    # This runs on every invocation
+    table.put_item(Item={'id': '123'})
+    return {'statusCode': 200}
+
+# BAD: Initialize on every invocation
+def lambda_handler(event, context):
+    import boto3  # Slow!
+    dynamodb = boto3.resource('dynamodb')  # Slow!
+    table = dynamodb.Table('items')  # Slow!
+    table.put_item(Item={'id': '123'})
+    return {'statusCode': 200}</pre>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: REST APIs and HTTP Basics</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">API Gateway: HTTP API vs REST API</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">AWS API Gateway offers two types of APIs. Our project uses <strong>HTTP API</strong> because it's simpler and cheaper:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Feature</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">HTTP API</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">REST API</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Cost</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>$1.00 per million requests</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">$3.50 per million requests</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Lower latency</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Slightly higher</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Features</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Basic routing, CORS, JWT authorization</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Advanced features: API keys, usage plans, request validation</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Best For</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Most serverless applications</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Complex enterprise APIs with throttling/quotas</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Why We Use HTTP API</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">For this course, HTTP API is perfect: it's 70% cheaper, faster, and has all the features we need. Unless you specifically need advanced features like API keys or usage plans, HTTP API is the better choice.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What is a REST API?</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>REST (Representational State Transfer)</strong> is an architectural style for building APIs. It uses HTTP methods to perform operations on resources.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">HTTP Method</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>GET</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retrieve data</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">GET /items/123</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>POST</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Create new data</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">POST /items</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>PUT</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Update existing data</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">PUT /items/123</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DELETE</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Remove data</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">DELETE /items/123</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">HTTP Request/Response Cycle</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">When a client makes an HTTP request, here's what happens:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Component</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Client</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Sends HTTP request (method, path, headers, body)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>API Gateway</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Receives request, matches route, creates event object</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Lambda</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Processes event, executes business logic</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>API Gateway</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Converts Lambda response to HTTP response</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Client</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Receives HTTP response (status code, headers, body)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 6: Building a Complete Lambda Handler</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Our Project Structure</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">For this week's lab, you'll deploy a serverless API with two endpoints:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Endpoint</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Method</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">POST /items</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">POST</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Create a new item in DynamoDB</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">GET /items/{id}</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">GET</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retrieve an item from DynamoDB by ID</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Lambda Handler Code</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Here's the complete handler with routing, error handling, and DynamoDB integration:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">import json
+import os
+import boto3
+from decimal import Decimal
+
+# Initialize outside handler (runs once per container)
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ.get('TABLE_NAME', 'items'))
+
+def lambda_handler(event, context):
+    """Main handler - routes requests based on HTTP method"""
+    http_method = event.get('requestContext', {}).get('http', {}).get('method')
+
+    if http_method == 'GET':
+        return handle_get(event)
+    elif http_method == 'POST':
+        return handle_post(event)
+    else:
+        return {'statusCode': 405, 'body': json.dumps({'error': 'Method not allowed'})}
+
+def handle_get(event):
+    """Retrieve an item by ID"""
+    item_id = event.get('pathParameters', {}).get('id')
+
+    if not item_id:
+        return {'statusCode': 400, 'body': json.dumps({'error': 'Missing id parameter'})}
+
+    try:
+        response = table.get_item(Key={'id': item_id})
+
+        if 'Item' in response:
+            item = convert_decimals(response['Item'])
+            return {'statusCode': 200, 'body': json.dumps(item)}
+        else:
+            return {'statusCode': 404, 'body': json.dumps({'error': 'Item not found'})}
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+def handle_post(event):
+    """Create a new item"""
+    try:
+        body = json.loads(event.get('body', '{}'))
+        item_id = body.get('id')
+
+        if not item_id:
+            return {'statusCode': 400, 'body': json.dumps({'error': 'Missing id in request body'})}
+
+        # Convert floats to Decimal for DynamoDB
+        item = convert_floats(body)
+        table.put_item(Item=item)
+
+        return {'statusCode': 201, 'body': json.dumps({'message': 'Item created', 'id': item_id})}
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+def convert_floats(obj):
+    """Recursively convert float to Decimal for DynamoDB"""
+    if isinstance(obj, list):
+        return [convert_floats(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, float):
+        return Decimal(str(obj))
+    else:
+        return obj
+
+def convert_decimals(obj):
+    """Recursively convert Decimal to float for JSON serialization"""
+    if isinstance(obj, list):
+        return [convert_decimals(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    else:
+        return obj</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Key Concepts in the Handler</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Concept</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Initialization Outside Handler</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">boto3 and DynamoDB table are initialized once per container, not on every request</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Environment Variables</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">TABLE_NAME is injected by SAM, making code reusable across environments</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Routing Logic</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Single handler routes to different functions based on HTTP method</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Error Handling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Try/except blocks catch errors and return proper HTTP status codes</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Decimal Conversion</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB requires Decimal for numbers; JSON requires float</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>JSON Parsing</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">event['body'] is a string that must be parsed with json.loads()</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The SAM Template</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Here's the complete SAM template that defines all infrastructure:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Week 3 - Serverless API
+
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+    Runtime: python3.12
+
+Resources:
+  # DynamoDB Table
+  ItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-items'
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # Lambda Function
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handler.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ItemsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItemsTable
+      Events:
+        CreateItem:
+          Type: HttpApi
+          Properties:
+            Path: /items
+            Method: POST
+        GetItem:
+          Type: HttpApi
+          Properties:
+            Path: /items/{id}
+            Method: GET
+
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  FunctionName:
+    Value: !Ref ApiFunction
+  TableName:
+    Value: !Ref ItemsTable</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Notice how SAM automatically creates the API Gateway, wires it to Lambda, sets up IAM permissions, and passes the table name as an environment variable. All of this would require 25+ manual commands without SAM!</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 7: Security and IAM</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How SAM Handles Security</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">One of SAM's biggest benefits is automatic IAM role creation. Let's understand what's happening behind the scenes:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">SAM Template Line</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What SAM Creates</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">DynamoDBCrudPolicy</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">IAM role with permissions for dynamodb:PutItem, GetItem, UpdateItem, DeleteItem, Query, Scan</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">TableName: !Ref ItemsTable</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Restricts permissions to ONLY this specific table (least privilege)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">Events: HttpApi</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda resource policy allowing API Gateway to invoke the function</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Principle of Least Privilege</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">SAM follows security best practices by granting the Lambda function ONLY the permissions it needs. The function can access the DynamoDB table, but cannot create new tables, access S3, or perform other AWS operations.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Real-World Security Considerations</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Security Layer</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What You'd Add in Production</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Authentication</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">JWT tokens, AWS Cognito, or API keys to verify user identity</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Authorization</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Check if authenticated user has permission to access specific resources</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Input Validation</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Validate request data to prevent injection attacks</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Rate Limiting</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Throttle requests to prevent abuse and control costs</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Encryption</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">HTTPS for data in transit (automatic), DynamoDB encryption at rest (enabled by default)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>For this lab:</strong> We're building a learning project, so we skip authentication to keep things simple. In production, you'd never deploy a public API without authentication!</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Resources for Further Learning</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Official AWS Documentation</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Resource</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS SAM Developer Guide</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/serverless-application-model/" style="color:#3b82f6;">docs.aws.amazon.com/serverless-application-model/</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS Lambda Developer Guide</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/lambda/" style="color:#3b82f6;">docs.aws.amazon.com/lambda/</a></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>API Gateway HTTP API Guide</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html" style="color:#3b82f6;">docs.aws.amazon.com/apigateway/.../http-api.html</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB Developer Guide</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/dynamodb/" style="color:#3b82f6;">docs.aws.amazon.com/dynamodb/</a></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Boto3 Documentation (Python SDK)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html" style="color:#3b82f6;">boto3.amazonaws.com/v1/documentation/</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Tutorials and Guides</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Topic</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Resource</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>REST API Design</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://restfulapi.net/" style="color:#3b82f6;">RESTful API Tutorial</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>HTTP Status Codes</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status" style="color:#3b82f6;">MDN Web Docs - HTTP Status</a></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>JSON Basics</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://www.json.org/" style="color:#3b82f6;">JSON.org</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS Serverless Workshops</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://workshops.aws/" style="color:#3b82f6;">workshops.aws (search for "serverless")</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Tools</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Tool</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Postman</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Test APIs with a graphical interface</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>curl</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Command-line tool for making HTTP requests</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS CLI</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Interact with AWS services from the command line</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>AWS SAM CLI</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Build, test, and deploy serverless applications</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary</h2>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Takeaways</h3>
+  <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Serverless</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">You write code, AWS manages infrastructure</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>AWS SAM</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Reduces 25+ manual steps to 3 commands (build, deploy, delete)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Lambda Handler</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Entry point with event and context parameters</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Cold vs Warm Starts</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Initialize outside handler for better performance</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>REST APIs</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Use HTTP methods (GET, POST, PUT, DELETE) on resources</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>API Gateway</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Transforms HTTP requests into Lambda events</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>DynamoDB</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">NoSQL database requiring Decimal for numbers</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>JSON Handling</strong></td>
+        <td style="padding:8px 0;color:#1e293b;">Parse request body with json.loads(), serialize response with json.dumps()</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Next Steps</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Lecture 2:</strong> We'll dive deep into DynamoDB - table design, partition/sort keys, access patterns, throughput models, and how to integrate it with Lambda.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Lab:</strong> You'll deploy your own serverless API using SAM, test it end-to-end, and learn how to debug using CloudWatch Logs.</p>
+</div>
+
+</body>
+</html>

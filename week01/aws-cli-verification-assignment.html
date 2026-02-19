@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS CLI Verification Assignment - Week 1</title>
+</head>
+<body>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Assignment: AWS CLI Verification</h2>
+    <p>Prove that you have successfully set up your AWS account and configured the AWS CLI by submitting the output of a verification command.</p>
+    <p><strong>Points:</strong> 100 points</p>
+    <p><strong>Due:</strong> Sunday, February 1, 11:59 PM</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Prerequisites</h2>
+
+<p>Before completing this assignment, you must have:</p>
+<ul>
+    <li>✓ Created your AWS account</li>
+    <li>✓ Set up billing alerts (and confirmed the SNS subscription email!)</li>
+    <li>✓ Created an IAM user with AdministratorAccess</li>
+    <li>✓ Created access keys for your IAM user</li>
+    <li>✓ Installed AWS CLI on your computer</li>
+    <li>✓ Configured AWS CLI with <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws configure</code></li>
+</ul>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Need Help?</h3>
+    <p>If you haven't completed the setup yet, follow these guides in order:</p>
+    <ol>
+        <li><a href="aws-overview.html">AWS Overview</a></li>
+        <li><a href="aws-account-setup.html">AWS Account Setup</a></li>
+        <li><a href="aws-cli-setup.html">AWS CLI Setup</a></li>
+    </ol>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Instructions</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Run the Verification Command</h3>
+
+<p>Open your terminal (PowerShell on Windows, Terminal on Mac/Linux) and run:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">aws sts get-caller-identity</pre>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Copy the Output</h3>
+
+<p>You should see JSON output that looks like this:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">{
+    "UserId": "AIDAXXXXXXXXXXXXXXXXX",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/your-name-admin"
+}</pre>
+
+<p>Copy the <strong>entire output</strong> from your terminal.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 3: Submit to Canvas</h3>
+
+<p>Paste the output into the text submission box below.</p>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What We're Checking</h3>
+    <p>This command verifies that:</p>
+    <ul>
+        <li>✓ AWS CLI is installed correctly</li>
+        <li>✓ Your credentials are configured properly</li>
+        <li>✓ You can authenticate with AWS</li>
+        <li>✓ You're using an IAM user (not root account)</li>
+    </ul>
+    <p>The output shows your <strong>User ID</strong>, <strong>Account ID</strong>, and <strong>ARN</strong> (Amazon Resource Name) which includes your IAM username.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Grading Criteria</h2>
+
+<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+    <thead>
+        <tr style="background-color: #dbeafe;">
+            <th style="text-align: left; padding: 10px; border: 1px solid #93c5fd; color: #1e40af;">Criteria</th>
+            <th style="text-align: left; padding: 10px; border: 1px solid #93c5fd; color: #1e40af;">Points</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">Valid JSON output from <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">aws sts get-caller-identity</code></td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">40 points</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">ARN shows IAM user (not root account)</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">30 points</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">Account ID is visible</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">20 points</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">Submission is properly formatted (copy-paste of terminal output)</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1;">10 points</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Troubleshooting</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "Unable to locate credentials"</h3>
+<p>Run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">aws configure</code> again and enter your access keys.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "aws: command not found"</h3>
+<p>AWS CLI is not installed or not in your PATH. Reinstall AWS CLI and restart your terminal.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Error: "The security token included in the request is invalid"</h3>
+<p>Your access keys are incorrect. Double-check that you copied them correctly from the AWS console.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">ARN shows "root" instead of IAM user</h3>
+<p>You're using root account credentials. Go back to the <a href="aws-account-setup.html">AWS Account Setup</a> guide and create an IAM user with access keys.</p>
+
+<div style="background-color: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #15803d; margin-top: 5px;">Need Help?</h3>
+    <p>If you're stuck, you can:</p>
+    <ul>
+        <li>Review the <a href="aws-cli-setup.html">AWS CLI Setup</a> guide</li>
+        <li>Ask questions in the course discussion forum</li>
+        <li>Come to office hours</li>
+        <li>If you granted instructor access, email gsalu@ncf.edu with your Account ID</li>
+    </ul>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<div style="text-align: center; margin: 20px 0;">
+    <p><a href="index.html">← Back to Week 1</a> | <a href="aws-cli-setup.html">AWS CLI Setup Guide</a></p>
+</div>
+
+</body>
+</html>
+

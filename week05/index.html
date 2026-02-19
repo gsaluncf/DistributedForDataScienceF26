@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 5 — AWS Lab Week: Distributed Cipher</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Week 5 Overview (Tue Feb 24, Thu Feb 26)</h2>
+    <p style="color:#1e293b;">As a class, we will build a horizontally scalable "Distributed Cipher Cracker" using AWS Lambda, SQS, DynamoDB, and S3. Each group contributes workers running in their own AWS accounts. Emphasis on concurrency controls, idempotency, and cost safety.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Tuesday — System design & scaffolding</h3>
+  <ul style="color:#1e293b;">
+    <li>Agree on task schema (SQS message shape) and result schema (DynamoDB item).</li>
+    <li>Define keyspace/wordlist partitioning and retry/visibility-timeout strategy.</li>
+    <li>Create starter repositories from a common template.</li>
+  </ul>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Thursday — Implementation & load test</h3>
+  <ul style="color:#1e293b;">
+    <li>Implement Lambda worker with concurrency limit; add structured logs.</li>
+    <li>Run a controlled load; monitor SQS depth, Lambda invocations, DynamoDB throttles.</li>
+    <li>Summarize findings and cost considerations.</li>
+  </ul>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Readings</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/invocation-scaling.html">Lambda scaling & concurrency</a></li>
+      <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">SQS visibility timeout</a></li>
+      <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html">DynamoDB TTL</a></li>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">S3 lifecycle management</a></li>
+    </ul>
+  </div>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Deliverables (due Sun Mar 1, 11:59 pm)</h3>
+    <ol>
+      <li>Group repo URL (template-based) with worker implementation.</li>
+      <li>Screenshot: CloudWatch metrics (invocations/concurrency) and SQS queue depth during test.</li>
+      <li>Screenshot: DynamoDB table with results (with TTL configured); brief reflection (<= 300 words) on scaling/cost.</li>
+    </ol>
+  </div>
+
+  <p style="color:#1e293b;">See <a href="lab.html">lab instructions</a> and <a href="quiz-seeds.md">quiz seeds</a>.</p>
+</body>
+</html>

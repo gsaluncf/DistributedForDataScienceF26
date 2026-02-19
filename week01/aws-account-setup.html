@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Account Setup - Week 1</title>
+</head>
+<body>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">AWS Account Setup</h2>
+    <p>In this guide, you'll create your AWS account, set up billing protection, create an IAM user for daily use, and optionally grant your instructor access for troubleshooting.</p>
+    <p><strong>Time required:</strong> 20-30 minutes</p>
+</div>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Important: Credit Card Required</h3>
+    <p>AWS requires a credit card to create an account. However, <strong>you will not be charged</strong> if you stay within the Free Tier limits. We'll set up billing alerts immediately to protect you from unexpected charges.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 1: Create Your AWS Account</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Sign Up for AWS</h3>
+
+<ol>
+    <li>Go to <a href="https://aws.amazon.com/free/" target="_blank">https://aws.amazon.com/free/</a></li>
+    <li>Click <strong>"Create a Free Account"</strong></li>
+    <li>Enter your email address (use your NCF email: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">yourname@ncf.edu</code>)</li>
+    <li>Choose an <strong>AWS account name</strong> (e.g., "yourname-ncf")</li>
+    <li>Click <strong>"Verify email address"</strong> and check your email for the verification code</li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Complete Account Information</h3>
+
+<ol>
+    <li>Create a strong <strong>root password</strong> (save this in a password manager!)</li>
+    <li>Enter your <strong>contact information</strong></li>
+    <li>Choose <strong>"Personal"</strong> account type</li>
+    <li>Enter your <strong>credit card information</strong>
+        <ul>
+            <li>AWS will charge $1 temporarily to verify the card (refunded immediately)</li>
+        </ul>
+    </li>
+    <li>Complete <strong>phone verification</strong></li>
+    <li>Choose the <strong>"Basic Support - Free"</strong> plan</li>
+</ol>
+
+<div style="background-color: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #15803d; margin-top: 5px;">Account Created!</h3>
+    <p>You should now see the AWS Management Console. Let's immediately set up billing protection.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 2: Set Up Billing Alerts (CRITICAL!)</h2>
+
+<p>This is the <strong>most important step</strong> to prevent unexpected charges. We'll create email alerts that notify you if your spending exceeds certain thresholds.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Enable Billing Alerts</h3>
+
+<ol>
+    <li>In the AWS Console, click your <strong>account name</strong> (top right) → <strong>"Account"</strong></li>
+    <li>Scroll down to <strong>"Billing preferences"</strong></li>
+    <li>Click <strong>"Edit"</strong></li>
+    <li>Check these boxes:
+        <ul>
+            <li>✓ <strong>"Receive Free Tier Usage Alerts"</strong></li>
+            <li>✓ <strong>"Receive Billing Alerts"</strong></li>
+        </ul>
+    </li>
+    <li>Enter your email address</li>
+    <li>Click <strong>"Update"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Create CloudWatch Billing Alarms</h3>
+
+<p style="color: #b91c1c; font-weight: bold;">Important: Switch your AWS Console to the us-east-1 (N. Virginia) region before creating billing alarms. Billing metrics are only available in this region. Check the region selector in the top-right corner and select "US East (N. Virginia)" before proceeding.</p>
+
+<ol>
+    <li>In the search bar at the top, type <strong>"CloudWatch"</strong> and select it</li>
+    <li>In the left sidebar, click <strong>"Alarms"</strong> → <strong>"All alarms"</strong></li>
+    <li>Click <strong>"Create alarm"</strong></li>
+    <li>Click <strong>"Select metric"</strong></li>
+    <li>Click <strong>"Billing"</strong> → <strong>"Total Estimated Charge"</strong></li>
+    <li>Check the box next to <strong>"USD"</strong></li>
+    <li>Click <strong>"Select metric"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 3: Configure the Alarm</h3>
+
+<ol>
+    <li>Under <strong>"Conditions"</strong>:
+        <ul>
+            <li>Threshold type: <strong>"Static"</strong></li>
+            <li>Whenever EstimatedCharges is: <strong>"Greater"</strong></li>
+            <li>than: <strong>1</strong> (start with $1)</li>
+        </ul>
+    </li>
+    <li>Click <strong>"Next"</strong></li>
+    <li>Under <strong>"Notification"</strong>:
+        <ul>
+            <li>Select <strong>"Create new topic"</strong></li>
+            <li>Topic name: <strong>"billing-alerts"</strong></li>
+            <li>Email: Your NCF email</li>
+        </ul>
+    </li>
+    <li>Click <strong>"Create topic"</strong></li>
+    <li>Click <strong>"Next"</strong></li>
+    <li>Alarm name: <strong>"billing-alert-1-usd"</strong></li>
+    <li>Click <strong>"Next"</strong> → <strong>"Create alarm"</strong></li>
+</ol>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Check Your Email!</h3>
+    <p>AWS will send you a <strong>subscription confirmation email</strong>. You MUST click the confirmation link for the alerts to work!</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 4: Create Additional Alarms (Recommended)</h3>
+
+<p>Repeat the alarm creation process for these thresholds:</p>
+<ul>
+    <li><strong>$5</strong> - Warning level</li>
+    <li><strong>$10</strong> - Serious concern</li>
+</ul>
+
+<p>Name them <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">billing-alert-5-usd</code> and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">billing-alert-10-usd</code>.</p>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 3: Create an IAM User</h2>
+
+<p>Your root account has full access to everything. For security, we'll create an <strong>IAM user</strong> for daily use.</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Access IAM</h3>
+
+<ol>
+    <li>In the search bar, type <strong>"IAM"</strong> and select <strong>"IAM"</strong></li>
+    <li>In the left sidebar, click <strong>"Users"</strong></li>
+    <li>Click <strong>"Create user"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Configure User Details</h3>
+
+<ol>
+    <li>User name: <strong>your-name-admin</strong> (e.g., "john-admin")</li>
+    <li>Check <strong>"Provide user access to the AWS Management Console"</strong></li>
+    <li>Choose <strong>"I want to create an IAM user"</strong></li>
+    <li>Choose <strong>"Custom password"</strong> and enter a strong password</li>
+    <li>Uncheck <strong>"Users must create a new password at next sign-in"</strong></li>
+    <li>Click <strong>"Next"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 3: Set Permissions</h3>
+
+<ol>
+    <li>Select <strong>"Attach policies directly"</strong></li>
+    <li>Search for and check <strong>"AdministratorAccess"</strong></li>
+    <li>Click <strong>"Next"</strong></li>
+    <li>Click <strong>"Create user"</strong></li>
+</ol>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Save Your Sign-In URL!</h3>
+    <p>AWS will show you a <strong>Console sign-in URL</strong> that looks like:</p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 14px;">https://123456789012.signin.aws.amazon.com/console</pre>
+    <p><strong>Save this URL!</strong> You'll use it to sign in as your IAM user (not the root account).</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 4: Create Access Keys for CLI</h2>
+
+<p>To use AWS from the command line, you'll need access keys. We'll create these in the next guide, but here's what you need to know:</p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Sign In as Your IAM User</h3>
+
+<ol>
+    <li>Sign out of the AWS Console (if signed in as root)</li>
+    <li>Go to your <strong>Console sign-in URL</strong> (saved from Part 3)</li>
+    <li>Sign in with your IAM username and password</li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Create Access Keys</h3>
+
+<ol>
+    <li>Click your username (top right) → <strong>"Security credentials"</strong></li>
+    <li>Scroll down to <strong>"Access keys"</strong></li>
+    <li>Click <strong>"Create access key"</strong></li>
+    <li>Select <strong>"Command Line Interface (CLI)"</strong></li>
+    <li>Check the confirmation box</li>
+    <li>Click <strong>"Next"</strong></li>
+    <li>Description: <strong>"CLI access for distributed systems course"</strong></li>
+    <li>Click <strong>"Create access key"</strong></li>
+</ol>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">CRITICAL: Save Your Keys!</h3>
+    <p>AWS will show you:</p>
+    <ul>
+        <li><strong>Access key ID</strong> (starts with "AKIA...")</li>
+        <li><strong>Secret access key</strong> (long random string)</li>
+    </ul>
+    <p><strong>Download the CSV file</strong> or copy both keys to a secure location. You'll need these for the CLI setup!</p>
+    <p style="color: #dc2626; margin-top: 10px;"><strong>WARNING:</strong> You can only see the secret key ONCE. If you lose it, you'll need to create new keys.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 5: Grant Instructor Access (Optional)</h2>
+
+<div style="background-color: #f3f4f6; border: 1px dashed #9ca3af; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Optional: Allow Instructor to Help</h3>
+    <p>If you get stuck with AWS issues, you can grant your instructor (<strong>gsalu@ncf.edu</strong>) read-only access to help troubleshoot. This is completely optional.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Create a Read-Only User for Instructor</h3>
+
+<ol>
+    <li>In IAM, click <strong>"Users"</strong> → <strong>"Create user"</strong></li>
+    <li>User name: <strong>instructor-readonly</strong></li>
+    <li>Check <strong>"Provide user access to the AWS Management Console"</strong></li>
+    <li>Choose <strong>"I want to create an IAM user"</strong></li>
+    <li>Choose <strong>"Autogenerated password"</strong></li>
+    <li>Check <strong>"Users must create a new password at next sign-in"</strong></li>
+    <li>Click <strong>"Next"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Set Read-Only Permissions</h3>
+
+<ol>
+    <li>Select <strong>"Attach policies directly"</strong></li>
+    <li>Search for and check <strong>"ReadOnlyAccess"</strong></li>
+    <li>Click <strong>"Next"</strong> → <strong>"Create user"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 3: Share Credentials with Instructor</h3>
+
+<ol>
+    <li>Download the <strong>CSV file</strong> with the sign-in details</li>
+    <li>Email it to <strong>gsalu@ncf.edu</strong> with subject: "AWS Read-Only Access - [Your Name]"</li>
+    <li>Include your <strong>Account ID</strong> (12-digit number) in the email</li>
+</ol>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What Can the Instructor See?</h3>
+    <p>With <strong>ReadOnlyAccess</strong>, the instructor can:</p>
+    <ul>
+        <li>✓ View your AWS resources (S3 buckets, Lambda functions, etc.)</li>
+        <li>✓ See billing information to help diagnose cost issues</li>
+        <li>✓ Check configuration settings</li>
+        <li>✗ <strong>Cannot</strong> create, modify, or delete anything</li>
+        <li>✗ <strong>Cannot</strong> see your access keys or passwords</li>
+    </ul>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Summary & Next Steps</h2>
+
+<div style="background-color: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #15803d; margin-top: 5px;">Checklist: What You Should Have</h3>
+    <ul>
+        <li>✓ AWS account created</li>
+        <li>✓ Billing alerts configured (and email confirmed!)</li>
+        <li>✓ IAM user created for daily use</li>
+        <li>✓ Access keys created and saved securely</li>
+        <li>✓ (Optional) Instructor access granted</li>
+    </ul>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">What's Next?</h3>
+
+<p>Now that your AWS account is set up and protected, continue to the <strong><a href="aws-cli-setup.html">AWS CLI Setup</a></strong> guide to install and configure the command-line tools.</p>
+
+<div style="background-color: #f3f4f6; border: 1px dashed #9ca3af; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <p style="margin: 0;"><strong>Due Date:</strong> Complete AWS account setup and billing alerts by Sunday, February 1, 11:59 PM</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<div style="text-align: center; margin: 20px 0;">
+    <p><a href="aws-overview.html">← Previous: AWS Overview</a> | <a href="index.html">Back to Week 1</a> | <a href="aws-cli-setup.html">Next: AWS CLI Setup →</a></p>
+</div>
+
+</body>
+</html>
+

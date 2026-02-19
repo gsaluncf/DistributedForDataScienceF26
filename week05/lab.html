@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 5 Lab — Distributed Cipher (Lambda + SQS + DynamoDB + S3)</title>
+</head>
+<body>
+  <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Distributed Cipher — Class Build</h2>
+    <p style="color:#1e293b;">We will implement a horizontally scalable keyspace search. Tasks are partitioned and placed on SQS; Lambda workers consume tasks and write results to DynamoDB; logs/artifacts to S3. Each group contributes capacity from their own AWS account with strict cost controls.</p>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part A — Shared design</h3>
+  <ol style="color:#1e293b;">
+    <li>Agree on SQS message schema: { "task_id", "range_start", "range_end", "payload" }.</li>
+    <li>Agree on DynamoDB result schema: PK=<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">task_id</code>, SK=<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">worker_id</code>, attributes: status, attempts, found, output_uri, ttl.</li>
+    <li>Set SQS visibility timeout (e.g., 30–60s) and redrive to DLQ after N attempts.</li>
+  </ol>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part B — Environment and safety</h3>
+  <ol style="color:#1e293b;">
+    <li>Per-account Budgets alert at low threshold (e.g., $5).</li>
+    <li>Lambda reserved concurrency (e.g., 5–10) to cap cost.</li>
+    <li>DynamoDB TTL attribute configured for temp results (e.g., 7 days).</li>
+    <li>S3 lifecycle: transition logs to IA after 30 days (optional).</li>
+  </ol>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part C — Implement worker</h3>
+  <ol style="color:#1e293b;">
+    <li>Template includes <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/worker/handler.py</code> with TODOs. Implement idempotent processing keyed by <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">task_id</code>.</li>
+    <li>On success, write result item and upload artifact to S3 (if applicable).</li>
+    <li>On failure, raise to trigger retry; avoid double-writes using a conditional put.</li>
+  </ol>
+
+  <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+    <ul>
+      <li>How does visibility timeout interact with processing time?</li>
+      <li>Why are conditional writes needed for idempotency?</li>
+    </ul>
+  </div>
+
+  <h3 style="color:#1d4ed8;margin-top:25px;">Part D — Load test and observe</h3>
+  <ol style="color:#1e293b;">
+    <li>Generate N tasks; record SQS queue depth, Lambda invocations, errors.</li>
+    <li>Observe DynamoDB read/write capacity (throttling?). Adjust batch size or concurrency if needed.</li>
+    <li>Collect metrics screenshots for submission.</li>
+  </ol>
+
+  <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">What to submit</h3>
+    <ul style="color:#1e293b;">
+      <li>Group repository URL (template-based) with your worker implementation.</li>
+      <li>Screenshots: SQS metrics, Lambda invocations/concurrency, DynamoDB table view.</li>
+      <li>Brief reflection (<=300 words): scaling behavior and cost learnings.</li>
+    </ul>
+  </div>
+
+  <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+    <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+    <ul>
+      <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/invocation-scaling.html">Lambda scaling</a></li>
+      <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">SQS visibility timeout</a></li>
+      <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html">DynamoDB TTL</a></li>
+      <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">S3 lifecycle</a></li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cannon Trajectory Simulator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --black: #000;
+      --gray: #cfcfcf;
+      --light-gray: #efefef;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #fff;
+      color: var(--black);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 24px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 320px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    canvas {
+      width: 100%;
+      height: 520px;
+      border: 1px solid var(--black);
+      background: #fff;
+    }
+
+    .panel {
+      border: 1px solid var(--black);
+      padding: 16px;
+      background: #fff;
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="range"],
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--black);
+      padding: 4px 6px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--black);
+    }
+
+    .input-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .value-display {
+      font-size: 12px;
+      color: #333;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--black);
+      background: #fff;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .equations {
+      display: grid;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .equation {
+      padding: 6px 8px;
+      border: 1px solid var(--black);
+      background: var(--light-gray);
+    }
+
+    .equation.active {
+      background: #fff;
+      border-width: 2px;
+    }
+
+    .readout {
+      border: 1px solid var(--black);
+      padding: 8px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .grid-legend {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #222;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Cannon Trajectory Simulator</h1>
+  <div class="layout">
+    <canvas id="simCanvas" width="960" height="520" aria-label="Cannon trajectory simulation"></canvas>
+    <div class="panel">
+      <div class="controls">
+        <div class="input-row">
+          <label for="angle">Launch Angle (degrees)</label>
+          <input id="angle" type="number" min="5" max="85" step="1" value="45" />
+        </div>
+        <div class="input-row">
+          <label for="speed">Initial Speed</label>
+          <input id="speed" type="number" min="10" max="120" step="1" value="60" />
+        </div>
+        <div class="input-row">
+          <label for="gravity">Gravity (positive)</label>
+          <input id="gravity" type="number" min="1" max="30" step="0.5" value="9.8" />
+        </div>
+        <div class="input-row">
+          <label for="playSpeed">Play Speed (time scale)</label>
+          <input id="playSpeed" type="range" min="0.2" max="3" step="0.1" value="1" />
+          <div class="value-display">Current: <span id="playSpeedValue">1.0</span>x</div>
+        </div>
+        <div class="input-row">
+          <label for="timeScrub">Replay Timeline (t)</label>
+          <input id="timeScrub" type="range" min="0" max="0" step="0.05" value="0" />
+          <div class="value-display">t = <span id="timeScrubValue">0.00</span> s</div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="fireBtn">Fire</button>
+        <button id="restartBtn">Restart</button>
+      </div>
+      <div class="equations" aria-live="polite">
+        <div class="equation" id="eq-vx">v₀ₓ = v₀ · cos(θ)</div>
+        <div class="equation" id="eq-vy">v₀ᵧ = v₀ · sin(θ)</div>
+        <div class="equation" id="eq-x">x(t) = v₀ₓ · t = <span id="eqXValue">0.00</span></div>
+        <div class="equation" id="eq-y">y(t) = v₀ᵧ · t − ½ · g · t² = <span id="eqYValue">0.00</span></div>
+        <div class="equation" id="eq-speed">speed(t) = √(vₓ² + vᵧ²) = <span id="eqSpeedValue">0.00</span></div>
+      </div>
+      <div class="readout">
+        <div>Time: <span id="timeValue">0.00</span> s</div>
+        <div>Speed: <span id="speedValue">0.00</span> units/s</div>
+      </div>
+      <div class="grid-legend">
+        Graph paper grid = 10 units per bold line, 1 unit per light line.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("simCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const angleInput = document.getElementById("angle");
+    const speedInput = document.getElementById("speed");
+    const gravityInput = document.getElementById("gravity");
+    const playSpeedInput = document.getElementById("playSpeed");
+    const playSpeedValue = document.getElementById("playSpeedValue");
+    const timeScrubInput = document.getElementById("timeScrub");
+    const timeScrubValue = document.getElementById("timeScrubValue");
+    const fireBtn = document.getElementById("fireBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const timeValue = document.getElementById("timeValue");
+    const speedValue = document.getElementById("speedValue");
+
+    const eqX = document.getElementById("eq-x");
+    const eqY = document.getElementById("eq-y");
+    const eqSpeed = document.getElementById("eq-speed");
+    const eqXValue = document.getElementById("eqXValue");
+    const eqYValue = document.getElementById("eqYValue");
+    const eqSpeedValue = document.getElementById("eqSpeedValue");
+
+    const origin = { x: 70, y: canvas.height - 60 };
+    const scale = 5;
+    const baseDt = 1 / 60;
+
+    const state = {
+      running: false,
+      stopped: false,
+      lastTimestamp: 0,
+      trail: [],
+    };
+
+    class PhysicsEngine {
+      constructor() {
+        this.reset();
+      }
+
+      configure({ angleDeg, speed, gravity }) {
+        const radians = (angleDeg * Math.PI) / 180;
+        this.v0x = speed * Math.cos(radians);
+        this.v0y = speed * Math.sin(radians);
+        this.gravity = gravity;
+        this.totalTime = (2 * this.v0y) / this.gravity;
+        this.time = 0;
+        this.position = { x: 0, y: 0 };
+        this.velocity = { x: this.v0x, y: this.v0y };
+      }
+
+      reset() {
+        this.v0x = 0;
+        this.v0y = 0;
+        this.gravity = 9.8;
+        this.totalTime = 0;
+        this.time = 0;
+        this.position = { x: 0, y: 0 };
+        this.velocity = { x: 0, y: 0 };
+      }
+
+      step(dt) {
+        this.time += dt;
+        this.position.x = this.v0x * this.time;
+        this.position.y = this.v0y * this.time - 0.5 * this.gravity * this.time * this.time;
+        this.velocity.x = this.v0x;
+        this.velocity.y = this.v0y - this.gravity * this.time;
+        return this.getState();
+      }
+
+      getState() {
+        const speed = Math.hypot(this.velocity.x, this.velocity.y);
+        return {
+          time: this.time,
+          position: { ...this.position },
+          velocity: { ...this.velocity },
+          speed,
+        };
+      }
+
+      getStateAtTime(time) {
+        const clampedTime = Math.max(0, time);
+        const position = {
+          x: this.v0x * clampedTime,
+          y: this.v0y * clampedTime - 0.5 * this.gravity * clampedTime * clampedTime,
+        };
+        const velocity = {
+          x: this.v0x,
+          y: this.v0y - this.gravity * clampedTime,
+        };
+        return {
+          time: clampedTime,
+          position,
+          velocity,
+          speed: Math.hypot(velocity.x, velocity.y),
+        };
+      }
+    }
+
+    const physics = new PhysicsEngine();
+
+    const drawGrid = () => {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const minor = 10;
+      const major = 50;
+
+      ctx.strokeStyle = "#efefef";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= canvas.width; x += minor) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += minor) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#cfcfcf";
+      ctx.lineWidth = 1.5;
+      for (let x = 0; x <= canvas.width; x += major) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += major) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    };
+
+    const drawAxes = () => {
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y);
+      ctx.lineTo(canvas.width - 20, origin.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y);
+      ctx.lineTo(origin.x, 20);
+      ctx.stroke();
+
+      ctx.fillStyle = "#000";
+      ctx.font = "12px Arial";
+      ctx.fillText("X", canvas.width - 30, origin.y - 8);
+      ctx.fillText("Y", origin.x + 8, 30);
+    };
+
+    const drawCannon = () => {
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.rect(origin.x - 25, origin.y - 14, 40, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(origin.x - 8, origin.y + 10, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(origin.x + 12, origin.y + 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.rect(origin.x - 5, origin.y - 26, 20, 12);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x + 5, origin.y - 26);
+      ctx.lineTo(origin.x + 32, origin.y - 40);
+      ctx.stroke();
+    };
+
+    const drawTrajectory = (trail) => {
+      if (trail.length < 2) return;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      trail.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.stroke();
+    };
+
+    const drawProjectile = (position) => {
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(position.x, position.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const drawArrow = (start, vector) => {
+      const length = Math.hypot(vector.x, vector.y);
+      if (length === 0) return;
+      const arrowSize = 6;
+      const endX = start.x + vector.x;
+      const endY = start.y - vector.y;
+
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+
+      const angle = Math.atan2(-vector.y, vector.x);
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(
+        endX - arrowSize * Math.cos(angle - Math.PI / 6),
+        endY - arrowSize * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        endX - arrowSize * Math.cos(angle + Math.PI / 6),
+        endY - arrowSize * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.lineTo(endX, endY);
+      ctx.fillStyle = "#000";
+      ctx.fill();
+    };
+
+    const toCanvasPoint = ({ x, y }) => ({
+      x: origin.x + x * scale,
+      y: origin.y - y * scale,
+    });
+
+    const withinBounds = (point) => {
+      if (point.x > canvas.width - 20 || point.x < origin.x) return false;
+      if (point.y < 20 || point.y > origin.y) return false;
+      return true;
+    };
+
+    const updateReadout = (simState) => {
+      timeValue.textContent = simState.time.toFixed(2);
+      speedValue.textContent = simState.speed.toFixed(2);
+      eqXValue.textContent = simState.position.x.toFixed(2);
+      eqYValue.textContent = Math.max(0, simState.position.y).toFixed(2);
+      eqSpeedValue.textContent = simState.speed.toFixed(2);
+    };
+
+    const updateEquationHighlight = (running) => {
+      [eqX, eqY, eqSpeed].forEach((el) => {
+        el.classList.toggle("active", running);
+      });
+    };
+
+    const renderScene = (simState) => {
+      drawGrid();
+      drawAxes();
+      drawCannon();
+      drawTrajectory(state.trail);
+
+      if (simState) {
+        drawProjectile(simState.canvasPosition);
+
+        const velocityScale = 0.4;
+        const vector = {
+          x: simState.velocity.x * velocityScale,
+          y: simState.velocity.y * velocityScale,
+        };
+        drawArrow(simState.canvasPosition, vector);
+      }
+    };
+
+    const stepSimulation = (timestamp) => {
+      if (!state.running) return;
+      if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+
+      const playSpeed = Number.parseFloat(playSpeedInput.value);
+      const dt = baseDt * playSpeed;
+
+      const simState = physics.step(dt);
+      const canvasPosition = toCanvasPoint(simState.position);
+      const renderState = {
+        ...simState,
+        canvasPosition,
+      };
+
+      state.trail.push(canvasPosition);
+      updateReadout(simState);
+      updateEquationHighlight(true);
+      timeScrubInput.value = simState.time.toFixed(2);
+      timeScrubValue.textContent = simState.time.toFixed(2);
+
+      renderScene(renderState);
+
+      const landed = simState.position.y <= 0;
+      const outOfBounds = !withinBounds(canvasPosition);
+
+      if (landed || outOfBounds) {
+        state.running = false;
+        state.stopped = true;
+        fireBtn.disabled = true;
+        state.lastTimestamp = 0;
+        updateEquationHighlight(false);
+        timeScrubInput.disabled = false;
+        return;
+      }
+
+      requestAnimationFrame(stepSimulation);
+    };
+
+    const startSimulation = () => {
+      if (state.running || state.stopped) return;
+      const angle = Number.parseFloat(angleInput.value);
+      const speed = Number.parseFloat(speedInput.value);
+      const gravity = Number.parseFloat(gravityInput.value);
+
+      physics.configure({ angleDeg: angle, speed, gravity });
+      timeScrubInput.max = physics.totalTime.toFixed(2);
+      timeScrubInput.value = "0";
+      timeScrubValue.textContent = "0.00";
+      timeScrubInput.disabled = true;
+      state.running = true;
+      state.lastTimestamp = 0;
+      fireBtn.disabled = true;
+      requestAnimationFrame(stepSimulation);
+    };
+
+    const resetSimulation = () => {
+      state.running = false;
+      state.stopped = false;
+      state.trail = [];
+      physics.reset();
+      timeValue.textContent = "0.00";
+      speedValue.textContent = "0.00";
+      eqXValue.textContent = "0.00";
+      eqYValue.textContent = "0.00";
+      eqSpeedValue.textContent = "0.00";
+      timeScrubInput.value = "0";
+      timeScrubInput.max = "0";
+      timeScrubValue.textContent = "0.00";
+      timeScrubInput.disabled = true;
+      fireBtn.disabled = false;
+      updateEquationHighlight(false);
+      renderScene(null);
+    };
+
+    const updatePlaySpeedLabel = () => {
+      playSpeedValue.textContent = Number.parseFloat(playSpeedInput.value).toFixed(1);
+    };
+
+    playSpeedInput.addEventListener("input", updatePlaySpeedLabel);
+    timeScrubInput.addEventListener("input", () => {
+      if (!state.stopped || physics.totalTime === 0) return;
+      const scrubTime = Number.parseFloat(timeScrubInput.value);
+      const simState = physics.getStateAtTime(scrubTime);
+      const canvasPosition = toCanvasPoint(simState.position);
+      state.trail = [];
+      const steps = Math.max(2, Math.floor(scrubTime / baseDt));
+      for (let i = 0; i <= steps; i += 1) {
+        const stepTime = (scrubTime / steps) * i;
+        const trailState = physics.getStateAtTime(stepTime);
+        state.trail.push(toCanvasPoint(trailState.position));
+      }
+      timeScrubValue.textContent = scrubTime.toFixed(2);
+      updateReadout(simState);
+      renderScene({ ...simState, canvasPosition });
+    });
+    fireBtn.addEventListener("click", startSimulation);
+    restartBtn.addEventListener("click", resetSimulation);
+
+    timeScrubInput.disabled = true;
+    updatePlaySpeedLabel();
+    renderScene(null);
+  </script>
+</body>
+</html>

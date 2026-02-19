@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extra Credit: Custom Domain for GitHub Pages</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #1e293b;
+            background-color: #ffffff;
+        }
+        h1 { color: #1e40af; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+        h2 { color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px; }
+        h3 { color: #1d4ed8; margin-top: 25px; }
+        .intro-box { background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .info-box { background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .warning-box { background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .reference-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .optional-box { background-color: #f3f4f6; border: 1px dashed #9ca3af; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        code { background-color: #e2e8f0; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+        pre { background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px; }
+        a { color: #3b82f6; text-decoration: underline; }
+        strong.term { color: #1e40af; }
+        hr { border: 1px solid #cbd5e1; margin: 30px 0; }
+        .video-container { margin: 20px 0; background: #000; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; }
+        .video-container video { width: 100%; display: block; }
+        .play-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: rgba(59, 130, 246, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s, transform 0.2s; pointer-events: none; }
+        .play-button::after { content: ''; border-style: solid; border-width: 15px 0 15px 25px; border-color: transparent transparent transparent white; margin-left: 5px; }
+        .video-container:hover .play-button { background: rgba(30, 64, 175, 0.95); transform: translate(-50%, -50%) scale(1.1); }
+        .video-container.playing .play-button { display: none; }
+        .step-number { display: inline-block; background: #3b82f6; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; margin-right: 10px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+        th { background-color: #f1f5f9; color: #1e40af; }
+        .ip-record { font-family: 'Courier New', monospace; background: #e2e8f0; padding: 8px 12px; border-radius: 4px; display: inline-block; margin: 3px 0; }
+    </style>
+</head>
+<body>
+
+<h1>Extra Credit: Register Your Own Domain</h1>
+
+<div class="intro-box">
+    <h2 style="margin-top: 10px;">Overview</h2>
+    <p>This extra credit assignment walks you through purchasing your own domain name and pointing it to your GitHub Pages site. By the end, your site will be accessible at a custom URL like <code>yourname.com</code> instead of <code>username.github.io</code>.</p>
+    <p><strong class="term">Why do this?</strong> Owning a domain is a professional skill. It demonstrates understanding of DNS, web infrastructure, and gives you a personal brand for your portfolio.</p>
+</div>
+
+<div class="warning-box">
+    <h3 style="margin-top: 5px;">Cost Notice</h3>
+    <p>Domain registration typically costs <strong>$10-20 per year</strong> depending on the domain extension (.com, .dev, .io, etc.). This is optional extra credit, so only proceed if you are comfortable with this expense.</p>
+</div>
+
+<hr>
+
+<h2>Part 1: Configure GitHub Pages for Your Custom Domain</h2>
+
+<p>Before purchasing a domain, you need to tell GitHub what domain name you plan to use. This video walks through the process:</p>
+
+<div class="video-container" onclick="playVideo(this)">
+    <video controls preload="metadata">
+        <source src="http://ncfdatascience.com/docs/buy_domain.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="play-button"></div>
+</div>
+
+<h3><span class="step-number">1</span>Open Repository Settings</h3>
+<p>Navigate to your GitHub repository, click <strong class="term">Settings</strong> in the top navigation bar.</p>
+
+<h3><span class="step-number">2</span>Go to Pages Section</h3>
+<p>In the left sidebar, click <strong class="term">Pages</strong> (under "Code and automation").</p>
+
+<h3><span class="step-number">3</span>Enter Your Custom Domain</h3>
+<p>In the "Custom domain" field, enter the domain name you want to use (e.g., <code>yourdomain.com</code>). Click <strong class="term">Save</strong>.</p>
+
+<div class="info-box">
+    <h3 style="margin-top: 5px;">Important: Note the A Records</h3>
+    <p>Click the "Learn more about configuring custom domains" link, which takes you to:</p>
+    <p><a href="https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank">GitHub Custom Domain Documentation</a></p>
+    <p>You will need these <strong class="term">A Records</strong> (IP addresses) when configuring your domain's DNS:</p>
+    <div>
+        <span class="ip-record">185.199.108.153</span><br>
+        <span class="ip-record">185.199.109.153</span><br>
+        <span class="ip-record">185.199.110.153</span><br>
+        <span class="ip-record">185.199.111.153</span>
+    </div>
+    <p style="margin-top: 15px;"><strong>Write these down or keep this page open.</strong> You will need them in Part 2.</p>
+</div>
+
+<hr>
+
+<h2>Part 2: Purchase and Configure Your Domain</h2>
+
+<p>This video demonstrates purchasing a domain from Squarespace Domains and configuring the DNS records:</p>
+
+<div class="video-container" onclick="playVideo(this)">
+    <video controls preload="metadata">
+        <source src="http://ncfdatascience.com/docs/configure_git_hub_for_domain.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="play-button"></div>
+</div>
+
+<h3><span class="step-number">1</span>Choose a Domain Registrar</h3>
+<p>Go to <a href="https://domains.squarespace.com" target="_blank">domains.squarespace.com</a> (or another registrar of your choice like Namecheap, Google Domains, Cloudflare, etc.).</p>
+
+<h3><span class="step-number">2</span>Search for Your Domain</h3>
+<p>Enter the domain name you want and check if it is available. Consider using your name, a project name, or something professional.</p>
+
+<h3><span class="step-number">3</span>Purchase the Domain</h3>
+<p>Create an account (or log in) and complete the purchase. A 1-year registration is typically sufficient to start.</p>
+
+<h3><span class="step-number">4</span>Access DNS Settings</h3>
+<p>After purchasing, navigate to your domain's management page. Look for <strong class="term">Domains</strong> then <strong class="term">DNS</strong> or <strong class="term">DNS Settings</strong>.</p>
+
+<h3><span class="step-number">5</span>Remove Preset DNS Records</h3>
+<p>Most registrars add default records. Remove any existing A records or CNAME records that might conflict with your GitHub Pages configuration.</p>
+
+<h3><span class="step-number">6</span>Add A Records for the Root Domain</h3>
+<p>Add four A records pointing to GitHub's servers. These handle traffic to your "naked" domain (e.g., <code>yourdomain.com</code> without www):</p>
+
+<div class="reference-box">
+    <h3 style="margin-top: 5px;">What is the Root Domain?</h3>
+    <p>The <strong class="term">root domain</strong> (also called "apex domain" or "naked domain") is your domain without any subdomain prefix. For example:</p>
+    <ul>
+        <li><code>yourdomain.com</code> is the root domain</li>
+        <li><code>www.yourdomain.com</code> is a subdomain</li>
+    </ul>
+    <p>A records point the root domain to specific IP addresses. In this case, GitHub's servers.</p>
+</div>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Host/Name</th>
+        <th>Value/Points To</th>
+    </tr>
+    <tr>
+        <td>A</td>
+        <td>@ (or leave blank)</td>
+        <td>185.199.108.153</td>
+    </tr>
+    <tr>
+        <td>A</td>
+        <td>@ (or leave blank)</td>
+        <td>185.199.109.153</td>
+    </tr>
+    <tr>
+        <td>A</td>
+        <td>@ (or leave blank)</td>
+        <td>185.199.110.153</td>
+    </tr>
+    <tr>
+        <td>A</td>
+        <td>@ (or leave blank)</td>
+        <td>185.199.111.153</td>
+    </tr>
+</table>
+
+<p>The <code>@</code> symbol represents the root domain in DNS configuration.</p>
+
+<h3><span class="step-number">7</span>Add a CNAME Record for www</h3>
+<p>Add a CNAME record so that <code>www.yourdomain.com</code> also works:</p>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Host/Name</th>
+        <th>Value/Points To</th>
+    </tr>
+    <tr>
+        <td>CNAME</td>
+        <td>www</td>
+        <td>yourusername.github.io</td>
+    </tr>
+</table>
+
+<p>Replace <code>yourusername</code> with your actual GitHub username.</p>
+
+<div class="info-box">
+    <h3 style="margin-top: 5px;">What is a CNAME Record?</h3>
+    <p>A <strong class="term">CNAME</strong> (Canonical Name) record creates an alias from one domain to another. Instead of pointing to an IP address, it points to another domain name.</p>
+    <p>When someone visits <code>www.yourdomain.com</code>, the CNAME tells their browser to look up <code>yourusername.github.io</code> instead.</p>
+</div>
+
+<hr>
+
+<h2>Part 3: Wait for DNS Propagation and SSL</h2>
+
+<h3><span class="step-number">1</span>Return to GitHub Pages Settings</h3>
+<p>Go back to your repository's Settings, then Pages. You should see "DNS Check in Progress" next to your custom domain.</p>
+
+<h3><span class="step-number">2</span>Wait for DNS Verification</h3>
+<p>DNS changes can take anywhere from a few minutes to 48 hours to propagate globally. Typically, it takes 5-30 minutes.</p>
+
+<div class="warning-box">
+    <h3 style="margin-top: 5px;">Be Patient</h3>
+    <p>The video shows a common mistake: checking too early. Wait until GitHub shows "DNS check successful" before testing your domain.</p>
+</div>
+
+<h3><span class="step-number">3</span>Wait for SSL Certificate</h3>
+<p>After DNS verification succeeds, GitHub will automatically provision an SSL certificate for HTTPS. This can take an additional 15-30 minutes.</p>
+<p>Once complete, you will see a checkbox option to "Enforce HTTPS". Enable this for security.</p>
+
+<h3><span class="step-number">4</span>Test Your Domain</h3>
+<p>Visit your custom domain in a browser. You should see your GitHub Pages site with the <code>index.html</code> (or <code>README.md</code>) from your repository's root directory.</p>
+
+<hr>
+
+<h2>Troubleshooting</h2>
+
+<div class="reference-box">
+    <h3 style="margin-top: 5px;">"DNS check unsuccessful"</h3>
+    <p>Double-check that you entered the A records correctly. Ensure there are no typos in the IP addresses. Wait a bit longer for propagation.</p>
+
+    <h3 style="margin-top: 20px;">"Certificate not yet generated"</h3>
+    <p>SSL provisioning happens after DNS verification. Wait 15-30 minutes after DNS check succeeds.</p>
+
+    <h3 style="margin-top: 20px;">Site shows wrong content or 404</h3>
+    <p>Ensure your repository has an <code>index.html</code> file in the root (or the folder you configured for GitHub Pages). The <code>README.md</code> will also work if no index.html exists.</p>
+
+    <h3 style="margin-top: 20px;">www works but root domain does not (or vice versa)</h3>
+    <p>Verify you have both the A records (for root) and the CNAME record (for www) configured correctly.</p>
+</div>
+
+<hr>
+
+<h2>Submission</h2>
+
+<div class="warning-box">
+    <h3 style="margin-top: 5px;">What to Submit</h3>
+    <p>Email <strong class="term">gsalu@ncf.edu</strong> with:</p>
+    <ul>
+        <li>Your custom domain URL (e.g., <code>https://yourdomain.com</code>)</li>
+        <li>A screenshot showing your GitHub Pages settings with the custom domain configured</li>
+        <li>A brief note about which registrar you used and any challenges you encountered</li>
+    </ul>
+</div>
+
+<hr>
+
+<h2>Summary: What You Learned</h2>
+
+<div class="intro-box">
+    <h3 style="margin-top: 5px;">DNS and Domain Concepts</h3>
+    <ul>
+        <li><strong class="term">Domain Registration</strong>: Purchasing the rights to use a domain name</li>
+        <li><strong class="term">A Records</strong>: DNS entries that map a domain to IPv4 addresses</li>
+        <li><strong class="term">CNAME Records</strong>: DNS entries that create aliases between domain names</li>
+        <li><strong class="term">Root/Apex Domain</strong>: The base domain without subdomains (e.g., example.com)</li>
+        <li><strong class="term">DNS Propagation</strong>: The time it takes for DNS changes to spread globally</li>
+        <li><strong class="term">SSL/TLS Certificates</strong>: Enable HTTPS for secure, encrypted connections</li>
+    </ul>
+
+    <h3 style="margin-top: 20px;">Distributed Systems Connection</h3>
+    <p>DNS itself is one of the largest distributed systems in the world. When you configure DNS records, you are interacting with a globally distributed database that routes billions of requests daily. Your domain configuration propagates across thousands of DNS servers worldwide.</p>
+</div>
+
+<script>
+function playVideo(container) {
+    const video = container.querySelector('video');
+    if (video.paused) {
+        video.play();
+        container.classList.add('playing');
+    }
+}
+
+document.querySelectorAll('.video-container video').forEach(video => {
+    video.addEventListener('pause', function() {
+        this.parentElement.classList.remove('playing');
+    });
+    video.addEventListener('play', function() {
+        this.parentElement.classList.add('playing');
+    });
+});
+</script>
+
+</body>
+</html>

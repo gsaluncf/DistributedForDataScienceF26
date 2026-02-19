@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 Lab 2 Emergency Control Panel</title>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1692.0.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+
+        /* Credentials Section */
+        .creds-panel {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .creds-panel h2 {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        .creds-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .creds-field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .creds-field label {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .creds-field input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .creds-field input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-connect {
+            background: #3b82f6;
+            color: white;
+            height: 36px;
+        }
+
+        .btn-save {
+            background: #475569;
+            color: #e2e8f0;
+            height: 36px;
+        }
+
+        /* Status badge */
+        .status-badge {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .status-badge.connected {
+            display: block;
+            background: #052e16;
+            border: 1px solid #166534;
+            color: #4ade80;
+        }
+
+        .status-badge.error {
+            display: block;
+            background: #450a0a;
+            border: 1px solid #991b1b;
+            color: #fca5a5;
+        }
+
+        /* Main Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: #475569;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .card .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-create {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-check {
+            background: #6366f1;
+            color: white;
+        }
+
+        .btn-purge {
+            background: #f59e0b;
+            color: #1e293b;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-test {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-drain {
+            background: #ec4899;
+            color: white;
+        }
+
+        .btn-copy {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        /* Log area */
+        .log-panel {
+            max-width: 1200px;
+            margin: 24px auto 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .log-header h3 {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .btn-clear {
+            background: #334155;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+        }
+
+        #log {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.8;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+        }
+
+        .log-entry.success {
+            color: #4ade80;
+        }
+
+        .log-entry.error {
+            color: #f87171;
+        }
+
+        .log-entry.info {
+            color: #60a5fa;
+        }
+
+        .log-entry.warn {
+            color: #fbbf24;
+        }
+
+        .log-entry .timestamp {
+            color: #475569;
+            margin-right: 8px;
+        }
+
+        /* Queue Status */
+        .queue-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .queue-stat {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .queue-stat .label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .queue-stat .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .queue-stat .value.orders {
+            color: #f59e0b;
+        }
+
+        .queue-stat .value.results {
+            color: #10b981;
+        }
+
+        /* URL display */
+        .url-box {
+            margin-top: 12px;
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            word-break: break-all;
+            display: none;
+        }
+
+        .url-box .url-label {
+            color: #64748b;
+            font-size: 0.65rem;
+            margin-bottom: 2px;
+        }
+
+        .url-box .url-value {
+            color: #67e8f9;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 1s infinite;
+        }
+
+        /* Spinner overlay for buttons */
+        .btn.running {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🚨 Lab 2 Emergency Control Panel</h1>
+    <p class="subtitle">Pizza Shop Queue Management &mdash; Instructor Only</p>
+
+    <!-- Credentials -->
+    <div class="creds-panel">
+        <h2>🔐 AWS Credentials</h2>
+        <div class="creds-row">
+            <div class="creds-field">
+                <label>AWS_ACCESS_KEY_ID</label>
+                <input type="text" id="accessKey" placeholder="AKIA...">
+            </div>
+            <div class="creds-field">
+                <label>AWS_SECRET_ACCESS_KEY</label>
+                <input type="password" id="secretKey" placeholder="your secret key">
+            </div>
+            <div class="creds-field" style="flex:0.4; min-width: 120px;">
+                <label>REGION</label>
+                <input type="text" id="region" value="us-east-1">
+            </div>
+            <button class="btn btn-connect" onclick="connectAWS()">Connect</button>
+            <button class="btn btn-save" onclick="saveCredentials()">💾 Save</button>
+        </div>
+        <div id="connectionStatus" class="status-badge"></div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid">
+
+        <!-- Queue Status Card -->
+        <div class="card">
+            <h3>📊 Queue Status</h3>
+            <p>Check if both queues exist, how many messages are in each, and their configuration.</p>
+            <div class="actions">
+                <button class="btn btn-check" onclick="checkQueues()">Check Status</button>
+                <button class="btn btn-copy" onclick="copyURLs()">Copy URLs</button>
+            </div>
+            <div class="queue-status" id="queueStats" style="display:none;">
+                <div class="queue-stat">
+                    <div class="label">pizza-orders</div>
+                    <div class="value orders" id="ordersCount">—</div>
+                </div>
+                <div class="queue-stat">
+                    <div class="label">pizza-results</div>
+                    <div class="value results" id="resultsCount">—</div>
+                </div>
+            </div>
+            <div class="url-box" id="urlBox">
+                <div class="url-label">ORDER_QUEUE_URL</div>
+                <div class="url-value" id="orderUrlDisplay"></div>
+                <div class="url-label" style="margin-top:8px;">RESPONSE_QUEUE_URL</div>
+                <div class="url-value" id="responseUrlDisplay"></div>
+            </div>
+        </div>
+
+        <!-- Create Queues Card -->
+        <div class="card">
+            <h3>🏗️ Create / Recreate Queues</h3>
+            <p>Creates both <code>pizza-orders</code> and <code>pizza-results</code> with the correct Visibility Timeout
+                and Retention settings. Safe to run if queues already exist (idempotent).</p>
+            <div class="actions">
+                <button class="btn btn-create" onclick="createQueues()">Create Both Queues</button>
+            </div>
+        </div>
+
+        <!-- Purge Card -->
+        <div class="card">
+            <h3>🧹 Purge Messages</h3>
+            <p>Instantly delete all messages from both queues without deleting the queues themselves. Use when you want
+                a clean slate between rounds.</p>
+            <div class="actions">
+                <button class="btn btn-purge" onclick="purgeQueues()">Purge Both Queues</button>
+                <button class="btn btn-purge" onclick="purgeQueue('orders')" style="background:#fbbf24;">Purge Orders
+                    Only</button>
+                <button class="btn btn-purge" onclick="purgeQueue('results')" style="background:#fbbf24;">Purge Results
+                    Only</button>
+            </div>
+        </div>
+
+        <!-- Test Round-Trip Card -->
+        <div class="card">
+            <h3>🧪 Test Round-Trip</h3>
+            <p>Send a test order to pizza-orders, then immediately receive it, "cook" it, post to pizza-results, and
+                verify the full pipeline works end-to-end.</p>
+            <div class="actions">
+                <button class="btn btn-test" onclick="testRoundTrip()">Run Full Test</button>
+                <button class="btn btn-test" onclick="sendTestOrder()" style="background:#a78bfa;">Send Test Order
+                    Only</button>
+            </div>
+        </div>
+
+        <!-- Drain Messages Card -->
+        <div class="card">
+            <h3>🔧 Drain Stuck Messages</h3>
+            <p>Receive and delete all visible messages from a queue. Use when messages are stuck and purge is on
+                cooldown (AWS enforces 60s between purge calls).</p>
+            <div class="actions">
+                <button class="btn btn-drain" onclick="drainQueue('orders')">Drain Orders</button>
+                <button class="btn btn-drain" onclick="drainQueue('results')">Drain Results</button>
+            </div>
+        </div>
+
+        <!-- Delete Queues Card -->
+        <div class="card" style="border-color: #7f1d1d;">
+            <h3 style="color: #ef4444;">💣 Delete Queues</h3>
+            <p>Permanently delete both queues. AWS enforces a <strong>60-second cooldown</strong> before you can
+                recreate queues with the same name. Use only for end-of-class cleanup.</p>
+            <div class="actions">
+                <button class="btn btn-delete"
+                    onclick="if(confirm('Delete BOTH queues? Students will lose connectivity.')) deleteQueues()">Delete
+                    Both Queues</button>
+            </div>
+        </div>
+
+        <!-- Nuclear Option Card -->
+        <div class="card" style="border-color: #166534;">
+            <h3 style="color: #4ade80;">🔄 Full Reset (Nuclear Option)</h3>
+            <p>Delete both queues, wait 65 seconds, then recreate them fresh. Use when everything is broken and you need
+                a clean restart. <strong>This takes ~70 seconds.</strong></p>
+            <div class="actions">
+                <button class="btn btn-create"
+                    onclick="if(confirm('This will kill all queues, wait 65s, and recreate. Students will be disconnected. Continue?')) nuclearReset()"
+                    style="background: linear-gradient(135deg, #ef4444, #10b981);">🔄 Nuclear Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Panel -->
+    <div class="log-panel">
+        <div class="log-header">
+            <h3>📋 Activity Log</h3>
+            <button class="btn btn-clear" onclick="clearLog()">Clear</button>
+        </div>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // --- Constants ---
+        const ACCOUNT_ID = '194722398367';
+        const ORDER_QUEUE_NAME = 'pizza-orders';
+        const RESULTS_QUEUE_NAME = 'pizza-results';
+        let ORDER_QUEUE_URL = '';
+        let RESPONSE_QUEUE_URL = '';
+        let sqs = null;
+
+        // --- Credentials Management ---
+        function loadSavedCredentials() {
+            try {
+                const saved = localStorage.getItem('lab2_emergency_creds');
+                if (saved) {
+                    const creds = JSON.parse(saved);
+                    document.getElementById('accessKey').value = creds.accessKey || '';
+                    document.getElementById('secretKey').value = creds.secretKey || '';
+                    document.getElementById('region').value = creds.region || 'us-east-1';
+                    log('Loaded saved credentials from browser storage.', 'info');
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function saveCredentials() {
+            const creds = {
+                accessKey: document.getElementById('accessKey').value.trim(),
+                secretKey: document.getElementById('secretKey').value.trim(),
+                region: document.getElementById('region').value.trim()
+            };
+            localStorage.setItem('lab2_emergency_creds', JSON.stringify(creds));
+            log('Credentials saved to browser localStorage.', 'success');
+        }
+
+        // --- Connect ---
+        async function connectAWS() {
+            const accessKey = document.getElementById('accessKey').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            const region = document.getElementById('region').value.trim();
+            const statusEl = document.getElementById('connectionStatus');
+
+            if (!accessKey || !secretKey) {
+                statusEl.className = 'status-badge error';
+                statusEl.textContent = '❌ Enter both Access Key and Secret Key';
+                return;
+            }
+
+            try {
+                AWS.config.update({
+                    accessKeyId: accessKey,
+                    secretAccessKey: secretKey,
+                    region: region
+                });
+
+                sqs = new AWS.SQS();
+                const sts = new AWS.STS();
+
+                const identity = await sts.getCallerIdentity().promise();
+                statusEl.className = 'status-badge connected';
+                statusEl.textContent = `✅ Connected as: ${identity.Arn}`;
+                log(`Connected as ${identity.Arn}`, 'success');
+
+                // Build queue URLs
+                ORDER_QUEUE_URL = `https://sqs.${region}.amazonaws.com/${ACCOUNT_ID}/${ORDER_QUEUE_NAME}`;
+                RESPONSE_QUEUE_URL = `https://sqs.${region}.amazonaws.com/${ACCOUNT_ID}/${RESULTS_QUEUE_NAME}`;
+
+            } catch (e) {
+                statusEl.className = 'status-badge error';
+                statusEl.textContent = `❌ ${e.message}`;
+                log(`Connection failed: ${e.message}`, 'error');
+            }
+        }
+
+        // --- Queue Operations ---
+        async function checkQueues() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('Checking queue status...', 'info');
+
+            try {
+                const ordersAttrs = await sqs.getQueueAttributes({
+                    QueueUrl: ORDER_QUEUE_URL,
+                    AttributeNames: ['All']
+                }).promise();
+
+                const resultsAttrs = await sqs.getQueueAttributes({
+                    QueueUrl: RESPONSE_QUEUE_URL,
+                    AttributeNames: ['All']
+                }).promise();
+
+                const ordersCount = ordersAttrs.Attributes.ApproximateNumberOfMessages;
+                const ordersInFlight = ordersAttrs.Attributes.ApproximateNumberOfMessagesNotVisible;
+                const resultsCount = resultsAttrs.Attributes.ApproximateNumberOfMessages;
+                const resultsInFlight = resultsAttrs.Attributes.ApproximateNumberOfMessagesNotVisible;
+
+                document.getElementById('queueStats').style.display = 'grid';
+                document.getElementById('ordersCount').textContent = `${ordersCount} (+${ordersInFlight})`;
+                document.getElementById('resultsCount').textContent = `${resultsCount} (+${resultsInFlight})`;
+
+                document.getElementById('urlBox').style.display = 'block';
+                document.getElementById('orderUrlDisplay').textContent = ORDER_QUEUE_URL;
+                document.getElementById('responseUrlDisplay').textContent = RESPONSE_QUEUE_URL;
+
+                log(`✅ pizza-orders: ${ordersCount} visible, ${ordersInFlight} in-flight | VT=${ordersAttrs.Attributes.VisibilityTimeout}s, Retention=${ordersAttrs.Attributes.MessageRetentionPeriod}s`, 'success');
+                log(`✅ pizza-results: ${resultsCount} visible, ${resultsInFlight} in-flight | VT=${resultsAttrs.Attributes.VisibilityTimeout}s, Retention=${resultsAttrs.Attributes.MessageRetentionPeriod}s`, 'success');
+
+            } catch (e) {
+                log(`❌ Queue check failed: ${e.message}`, 'error');
+                if (e.code === 'AWS.SimpleQueueService.NonExistentQueue') {
+                    log('One or both queues do not exist. Use "Create Both Queues" to create them.', 'warn');
+                }
+            }
+        }
+
+        async function createQueues() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('Creating queues...', 'info');
+
+            try {
+                const orders = await sqs.createQueue({
+                    QueueName: ORDER_QUEUE_NAME,
+                    Attributes: {
+                        'VisibilityTimeout': '60',
+                        'MessageRetentionPeriod': '3600'
+                    }
+                }).promise();
+                ORDER_QUEUE_URL = orders.QueueUrl;
+                log(`✅ Created pizza-orders: ${orders.QueueUrl}`, 'success');
+
+                const results = await sqs.createQueue({
+                    QueueName: RESULTS_QUEUE_NAME,
+                    Attributes: {
+                        'VisibilityTimeout': '10',
+                        'MessageRetentionPeriod': '3600'
+                    }
+                }).promise();
+                RESPONSE_QUEUE_URL = results.QueueUrl;
+                log(`✅ Created pizza-results: ${results.QueueUrl}`, 'success');
+
+                log('Both queues are ready! Share these URLs with students:', 'success');
+                log(`ORDER_QUEUE_URL = '${ORDER_QUEUE_URL}'`, 'info');
+                log(`RESPONSE_QUEUE_URL = '${RESPONSE_QUEUE_URL}'`, 'info');
+
+                await checkQueues();
+
+            } catch (e) {
+                log(`❌ Create failed: ${e.message}`, 'error');
+            }
+        }
+
+        async function purgeQueues() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('Purging all messages from both queues...', 'warn');
+
+            try {
+                await sqs.purgeQueue({ QueueUrl: ORDER_QUEUE_URL }).promise();
+                log('✅ pizza-orders purged', 'success');
+            } catch (e) {
+                log(`⚠️ Orders purge: ${e.message}`, 'warn');
+            }
+
+            try {
+                await sqs.purgeQueue({ QueueUrl: RESPONSE_QUEUE_URL }).promise();
+                log('✅ pizza-results purged', 'success');
+            } catch (e) {
+                log(`⚠️ Results purge: ${e.message}`, 'warn');
+            }
+
+            await checkQueues();
+        }
+
+        async function purgeQueue(which) {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            const url = which === 'orders' ? ORDER_QUEUE_URL : RESPONSE_QUEUE_URL;
+            const name = which === 'orders' ? 'pizza-orders' : 'pizza-results';
+
+            try {
+                await sqs.purgeQueue({ QueueUrl: url }).promise();
+                log(`✅ ${name} purged`, 'success');
+                await checkQueues();
+            } catch (e) {
+                log(`❌ Purge ${name}: ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteQueues() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('Deleting both queues...', 'warn');
+
+            try {
+                await sqs.deleteQueue({ QueueUrl: ORDER_QUEUE_URL }).promise();
+                log('✅ pizza-orders deleted', 'success');
+            } catch (e) {
+                log(`⚠️ Orders delete: ${e.message}`, 'warn');
+            }
+
+            try {
+                await sqs.deleteQueue({ QueueUrl: RESPONSE_QUEUE_URL }).promise();
+                log('✅ pizza-results deleted', 'success');
+            } catch (e) {
+                log(`⚠️ Results delete: ${e.message}`, 'warn');
+            }
+
+            document.getElementById('queueStats').style.display = 'none';
+        }
+
+        async function sendTestOrder() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+
+            const testId = crypto.randomUUID().slice(0, 8);
+            const order = {
+                correlation_id: testId,
+                customer: 'INSTRUCTOR-TEST',
+                toppings: ['test-topping'],
+                ordered_at: new Date().toLocaleTimeString()
+            };
+
+            try {
+                const resp = await sqs.sendMessage({
+                    QueueUrl: ORDER_QUEUE_URL,
+                    MessageBody: JSON.stringify(order)
+                }).promise();
+                log(`✅ Test order sent (ID: ${testId}, MsgId: ${resp.MessageId.slice(0, 12)}...)`, 'success');
+            } catch (e) {
+                log(`❌ Send failed: ${e.message}`, 'error');
+            }
+        }
+
+        async function testRoundTrip() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('=== Starting full round-trip test ===', 'info');
+
+            // Step 1: Send test order
+            const testId = crypto.randomUUID();
+            const order = {
+                correlation_id: testId,
+                customer: 'INSTRUCTOR-ROUNDTRIP-TEST',
+                toppings: ['test-pepperoni', 'test-mushrooms'],
+                ordered_at: new Date().toLocaleTimeString()
+            };
+
+            try {
+                await sqs.sendMessage({
+                    QueueUrl: ORDER_QUEUE_URL,
+                    MessageBody: JSON.stringify(order)
+                }).promise();
+                log(`1/4 ✅ Order sent (correlation_id: ${testId.slice(0, 8)}...)`, 'success');
+            } catch (e) {
+                return log(`❌ Send failed: ${e.message}`, 'error');
+            }
+
+            // Step 2: Receive from order queue
+            await sleep(1000);
+            try {
+                const recv = await sqs.receiveMessage({
+                    QueueUrl: ORDER_QUEUE_URL,
+                    MaxNumberOfMessages: 10,
+                    WaitTimeSeconds: 5
+                }).promise();
+
+                const msgs = recv.Messages || [];
+                const ourMsg = msgs.find(m => {
+                    try { return JSON.parse(m.Body).correlation_id === testId; }
+                    catch { return false; }
+                });
+
+                if (!ourMsg) {
+                    return log('❌ Test order not found in queue! May have been consumed by a student notebook.', 'error');
+                }
+
+                log(`2/4 ✅ Order received from queue`, 'success');
+
+                // Step 3: Post result
+                const result = {
+                    correlation_id: testId,
+                    status: 'READY',
+                    cook: 'INSTRUCTOR-BOT',
+                    customer: 'INSTRUCTOR-ROUNDTRIP-TEST',
+                    toppings: ['test-pepperoni', 'test-mushrooms'],
+                    completed_at: new Date().toLocaleTimeString()
+                };
+
+                await sqs.sendMessage({
+                    QueueUrl: RESPONSE_QUEUE_URL,
+                    MessageBody: JSON.stringify(result)
+                }).promise();
+                log(`3/4 ✅ Result posted to pizza-results`, 'success');
+
+                // Delete original order
+                await sqs.deleteMessage({
+                    QueueUrl: ORDER_QUEUE_URL,
+                    ReceiptHandle: ourMsg.ReceiptHandle
+                }).promise();
+
+                // Step 4: Verify result
+                await sleep(500);
+                const recvResult = await sqs.receiveMessage({
+                    QueueUrl: RESPONSE_QUEUE_URL,
+                    MaxNumberOfMessages: 10,
+                    WaitTimeSeconds: 3
+                }).promise();
+
+                const resultMsgs = recvResult.Messages || [];
+                const ourResult = resultMsgs.find(m => {
+                    try { return JSON.parse(m.Body).correlation_id === testId; }
+                    catch { return false; }
+                });
+
+                if (ourResult) {
+                    await sqs.deleteMessage({
+                        QueueUrl: RESPONSE_QUEUE_URL,
+                        ReceiptHandle: ourResult.ReceiptHandle
+                    }).promise();
+                    log(`4/4 ✅ Result verified and cleaned up`, 'success');
+                    log('=== ✅ FULL ROUND-TRIP TEST PASSED ===', 'success');
+                } else {
+                    log('4/4 ⚠️ Result not immediately visible (may be in-flight). Pipeline likely OK.', 'warn');
+                }
+
+            } catch (e) {
+                log(`❌ Round-trip error: ${e.message}`, 'error');
+            }
+        }
+
+        async function drainQueue(which) {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            const url = which === 'orders' ? ORDER_QUEUE_URL : RESPONSE_QUEUE_URL;
+            const name = which === 'orders' ? 'pizza-orders' : 'pizza-results';
+            log(`Draining ${name}...`, 'warn');
+
+            let total = 0;
+            for (let i = 0; i < 50; i++) {
+                try {
+                    const recv = await sqs.receiveMessage({
+                        QueueUrl: url,
+                        MaxNumberOfMessages: 10,
+                        WaitTimeSeconds: 2
+                    }).promise();
+
+                    const msgs = recv.Messages || [];
+                    if (msgs.length === 0) break;
+
+                    for (const msg of msgs) {
+                        await sqs.deleteMessage({
+                            QueueUrl: url,
+                            ReceiptHandle: msg.ReceiptHandle
+                        }).promise();
+                    }
+                    total += msgs.length;
+                    log(`  Drained ${msgs.length} messages (total: ${total})...`, 'info');
+                } catch (e) {
+                    log(`⚠️ Drain error: ${e.message}`, 'warn');
+                    break;
+                }
+            }
+
+            log(`✅ Drained ${total} messages from ${name}`, 'success');
+            await checkQueues();
+        }
+
+        async function nuclearReset() {
+            if (!sqs) return log('Connect to AWS first!', 'error');
+            log('=== 🔄 NUCLEAR RESET INITIATED ===', 'warn');
+
+            // Step 1: Delete
+            await deleteQueues();
+
+            // Step 2: Wait with countdown
+            log('Waiting 65 seconds for AWS to release queue names...', 'warn');
+            for (let i = 65; i > 0; i -= 5) {
+                log(`  ${i} seconds remaining...`, 'info');
+                await sleep(5000);
+            }
+
+            // Step 3: Recreate
+            log('Recreating queues...', 'info');
+            await createQueues();
+
+            log('=== ✅ NUCLEAR RESET COMPLETE ===', 'success');
+        }
+
+        function copyURLs() {
+            if (!ORDER_QUEUE_URL || !RESPONSE_QUEUE_URL) {
+                return log('Connect and check queues first!', 'error');
+            }
+
+            const text = `ORDER_QUEUE_URL = '${ORDER_QUEUE_URL}'\nRESPONSE_QUEUE_URL = '${RESPONSE_QUEUE_URL}'`;
+            navigator.clipboard.writeText(text).then(() => {
+                log('✅ Queue URLs copied to clipboard!', 'success');
+            }).catch(() => {
+                log('⚠️ Clipboard failed. URLs are shown in the status card.', 'warn');
+            });
+        }
+
+        // --- Logging ---
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const ts = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="timestamp">[${ts}]</span>${escapeHtml(message)}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // --- Init ---
+        loadSavedCredentials();
+        log('Emergency Control Panel loaded. Connect to AWS to begin.', 'info');
+    </script>
+</body>
+
+</html>

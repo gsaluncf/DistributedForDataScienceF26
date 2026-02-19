@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Pages Setup - Distributed Computing in Action</title>
+</head>
+<body>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Introduction: Your First Distributed System</h2>
+    <p>Welcome to your first hands-on experience with <strong style="color: #1e40af;">distributed computing</strong>!</p>
+    <p>In this walkthrough, you'll set up <strong style="color: #1e40af;">GitHub Pages</strong> - a free web hosting service that demonstrates core distributed systems concepts:</p>
+    <ul>
+        <li><strong>Replication</strong> - Your code exists on your local machine AND on GitHub's servers</li>
+        <li><strong>Synchronization</strong> - Push and pull keep both copies in sync</li>
+        <li><strong>Remote Execution</strong> - GitHub's servers build and serve your website automatically</li>
+        <li><strong>Global Distribution</strong> - Your site is served from GitHub's CDN (Content Delivery Network) worldwide</li>
+    </ul>
+    <p><strong>Why GitHub Pages?</strong> It's the perfect "low-hanging fruit" for learning distributed computing - you get immediate, visible results (a live website!) while experiencing fundamental distributed systems concepts.</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">What You'll Accomplish</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p>By the end of this walkthrough, you will:</p>
+    <ol>
+        <li>Create a <strong>public GitHub repository</strong> for class projects</li>
+        <li>Enable <strong>GitHub Pages</strong> to host a live website</li>
+        <li>Create a <strong>README.md</strong> file that becomes your homepage</li>
+        <li>Experience the <strong>distributed workflow</strong>: clone → modify → push</li>
+        <li>Submit your repository URL and GitHub Pages URL to the instructor</li>
+    </ol>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 1: Create Your Public Repository</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 1: Log into GitHub</h3>
+<p>Go to <a href="https://github.com" style="color: #3b82f6; text-decoration: underline;">https://github.com</a> and sign in to your account.</p>
+<p><em style="color: #64748b;">Don't have a GitHub account? Create one at <a href="https://github.com/signup" style="color: #3b82f6; text-decoration: underline;">https://github.com/signup</a> (it's free!)</em></p>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 2: Create a New Repository</h3>
+<ol>
+    <li>Click the <strong style="color: #1e40af;">green "New"</strong> button (or the "+" icon in the top-right corner → "New repository")</li>
+    <li>Fill in the repository details:
+        <ul>
+            <li><strong>Repository name:</strong> <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">distributed-computing-projects</code></li>
+            <li><strong>Description:</strong> "Public projects for Distributed Computing class"</li>
+            <li><strong>Visibility:</strong> Select <strong style="color: #1e40af;">Public</strong> (required for free GitHub Pages)</li>
+            <li><strong>Initialize repository:</strong> Check "Add a README file"</li>
+        </ul>
+    </li>
+    <li>Click <strong style="color: #1e40af;">"Create repository"</strong></li>
+</ol>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Why Public?</h3>
+    <p>GitHub Pages is <strong>free for public repositories</strong>. This also aligns with open-source principles - sharing knowledge and code publicly benefits the entire community!</p>
+    <p>For this class, we'll use this public repo for projects that are meant to be shared. Any private/sensitive work will use separate private repositories.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 3: Customize Your README.md</h3>
+<p>GitHub created a basic README.md file. Let's make it more interesting!</p>
+
+<ol>
+    <li>Click on the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">README.md</code> file in your repository</li>
+    <li>Click the <strong style="color: #1e40af;">pencil icon</strong> (Edit this file) in the top-right</li>
+    <li>Replace the content with the following:</li>
+</ol>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;"># Distributed Computing Projects
+
+Welcome to my public project portfolio for the Distributed Computing class!
+
+## About This Repository
+
+This repository contains projects and experiments exploring distributed systems concepts:
+- Git and version control
+- GitHub Pages and web hosting
+- Distributed workflows
+- And more to come!
+
+## About Me
+
+**Name:** [Your Name]  
+**Course:** Distributed Computing  
+**Semester:** [Current Semester]
+
+## Projects
+
+Coming soon!
+
+---
+
+*Last updated: [Today's Date]*</pre>
+
+<ol start="4">
+    <li>Replace <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">[Your Name]</code>, <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">[Current Semester]</code>, and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">[Today's Date]</code> with your actual information</li>
+    <li>Scroll down and click <strong style="color: #1e40af;">"Commit changes"</strong></li>
+    <li>In the dialog, click <strong style="color: #1e40af;">"Commit changes"</strong> again to confirm</li>
+</ol>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 2: Enable GitHub Pages</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 4: Configure GitHub Pages</h3>
+<ol>
+    <li>In your repository, click <strong style="color: #1e40af;">Settings</strong> (top navigation bar)</li>
+    <li>In the left sidebar, click <strong style="color: #1e40af;">Pages</strong> (under "Code and automation")</li>
+    <li>Under "Build and deployment":
+        <ul>
+            <li><strong>Source:</strong> Select "Deploy from a branch"</li>
+            <li><strong>Branch:</strong> Select <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">/ (root)</code></li>
+        </ul>
+    </li>
+    <li>Click <strong style="color: #1e40af;">"Save"</strong></li>
+</ol>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 5: Wait for Deployment (1-2 minutes)</h3>
+<p>GitHub is now building and deploying your site! This happens on <strong style="color: #1e40af;">GitHub's servers</strong> - a perfect example of distributed computing.</p>
+
+<ol>
+    <li>Refresh the Settings → Pages page after about 1 minute</li>
+    <li>You should see a message: <strong style="color: #22c55e;">"Your site is live at https://[username].github.io/distributed-computing-projects/"</strong></li>
+    <li>Click the link to view your live website!</li>
+</ol>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What Just Happened? (Distributed Computing in Action)</h3>
+    <p>When you enabled GitHub Pages:</p>
+    <ul>
+        <li>GitHub's servers detected the change</li>
+        <li>They automatically built your README.md into an HTML page</li>
+        <li>They deployed it to their CDN (Content Delivery Network)</li>
+        <li>Your site is now served from multiple locations worldwide for fast access</li>
+    </ul>
+    <p><strong>This is distributed computing!</strong> Your content is replicated across multiple servers, and you didn't have to manage any of it.</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Part 3: Submit Your URLs</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 6: Collect Your URLs</h3>
+
+<p>You need to submit <strong>two URLs</strong> to the instructor:</p>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <p><strong style="color: #1e40af;">1. Repository URL</strong> (where your code lives):</p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">https://github.com/[your-username]/distributed-computing-projects</pre>
+    <p style="margin-top: 15px;"><em style="color: #64748b;">Example: https://github.com/johndoe/distributed-computing-projects</em></p>
+
+    <p style="margin-top: 25px;"><strong style="color: #1e40af;">2. GitHub Pages URL</strong> (your live website):</p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">https://[your-username].github.io/distributed-computing-projects/</pre>
+    <p style="margin-top: 15px;"><em style="color: #64748b;">Example: https://johndoe.github.io/distributed-computing-projects/</em></p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Step 7: Email Your Submission</h3>
+
+<p>Send an email to <strong style="color: #1e40af;">gsalu@ncf.edu</strong> with the following information:</p>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <p><strong>Email Template:</strong></p>
+    <pre style="background-color: #ffffff; border: 1px solid #cbd5e1; padding: 15px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">Subject: GitHub Pages Setup - [Your Name]
+
+Hi Professor,
+
+I have successfully set up my GitHub Pages repository for the Distributed Computing class.
+
+Repository URL: https://github.com/[your-username]/distributed-computing-projects
+GitHub Pages URL: https://[your-username].github.io/distributed-computing-projects/
+
+Best regards,
+[Your Name]</pre>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Challenge: Experience the Distributed Workflow</h2>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Your Mission</h3>
+    <p>Now that your repository exists on GitHub's servers, let's experience the <strong style="color: #1e40af;">distributed workflow</strong>:</p>
+    <ol>
+        <li><strong>Clone</strong> - Copy the remote repository to your local machine</li>
+        <li><strong>Modify</strong> - Make changes locally</li>
+        <li><strong>Push</strong> - Send your changes back to GitHub's servers</li>
+        <li><strong>Verify</strong> - Watch GitHub Pages automatically update your live site</li>
+    </ol>
+    <p><strong>This is the essence of distributed computing!</strong> Multiple copies of data, synchronized across different machines.</p>
+</div>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Commands You'll Use</h3>
+
+<p>Open your terminal (Command Prompt, PowerShell, or Git Bash on Windows; Terminal on Mac/Linux) and follow these steps:</p>
+
+<h4 style="color: #1d4ed8; margin-top: 20px;">Step 1: Clone the Repository to Your Local Machine</h4>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">cd ~
+# Navigate to your home directory (or wherever you want to store your projects)
+
+git clone https://github.com/[your-username]/distributed-computing-projects.git
+# Replace [your-username] with your actual GitHub username
+# This downloads a complete copy of the repository to your machine
+
+cd distributed-computing-projects
+# Enter the newly created directory</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What Just Happened?</h3>
+    <p><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone</code> created a <strong>complete copy</strong> of your repository on your local machine, including:</p>
+    <ul>
+        <li>All files (README.md)</li>
+        <li>All commit history</li>
+        <li>All branches</li>
+        <li><strong>A connection to the remote repository</strong> - Git automatically configured a "remote" called <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">origin</code> pointing to GitHub</li>
+    </ul>
+    <p><strong>Distributed replication in action!</strong> You now have two copies: one on GitHub's servers, one on your machine.</p>
+
+    <p style="margin-top: 15px;"><strong style="color: #1e40af;">Verify the remote connection:</strong></p>
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;">git remote -v
+# Shows: origin  https://github.com/[your-username]/distributed-computing-projects.git (fetch)
+#        origin  https://github.com/[your-username]/distributed-computing-projects.git (push)</pre>
+    <p><em style="color: #64748b;">The <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">origin</code> remote was automatically created by <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone</code> - you don't need to set it up manually!</em></p>
+</div>
+
+<h4 style="color: #1d4ed8; margin-top: 20px;">Step 2: Make a Change to README.md</h4>
+
+<p>Open <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">README.md</code> in your favorite text editor and add a new section at the bottom:</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">## Recent Updates
+
+- **[Today's Date]**: Successfully completed the distributed workflow challenge!
+  - Cloned repository to local machine
+  - Made local modifications
+  - Pushed changes back to GitHub
+  - Experienced distributed computing firsthand!</pre>
+
+<p>Save the file.</p>
+
+<h4 style="color: #1d4ed8; margin-top: 20px;">Step 3: Stage, Commit, and Push Your Changes</h4>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">git status
+# Check what files have changed (you should see README.md as modified)
+
+git add README.md
+# Stage the file for commit
+
+git commit -m "Add Recent Updates section - completed distributed workflow challenge"
+# Create a commit with your changes
+
+git push origin main
+# Push your commit to GitHub's servers</pre>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Understanding "git push origin main"</h3>
+    <p>Let's break down this command word by word:</p>
+
+    <p style="margin-top: 15px;"><strong style="color: #1e40af;">git push</strong> - The command to send commits to a remote repository</p>
+
+    <p style="margin-top: 15px;"><strong style="color: #1e40af;">origin</strong> - The name of the remote repository</p>
+    <ul>
+        <li>When you ran <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone</code>, Git automatically created a remote called "origin"</li>
+        <li>"origin" is just a nickname (alias) for the full GitHub URL: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">https://github.com/[your-username]/distributed-computing-projects.git</code></li>
+        <li>You could have multiple remotes with different names, but "origin" is the standard default name for the main remote</li>
+        <li>Think of it as: "origin" = "the place this repository originally came from"</li>
+    </ul>
+
+    <p style="margin-top: 15px;"><strong style="color: #1e40af;">main</strong> - The name of the branch you're pushing</p>
+    <ul>
+        <li>"main" is the default branch name in modern Git repositories</li>
+        <li>This tells Git: "push the commits from my local <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> branch to the <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">main</code> branch on the origin remote"</li>
+        <li>If you were working on a different branch (like "feature1"), you'd push that branch name instead</li>
+    </ul>
+
+    <p style="margin-top: 20px;"><strong style="color: #1e40af;">In plain English:</strong></p>
+    <p style="margin-left: 20px; font-style: italic; color: #64748b;">"Git, please push my commits from my local main branch to the main branch on the origin remote (GitHub)"</p>
+</div>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">What Happens When You Push?</h3>
+    <p>When you run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git push origin main</code>:</p>
+    <ol>
+        <li><strong>Your local Git</strong> packages up your new commit(s)</li>
+        <li><strong>Network transfer</strong> - The commit data is sent over the internet to GitHub's servers</li>
+        <li><strong>GitHub receives</strong> the commit and stores it in their Git database</li>
+        <li><strong>GitHub updates</strong> the main branch pointer on their server to point to your new commit</li>
+        <li><strong>GitHub Pages detects</strong> the change and automatically triggers a rebuild</li>
+        <li><strong>Within 1-2 minutes</strong>, your live website updates with the new content</li>
+    </ol>
+    <p style="margin-top: 15px;"><strong>This is distributed synchronization in action!</strong> Changes flow from your machine to remote servers, triggering automated processes across GitHub's distributed infrastructure.</p>
+</div>
+
+<h4 style="color: #1d4ed8; margin-top: 20px;">Step 4: Verify the Changes</h4>
+
+<ol>
+    <li>Go to your repository on GitHub: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">https://github.com/[your-username]/distributed-computing-projects</code></li>
+    <li>You should see your new commit and the updated README.md</li>
+    <li>Wait 1-2 minutes, then visit your GitHub Pages site: <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">https://[your-username].github.io/distributed-computing-projects/</code></li>
+    <li>Your live website should now show the "Recent Updates" section!</li>
+</ol>
+
+<div style="background-color: #dcfce7; border: 1px solid #22c55e; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Congratulations!</h3>
+    <p>You've just experienced the complete distributed computing workflow:</p>
+    <ul>
+        <li><strong>Replication</strong> - Cloned a remote repository locally</li>
+        <li><strong>Local Processing</strong> - Made changes on your machine</li>
+        <li><strong>Synchronization</strong> - Pushed changes to remote servers</li>
+        <li><strong>Automated Deployment</strong> - GitHub Pages rebuilt and deployed your site automatically</li>
+        <li><strong>Global Distribution</strong> - Your changes are now live worldwide via CDN</li>
+    </ul>
+    <p><strong>This is the foundation of modern distributed systems!</strong> The same concepts apply to cloud computing, microservices, distributed databases, and more.</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Command Reference</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Complete Command Sequence</h3>
+    <p>Here's the full set of commands you used in this challenge:</p>
+
+    <pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 15px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px;"># Navigate to your projects directory
+cd ~
+
+# Clone the repository from GitHub to your local machine
+git clone https://github.com/[your-username]/distributed-computing-projects.git
+
+# Enter the repository directory
+cd distributed-computing-projects
+
+# (Edit README.md in your text editor)
+
+# Check the status of your repository
+git status
+
+# Stage the modified file
+git add README.md
+
+# Commit your changes with a descriptive message
+git commit -m "Add Recent Updates section - completed distributed workflow challenge"
+
+# Push your changes to GitHub
+git push origin main</pre>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Key Commands Explained</h3>
+    <ul>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone [url]</code> - Copy a remote repository to your local machine (also automatically sets up "origin" remote)</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git status</code> - Show which files have changed</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git add [file]</code> - Stage a file for commit</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git commit -m "[message]"</code> - Create a commit with your staged changes</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git push origin main</code> - Send your commits to the remote repository
+            <ul style="margin-top: 5px;">
+                <li><strong>origin</strong> = the remote repository (GitHub) - automatically configured by git clone</li>
+                <li><strong>main</strong> = the branch name you're pushing</li>
+            </ul>
+        </li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git remote -v</code> - Show configured remotes (verify "origin" points to GitHub)</li>
+    </ul>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Troubleshooting</h2>
+
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0;">
+
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Problem: "Permission denied" when pushing</h3>
+    <p><strong>Solution:</strong> You need to authenticate with GitHub. Use one of these methods:</p>
+    <ul>
+        <li><strong>HTTPS with Personal Access Token</strong> - Generate a token at GitHub Settings → Developer settings → Personal access tokens</li>
+        <li><strong>SSH Keys</strong> - Set up SSH keys following <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" style="color: #3b82f6; text-decoration: underline;">GitHub's SSH guide</a></li>
+    </ul>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Problem: GitHub Pages site not updating</h3>
+    <p><strong>Solution:</strong> Wait 2-3 minutes and refresh. GitHub Pages can take a moment to rebuild. Check Settings → Pages for deployment status.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Problem: "fatal: not a git repository"</h3>
+    <p><strong>Solution:</strong> Make sure you're inside the cloned directory. Run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">cd distributed-computing-projects</code> first.</p>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Problem: Merge conflicts</h3>
+    <p><strong>Solution:</strong> If you edited the file both on GitHub and locally, you might get conflicts. Run <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git pull origin main</code> before making local changes to sync first.</p>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Summary: What You've Learned</h2>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Distributed Computing Concepts</h3>
+    <ul>
+        <li><strong>Replication</strong> - Your repository exists in multiple locations (GitHub's servers, your local machine)</li>
+        <li><strong>Synchronization</strong> - Git keeps these copies in sync with push/pull</li>
+        <li><strong>Remote Execution</strong> - GitHub Pages builds and deploys your site automatically on their servers</li>
+        <li><strong>Content Delivery Network (CDN)</strong> - Your site is distributed globally for fast access</li>
+        <li><strong>Version Control</strong> - Every change is tracked, allowing rollback and collaboration</li>
+    </ul>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Git Commands Mastered</h3>
+    <ul>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git clone</code> - Replicate a remote repository locally</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git status</code> - Check repository state</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git add</code> - Stage changes</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git commit</code> - Create a snapshot</li>
+        <li><code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">git push</code> - Synchronize to remote</li>
+    </ul>
+
+    <h3 style="color: #1d4ed8; margin-top: 25px;">Next Steps</h3>
+    <p>Throughout this course, you'll use this repository to publish projects and experiments. Each time you push changes, you're practicing distributed computing fundamentals that scale to enterprise systems!</p>
+</div>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Don't Forget!</h3>
+    <p>Email your repository URL and GitHub Pages URL to <strong style="color: #1e40af;">gsalu@ncf.edu</strong> to complete this assignment.</p>
+</div>
+
+</body>
+</html>

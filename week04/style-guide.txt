@@ -1,0 +1,532 @@
+# Canvas LMS HTML Style Guide
+
+## Overview
+This style guide provides instructions for creating professional, educational HTML content formatted for Canvas LMS. The styling uses inline CSS exclusively and follows accessibility best practices while maintaining visual hierarchy and readability.
+
+## Critical Canvas LMS Requirements
+
+### NEVER style these elements:
+- **`<body>`** - Canvas controls the body styling
+- **`<h1>`** - Canvas typically handles the main page title
+- Never use `<style>` tags - Canvas may strip them
+- All styling MUST be inline using `style="..."` attributes
+
+### NEVER use these elements:
+- **Emojis** - Never use emojis in educational content (🚫 ❌ ✅ etc.)
+- **Decorative symbols** - Avoid Unicode symbols like arrows (→), checkmarks (✓), or bullets (•)
+- **Special characters for decoration** - Use HTML and CSS for visual elements instead
+- **Em dashes** - Use hyphens or restructure sentences instead
+
+### Document Structure
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Content Title</title>
+</head>
+<body>
+<!-- All content goes here with inline styles -->
+</body>
+</html>
+```
+
+## Color Palette (Professional Blue Theme)
+
+### Primary Colors
+- **Primary Blue**: `#1e40af` - For headings and key elements
+- **Secondary Blue**: `#3b82f6` - For accents and borders
+- **Light Blue**: `#dbeafe` - For highlighted boxes
+- **Medium Blue**: `#93c5fd` - For box borders
+
+### Supporting Colors
+- **Text**: `#1e293b` - Main text color
+- **Text Muted**: `#64748b` - For captions and secondary text
+- **Background Gray**: `#f8fafc` - Light backgrounds
+- **Code Background Light**: `#f1f5f9` - For light code blocks
+- **Code Background Dark**: `#1e293b` - For dark code blocks
+- **Code Text Light**: `#e2e8f0` - Text color for dark code blocks
+- **Code Inline**: `#e2e8f0` - For inline code background
+- **Border Gray**: `#cbd5e1` - General borders
+
+### Status Colors
+- **Warning/Challenge**: `#fef3c7` background, `#f59e0b` border
+- **Info/Check**: `#eff6ff` background, `#60a5fa` border
+- **Optional/Muted**: `#f3f4f6` background, `#9ca3af` border
+- **Success/Positive**: `#d1fae5` background, `#10b981` border/text - For positive highlights
+
+## Typography Hierarchy
+
+### Headings
+```html
+<!-- H2 - Main sections -->
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Section Title</h2>
+
+<!-- H3 - Subsections -->
+<h3 style="color: #1d4ed8; margin-top: 25px;">Subsection Title</h3>
+```
+
+### Text Elements
+```html
+<!-- Paragraph with explicit styling (use when you need consistent sizing) -->
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Standard paragraph text with good readability.</p>
+
+<!-- Larger intro paragraph -->
+<p style="color: #1e293b; font-size: 16px; line-height: 1.6;">Introduction or emphasis paragraph.</p>
+
+<!-- Strong/Bold text -->
+<strong style="color: #1e40af;">Important Term</strong>
+
+<!-- Inline code -->
+<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">code</code>
+
+<!-- Inline code in links or special contexts -->
+<code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">command</code>
+```
+
+### Font Size Guidelines
+- **16px**: Introduction paragraphs, important content
+- **15px**: Standard body text
+- **14px**: Secondary information, code blocks
+- **13px**: Code examples, captions, table monospace text
+- **12px**: Small code snippets in tables
+
+## Content Containers
+
+### Highlighted Introduction Box
+```html
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Introduction</h2>
+    <p>Content goes here...</p>
+</div>
+```
+
+### Check Your Understanding Box
+```html
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Check your understanding</h3>
+    <ul>
+        <li>Question 1</li>
+        <li>Question 2</li>
+    </ul>
+</div>
+```
+
+### Challenge/Activity Box
+```html
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Challenge</h3>
+    <p>Challenge instructions...</p>
+</div>
+```
+
+### Optional Content Box
+```html
+<div style="background-color: #f3f4f6; border: 1px dashed #9ca3af; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Optional Section</h2>
+    <p>Optional content...</p>
+</div>
+```
+
+### Glossary/Reference Box
+```html
+<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Reference Title</h2>
+    <ul>
+        <li>Reference items...</li>
+    </ul>
+</div>
+```
+
+### Success/Positive Highlight Box
+```html
+<div style="background-color: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h4 style="color: #059669; margin-top: 5px;">Success or Positive Note</h4>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Use this for positive outcomes, best practices, or recommended approaches.</p>
+</div>
+```
+
+## Code Formatting
+
+### Light Code Blocks (Default)
+```html
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">
+function example() {
+    return "code goes here";
+}
+</pre>
+```
+
+### Dark Code Blocks (For Emphasis or Longer Examples)
+```html
+<div style="background-color: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 13px;">
+<pre style="margin: 0;">def lambda_handler(event, context):
+    """
+    Dark themed code block for better visual hierarchy
+    """
+    return {
+        'statusCode': 200,
+        'body': 'Hello World'
+    }</pre>
+</div>
+```
+
+**When to use dark code blocks:**
+- Longer, complete code examples
+- Code that should stand out visually
+- Production-ready code snippets
+- When you want to emphasize the code as a key learning element
+
+### Inline Code
+```html
+<code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">variableName</code>
+```
+
+## Layout Elements
+
+### Section Dividers
+```html
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+```
+
+### Lists
+- Use standard `<ul>` and `<ol>` tags
+- No special styling needed - Canvas handles basic list formatting
+- Add `margin-left: 20px;` if you need extra indentation
+
+### Tables
+Tables are excellent for comparing information, showing structured data, or presenting step-by-step processes.
+
+#### Basic Table Structure
+```html
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Header 1</th>
+<th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Header 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Data 1</td>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Data 2</td>
+</tr>
+<tr style="background-color: #f8fafc;">
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Data 3</td>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Data 4</td>
+</tr>
+</tbody>
+</table>
+```
+
+#### Table Styling Guidelines
+- **Alternating rows**: Use `background-color: #f8fafc;` on every other row for readability
+- **Headers**: Always use blue text (`color: #1e40af;`) and light gray background (`#f1f5f9`)
+- **Padding**: Use `12px` for comfortable spacing
+- **Borders**: Use `#cbd5e1` for all borders
+- **Text alignment**: `text-align: left;` for most content, `text-align: center;` for numeric data if needed
+
+#### Special Table Cell Formatting
+
+**Bold text in cells:**
+```html
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Important Item</strong></td>
+```
+
+**Monospace/code in cells:**
+```html
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 13px;">aws lambda create-function</td>
+```
+
+**Success/positive highlight in cells:**
+```html
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #10b981;"><strong>Recommended approach</strong></td>
+```
+
+**Small code snippets in cells:**
+```html
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b; font-family: monospace; font-size: 12px;">GET /items/123</td>
+```
+
+### Images and Captions
+```html
+<div style="text-align: center; margin: 20px 0;">
+<img style="max-width: 100%; height: auto; border: 1px solid #cbd5e1; border-radius: 8px;" src="image-url.png" alt="Descriptive alt text" />
+<p style="color: #64748b; font-size: 13px; margin-top: 10px;">Caption describing the image (Source: Attribution)</p>
+</div>
+```
+
+**Image guidelines:**
+- Always use `max-width: 100%;` for responsiveness
+- Include `height: auto;` to maintain aspect ratio
+- Add a subtle border and border-radius for polish
+- Always include descriptive `alt` text for accessibility
+- Use muted color (`#64748b`) for captions
+- Center images with `text-align: center;` on the wrapper div
+
+### Combining Elements
+
+You can nest tables, lists, and other content inside colored boxes for rich, structured content:
+
+#### Table Inside a Summary Box
+```html
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<h3 style="color: #1d4ed8; margin-top: 5px;">Key Takeaways</h3>
+<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+<tbody>
+<tr>
+<td style="padding: 8px 0; color: #1e293b;"><strong>Concept</strong></td>
+<td style="padding: 8px 0; color: #1e293b;">Brief explanation</td>
+</tr>
+<tr>
+<td style="padding: 8px 0; color: #1e293b;"><strong>Another Concept</strong></td>
+<td style="padding: 8px 0; color: #1e293b;">Another explanation</td>
+</tr>
+</tbody>
+</table>
+</div>
+```
+
+**Note:** When nesting tables in colored boxes, you can simplify the table styling (remove borders) for a cleaner look, as shown above.
+
+## Accessibility Guidelines
+
+### Required Attributes
+- Always include `lang="en"` on `<html>` tag
+- Use semantic HTML elements (`<h2>`, `<h3>`, `<ul>`, `<ol>`, `<table>`, etc.)
+- Maintain proper heading hierarchy (don't skip levels)
+- Always include `alt` attributes on images with descriptive text
+
+### Color Contrast
+- All text colors meet WCAG AA standards
+- Never rely solely on color to convey information
+- Use both color and text/icons for status indicators
+- Test color combinations:
+  - `#1e293b` on white: Excellent contrast
+  - `#1e40af` on white: Good contrast
+  - `#10b981` on white: Good contrast
+  - `#64748b` on white: Acceptable for captions/secondary text
+
+### Font Guidelines
+- Use system fonts or common web fonts only
+- `'Courier New', monospace` or `monospace` for code
+- Default system fonts for body text
+- Minimum font size: 13px for code/captions, 15px for body text
+- Line height: 1.6 for optimal readability
+
+## Best Practices
+
+### Responsive Design
+- Use `max-width` instead of fixed widths when needed
+- Test on mobile devices
+- Ensure horizontal scrolling for code blocks: `overflow-x: auto`
+
+### Content Structure
+1. Start with an introduction box explaining the purpose
+2. Use numbered sections (2, 3, 4...) since Canvas may use H1
+3. Include "Check your understanding" after each major concept
+4. Add challenges/activities to reinforce learning
+5. End with summary or consolidated practice
+6. Use tables to compare concepts, show workflows, or present structured information
+7. Use dark code blocks for important, complete examples
+8. Use light code blocks for quick snippets or inline demonstrations
+
+### Performance
+- Keep inline styles concise but complete
+- Avoid redundant style declarations
+- Use semantic HTML structure to minimize styling needs
+
+### Visual Hierarchy Tips
+- **Contrast**: Use dark code blocks to make important code stand out
+- **Color coding**: Use green highlights for positive/recommended items in tables
+- **Spacing**: Maintain consistent margins (20px) between major elements
+- **Typography**: Vary font sizes (13px-16px) to create hierarchy within content
+- **Tables**: Use alternating row colors for easier scanning
+
+## Example Template
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Title</title>
+</head>
+<body>
+
+<h1>Main Lesson Title</h1>
+
+<div style="background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 10px;">Introduction</h2>
+<p>Lesson overview and objectives...</p>
+</div>
+
+<h2 style="color: #1e40af; border-left: 4px solid #3b82f6; padding-left: 15px; margin-top: 30px;">Section 1</h2>
+
+<h3 style="color: #1d4ed8; margin-top: 25px;">Subsection</h3>
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Content with <strong style="color: #1e40af;">important terms</strong> and <code style="background-color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace;">code examples</code>.</p>
+
+<pre style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px;">
+// Code block example
+function hello() {
+    console.log("Hello World");
+}
+</pre>
+
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #cbd5e1;">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Feature</th>
+<th style="padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: #1e40af;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Item 1</strong></td>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Description of item 1</td>
+</tr>
+<tr style="background-color: #f8fafc;">
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;"><strong>Item 2</strong></td>
+<td style="padding: 12px; border: 1px solid #cbd5e1; color: #1e293b;">Description of item 2</td>
+</tr>
+</tbody>
+</table>
+
+<div style="background-color: #eff6ff; border: 1px solid #60a5fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+<h3 style="color: #1d4ed8; margin-top: 5px;">Check your understanding</h3>
+<ul>
+<li>Question 1</li>
+<li>Question 2</li>
+</ul>
+</div>
+
+<hr style="border: 1px solid #cbd5e1; margin: 30px 0;">
+
+</body>
+</html>
+```
+
+## Common Mistakes to Avoid
+
+1. **Don't style `<body>` or `<h1>`** - Canvas controls these
+2. **Don't use `<style>` tags** - Use inline styles only
+3. **Don't use external CSS files** - Canvas may not load them
+4. **Don't use non-web-safe fonts** - Stick to system fonts
+5. **Don't skip heading levels** - Go H2 → H3 → H4, not H2 → H4
+6. **Don't use only color** - Always pair with text or icons
+7. **Don't make fixed-width content** - Keep it responsive
+8. **Don't forget mobile testing** - Many students use phones/tablets
+9. **Don't forget alt text on images** - Required for accessibility
+10. **Don't use tiny fonts** - Minimum 13px for code, 15px for body text
+11. **Don't forget line-height** - Use 1.6 for readable paragraphs
+12. **Don't overuse dark code blocks** - Reserve for important examples
+13. **NEVER use emojis** - They are unprofessional and may not render consistently
+14. **NEVER use decorative Unicode symbols** - Use HTML/CSS for visual elements
+15. **NEVER use em dashes** - Use hyphens or rewrite sentences
+
+## Professional Writing Standards
+
+### Tone and Voice
+- **Professional and clear** - Write for college-level students
+- **Direct and concise** - Avoid unnecessary words
+- **Active voice preferred** - "Lambda executes your code" not "Your code is executed by Lambda"
+- **Consistent terminology** - Use the same terms throughout (don't switch between "function" and "method" randomly)
+
+### Formatting Rules
+- **No emojis ever** - Use words and proper HTML styling instead
+- **No decorative Unicode** - Avoid symbols like →, ✓, •, ★, etc.
+- **No em dashes (—)** - Use hyphens (-) or restructure sentences
+- **Use proper HTML entities** - `&amp;` for &, `&lt;` for <, `&gt;` for >
+- **Spell out abbreviations on first use** - "Amazon Web Services (AWS)" then "AWS"
+
+### Why No Emojis or Decorative Symbols?
+1. **Inconsistent rendering** - Different browsers and devices display them differently
+2. **Accessibility issues** - Screen readers may read them awkwardly or skip them
+3. **Professionalism** - Educational content should be formal and professional
+4. **Canvas compatibility** - Some symbols may not render correctly in Canvas LMS
+5. **Internationalization** - Symbols may have different meanings in different cultures
+
+**Instead of emojis/symbols, use:**
+- Colored boxes for emphasis (success, warning, info)
+- Bold text with color for important terms
+- Proper headings and visual hierarchy
+- Tables to organize information
+- Icons from image files if absolutely necessary (with alt text)
+
+### Examples: What NOT to Do vs. What TO Do
+
+**❌ WRONG - Using emojis:**
+```html
+<p>🚀 Deploy your application to AWS!</p>
+<p>✅ This is the correct approach</p>
+<p>⚠️ Warning: Be careful here</p>
+```
+
+**✓ CORRECT - Using styled HTML:**
+```html
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Deploy your application to AWS!</p>
+
+<div style="background-color: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h4 style="color: #059669; margin-top: 5px;">Correct Approach</h4>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">This is the recommended way to proceed.</p>
+</div>
+
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <h3 style="color: #1d4ed8; margin-top: 5px;">Warning</h3>
+    <p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Be careful here.</p>
+</div>
+```
+
+**❌ WRONG - Using decorative symbols:**
+```html
+<p>Follow these steps → configure AWS → deploy → test</p>
+<ul>
+    <li>• First item</li>
+    <li>• Second item</li>
+</ul>
+```
+
+**✓ CORRECT - Using proper HTML:**
+```html
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Follow these steps: configure AWS, deploy, and test.</p>
+<ul>
+    <li>First item</li>
+    <li>Second item</li>
+</ul>
+```
+
+**❌ WRONG - Using em dashes:**
+```html
+<p>Serverless computing — a revolutionary approach — eliminates server management.</p>
+```
+
+**✓ CORRECT - Using hyphens or restructuring:**
+```html
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Serverless computing - a revolutionary approach - eliminates server management.</p>
+<!-- OR BETTER: -->
+<p style="color: #1e293b; font-size: 15px; line-height: 1.6;">Serverless computing is a revolutionary approach that eliminates server management.</p>
+```
+
+## Testing Checklist
+
+Before submitting Canvas content:
+- [ ] No `<style>` tags used
+- [ ] No styling on `<body>` or `<h1>`
+- [ ] All styles are inline
+- [ ] Content is readable on mobile
+- [ ] Code blocks scroll horizontally if needed
+- [ ] Color contrast is sufficient
+- [ ] Heading hierarchy is logical
+- [ ] All boxes have proper spacing and borders
+- [ ] All images have `alt` attributes
+- [ ] All images are responsive (`max-width: 100%`)
+- [ ] Tables have alternating row colors for readability
+- [ ] Font sizes are appropriate (15px+ for body, 13px+ for code)
+- [ ] Line height is set to 1.6 for paragraphs
+- [ ] Dark code blocks are used sparingly for emphasis
+- [ ] **NO EMOJIS ANYWHERE** - Check entire document
+- [ ] **NO DECORATIVE UNICODE SYMBOLS** - Use HTML/CSS instead
+- [ ] **NO EM DASHES** - Use hyphens or rewrite
+- [ ] Tone is professional and appropriate for college students

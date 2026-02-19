@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4 Lecture 2 - Messaging and Queues</title>
+</head>
+
+<body>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Messaging and Queues
+        </h2>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;">In the previous lecture we gave our system a
+            <strong>memory</strong> (DynamoDB). Today we give it a <strong>nervous system</strong> &mdash; a way for
+            separate components to talk to each other without being in the same room, or even awake at the same time.
+        </p>
+        <p style="color:#1e293b;font-size:16px;line-height:1.6;margin-top:10px;">By the end of this lecture you will
+            understand what a <strong>message queue</strong> is, why every large-scale system uses one, how
+            <strong>Amazon SQS</strong> implements the concept, and the <strong>Correlation ID</strong> pattern that
+            lets a sender and receiver find each other again.
+        </p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PART 1 -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: What Is a
+        Message Queue?</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">A <strong>message queue</strong> is one of the oldest ideas
+        in computing. It is simply a <em>buffer</em> that sits between a <strong>sender</strong> (producer) and a
+        <strong>receiver</strong> (consumer).
+    </p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">Think of the <strong>ticket rack</strong> at a pizza
+        counter:</p>
+
+    <ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+        <li>A customer walks up and places an order. The cashier writes it on a ticket and clips it to the rack.</li>
+        <li>The customer gets an <strong>immediate confirmation</strong> ("Order #42, we'll call your name") and sits
+            down.</li>
+        <li>A cook pulls the next ticket off the rack <em>whenever they are free</em>.</li>
+        <li>If the cook is busy, tickets pile up on the rack &mdash; no one crashes, no one is blocked.</li>
+    </ul>
+
+    <!-- Pizza Counter SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 280" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Background counter -->
+            <rect x="0" y="0" width="800" height="280" rx="12" fill="#fefce8" />
+            <text x="400" y="25" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold"
+                font-style="italic">The Pizza Counter</text>
+
+            <!-- Customer -->
+            <circle cx="100" cy="150" r="40" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="100" y="142" text-anchor="middle" fill="#1e40af" font-size="28">🙋</text>
+            <text x="100" y="165" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="bold">Customer</text>
+            <text x="100" y="210" text-anchor="middle" fill="#64748b" font-size="10">"I want a</text>
+            <text x="100" y="222" text-anchor="middle" fill="#64748b" font-size="10">pepperoni!"</text>
+
+            <!-- Arrow to cashier -->
+            <line x1="145" y1="150" x2="195" y2="150" stroke="#94a3b8" stroke-width="2" marker-end="url(#pizzaArrow)" />
+
+            <!-- Cashier -->
+            <circle cx="240" cy="150" r="40" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="240" y="142" text-anchor="middle" fill="#92400e" font-size="28">💁</text>
+            <text x="240" y="165" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">Cashier</text>
+            <text x="240" y="210" text-anchor="middle" fill="#64748b" font-size="10">Writes ticket,</text>
+            <text x="240" y="222" text-anchor="middle" fill="#64748b" font-size="10">gives number</text>
+
+            <!-- Arrow to rack -->
+            <line x1="285" y1="150" x2="335" y2="150" stroke="#f59e0b" stroke-width="2" marker-end="url(#pizzaArrow)" />
+
+            <!-- Ticket Rack -->
+            <rect x="340" y="80" width="160" height="140" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="2"
+                stroke-dasharray="5,5" />
+            <text x="420" y="105" text-anchor="middle" fill="#64748b" font-size="11" font-weight="bold">TICKET
+                RACK</text>
+            <text x="420" y="120" text-anchor="middle" fill="#94a3b8" font-size="9">(The Queue)</text>
+            <!-- Tickets -->
+            <rect x="355" y="130" width="50" height="30" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="380" y="149" text-anchor="middle" fill="#92400e" font-size="8">#42</text>
+            <rect x="410" y="130" width="50" height="30" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="435" y="149" text-anchor="middle" fill="#92400e" font-size="8">#43</text>
+            <rect x="355" y="165" width="50" height="30" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="380" y="184" text-anchor="middle" fill="#92400e" font-size="8">#44</text>
+            <rect x="410" y="165" width="50" height="30" rx="3" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1"
+                stroke-dasharray="3,3" />
+            <text x="435" y="184" text-anchor="middle" fill="#94a3b8" font-size="8">...</text>
+
+            <text x="420" y="245" text-anchor="middle" fill="#64748b" font-size="10">Orders wait here</text>
+            <text x="420" y="257" text-anchor="middle" fill="#64748b" font-size="10">until a cook is free</text>
+
+            <!-- Arrow to cook -->
+            <line x1="505" y1="150" x2="555" y2="150" stroke="#10b981" stroke-width="2" marker-end="url(#pizzaArrow)" />
+
+            <!-- Cook -->
+            <circle cx="600" cy="150" r="40" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="600" y="142" text-anchor="middle" fill="#065f46" font-size="28">👨‍🍳</text>
+            <text x="600" y="165" text-anchor="middle" fill="#065f46" font-size="10" font-weight="bold">Cook</text>
+            <text x="600" y="210" text-anchor="middle" fill="#047857" font-size="10">Pulls ticket #42,</text>
+            <text x="600" y="222" text-anchor="middle" fill="#047857" font-size="10">makes pizza</text>
+
+            <!-- Arrow to pizza -->
+            <line x1="645" y1="150" x2="695" y2="150" stroke="#10b981" stroke-width="2" marker-end="url(#pizzaArrow)" />
+
+            <!-- Pizza done -->
+            <circle cx="740" cy="150" r="35" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="740" y="148" text-anchor="middle" fill="#92400e" font-size="30">🍕</text>
+            <text x="740" y="205" text-anchor="middle" fill="#047857" font-size="10" font-weight="bold">Done!</text>
+
+            <defs>
+                <marker id="pizzaArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">The ticket rack <strong>decouples</strong> the cashier from
+        the cook. The cashier doesn't need to know how many cooks are working, or how long a pizza takes. The cook
+        doesn't need to know how fast customers are arriving. They each operate at their own pace.</p>
+
+    <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#92400e;margin-top:5px;">Key Term: Temporal Decoupling</h3>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;">When two components don't need to be running
+            <em>at the same time</em> to communicate, they are <strong>temporally decoupled</strong>. The queue holds
+            messages until someone is ready to process them. This is the foundation of almost every scalable system.
+        </p>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- PART 2 -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: Why Queues?
+        Three Problems They Solve</h2>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Problem</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Without a Queue</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">With a Queue</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Load Leveling</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Friday night: 200 orders/min. Your 2
+                    cooks can only handle 20/min. The cashier freezes, the line wraps around the block, customers
+                    leave.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The rack absorbs the surge. Cooks work
+                    steadily. Customers get a ticket number and sit down. Nobody crashes.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Fault Tolerance</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">A cook drops a pizza. The order is
+                    lost. The customer never gets food and never gets a refund.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The ticket stays on the rack until
+                    someone <em>confirms</em> the pizza is done. If a cook drops it, the ticket reappears and another
+                    cook picks it up.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Independent Scaling</strong>
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Adding a third cook requires rewiring
+                    the cashier to know about all three cooks and route orders to them.</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Just hire a third cook. They pull
+                    tickets from the same rack. The cashier doesn't even notice.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+        <ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>In the pizza shop analogy, who is the <strong>producer</strong> and who is the
+                <strong>consumer</strong>?
+            </li>
+            <li>If a cook takes 10 minutes per pizza and 60 orders arrive in 10 minutes, how many cooks do you need to
+                keep up?</li>
+            <li>What happens to the tickets on the rack if all cooks go on break? Are orders lost?</li>
+        </ul>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- PART 3 -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: Amazon SQS
+        &mdash; A Hosted Queue</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Reading Architecture Diagrams: Database vs Queue</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">In system architecture diagrams, each component has a
+        standard symbol. Last lecture you learned the <strong>cylinder</strong> for a database. Today you learn the
+        <strong>arrow pipe</strong> for a queue. Here they are side by side:
+    </p>
+
+    <!-- Architecture Symbols SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 320" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Section divider -->
+            <line x1="400" y1="30" x2="400" y2="300" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="5,5" />
+
+            <!-- === DATABASE SIDE === -->
+            <text x="200" y="30" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Database
+                (DynamoDB)</text>
+
+            <!-- Cylinder shape -->
+            <ellipse cx="200" cy="100" rx="70" ry="20" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <rect x="130" y="100" width="140" height="100" fill="#eff6ff" stroke="none" />
+            <line x1="130" y1="100" x2="130" y2="200" stroke="#3b82f6" stroke-width="2" />
+            <line x1="270" y1="100" x2="270" y2="200" stroke="#3b82f6" stroke-width="2" />
+            <ellipse cx="200" cy="200" rx="70" ry="20" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" />
+
+            <!-- Label inside -->
+            <text x="200" y="155" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">DynamoDB</text>
+
+            <!-- Description -->
+            <text x="200" y="245" text-anchor="middle" fill="#64748b" font-size="11">Symbol: Cylinder</text>
+            <text x="200" y="262" text-anchor="middle" fill="#64748b" font-size="11">Meaning: Persistent storage</text>
+            <text x="200" y="279" text-anchor="middle" fill="#64748b" font-size="11">Data lives here long-term</text>
+
+            <!-- === QUEUE SIDE === -->
+            <text x="600" y="30" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Queue
+                (SQS)</text>
+
+            <!-- Pipe/arrow shape -->
+            <rect x="510" y="110" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+
+            <!-- Arrow entering -->
+            <line x1="470" y1="140" x2="510" y2="140" stroke="#f59e0b" stroke-width="3" marker-end="url(#archArrow)" />
+
+            <!-- Arrow exiting -->
+            <line x1="650" y1="140" x2="700" y2="140" stroke="#10b981" stroke-width="3"
+                marker-end="url(#archArrowGreen)" />
+
+            <!-- Messages inside -->
+            <rect x="525" y="122" width="25" height="25" rx="3" fill="#fff7ed" stroke="#f59e0b" stroke-width="1" />
+            <text x="537" y="139" text-anchor="middle" fill="#92400e" font-size="8">msg</text>
+            <rect x="555" y="122" width="25" height="25" rx="3" fill="#fff7ed" stroke="#f59e0b" stroke-width="1" />
+            <text x="567" y="139" text-anchor="middle" fill="#92400e" font-size="8">msg</text>
+            <rect x="585" y="122" width="25" height="25" rx="3" fill="#fff7ed" stroke="#f59e0b" stroke-width="1" />
+            <text x="597" y="139" text-anchor="middle" fill="#92400e" font-size="8">msg</text>
+            <rect x="615" y="122" width="25" height="25" rx="3" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1" />
+            <text x="627" y="139" text-anchor="middle" fill="#94a3b8" font-size="8">...</text>
+
+            <!-- Label above -->
+            <text x="580" y="100" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">SQS Queue</text>
+
+            <!-- In/Out labels -->
+            <text x="480" y="165" text-anchor="middle" fill="#f59e0b" font-size="9">IN</text>
+            <text x="710" y="165" text-anchor="middle" fill="#10b981" font-size="9">OUT</text>
+
+            <!-- Description -->
+            <text x="600" y="205" text-anchor="middle" fill="#64748b" font-size="11">Symbol: Pipe with arrows</text>
+            <text x="600" y="222" text-anchor="middle" fill="#64748b" font-size="11">Meaning: Transient buffer</text>
+            <text x="600" y="239" text-anchor="middle" fill="#64748b" font-size="11">Data flows through, doesn't
+                stay</text>
+
+            <!-- Key difference box -->
+            <rect x="200" y="290" width="400" height="25" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" />
+            <text x="400" y="307" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">Key: Database =
+                store forever | Queue = pass along and discard</text>
+
+            <defs>
+                <marker id="archArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+                </marker>
+                <marker id="archArrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">When you see system architecture diagrams in the real
+        world, you'll now recognize both symbols. A <strong>database</strong> stores data long-term (it persists). A
+        <strong>queue</strong> is just a transit point — data passes through and is deleted once processed.
+    </p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Amazon Simple Queue Service (SQS)</strong> is a
+        fully managed message queue. You don't install anything. AWS runs the infrastructure, and you interact with it
+        through four API calls:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">API Call</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Pizza Analogy</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Python (Boto3)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Create Queue</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Install the ticket rack on the wall
+                </td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    <code>sqs.create_queue(QueueName=...)</code>
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Send Message</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Cashier clips a ticket to the rack</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    <code>sqs.send_message(QueueUrl=..., MessageBody=...)</code>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Receive Message</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Cook pulls the next ticket</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    <code>sqs.receive_message(QueueUrl=...)</code>
+                </td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Delete Message</strong></td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Cook throws ticket away after pizza is
+                    boxed</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:13px;">
+                    <code>sqs.delete_message(QueueUrl=..., ReceiptHandle=...)</code>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Creating a Queue in Python</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">import boto3
+
+sqs = boto3.client('sqs', region_name='us-east-1')
+
+response = sqs.create_queue(
+    QueueName='PizzaOrderQueue',
+    Attributes={
+        'VisibilityTimeout': '30',        # seconds before a "dropped" ticket reappears
+        'MessageRetentionPeriod': '86400'  # keep messages for 24 hours max
+    }
+)
+QUEUE_URL = response['QueueUrl']
+print(f"Queue ready: {QUEUE_URL}")</pre>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">That's it. One API call and you have a fully managed,
+        infinitely scalable message queue running in the cloud.</p>
+
+    <!-- SQS Architecture SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 250" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Producer box -->
+            <rect x="10" y="60" width="160" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="90" y="95" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Producer</text>
+            <text x="90" y="115" text-anchor="middle" fill="#64748b" font-size="11">(Cashier / API)</text>
+            <text x="90" y="135" text-anchor="middle" fill="#64748b" font-size="11">send_message()</text>
+
+            <!-- Arrow 1 -->
+            <line x1="170" y1="110" x2="240" y2="110" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+
+            <!-- Queue box -->
+            <rect x="240" y="40" width="300" height="140" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="2"
+                stroke-dasharray="5,5" />
+            <text x="390" y="30" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">SQS Queue (The
+                Ticket Rack)</text>
+
+            <!-- Messages in Queue -->
+            <rect x="260" y="80" width="60" height="60" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="290" y="115" text-anchor="middle" fill="#92400e" font-size="10">Order 1</text>
+
+            <rect x="330" y="80" width="60" height="60" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="360" y="115" text-anchor="middle" fill="#92400e" font-size="10">Order 2</text>
+
+            <rect x="400" y="80" width="60" height="60" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" />
+            <text x="430" y="115" text-anchor="middle" fill="#92400e" font-size="10">Order 3</text>
+
+            <text x="490" y="115" text-anchor="middle" fill="#94a3b8" font-size="20">...</text>
+
+            <!-- Arrow 2 -->
+            <line x1="540" y1="110" x2="610" y2="110" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+
+            <!-- Consumer box -->
+            <rect x="610" y="60" width="160" height="100" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="690" y="95" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">Consumer</text>
+            <text x="690" y="115" text-anchor="middle" fill="#047857" font-size="11">(Cook / Worker)</text>
+            <text x="690" y="135" text-anchor="middle" fill="#047857" font-size="11">receive_message()</text>
+
+            <!-- Arrowhead marker -->
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- PART 4 -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: The Correlation
+        Problem</h2>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">There is an obvious question our pizza analogy hasn't
+        answered yet: <strong>How does the customer know their pizza is done?</strong></p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">The cashier gave them a ticket number. But the cook doesn't
+        walk over and tap them on the shoulder. Instead, the cook puts the finished pizza on the <em>pickup counter</em>
+        with the ticket number on the box. The customer checks the counter for their number.</p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">In distributed systems, this is the
+        <strong>Correlation ID</strong> pattern:
+    </p>
+
+    <ol style="color:#1e293b;font-size:15px;line-height:1.8;">
+        <li>The producer generates a unique ID (like a UUID) and attaches it to the message.</li>
+        <li>The consumer processes the message and posts a <strong>result</strong> to a separate
+            <strong>response queue</strong>, tagged with the same ID.
+        </li>
+        <li>The original producer polls the response queue, looking for a message with their ID.</li>
+    </ol>
+
+    <!-- Two-Queue SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 320" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <!-- Customer -->
+            <rect x="10" y="30" width="140" height="260" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+            <text x="80" y="55" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">Customer</text>
+            <text x="80" y="75" text-anchor="middle" fill="#64748b" font-size="10">(Producer)</text>
+            <text x="80" y="130" text-anchor="middle" fill="#1e40af" font-size="11">1. Send order</text>
+            <text x="80" y="145" text-anchor="middle" fill="#1e40af" font-size="11">+ correlation_id</text>
+            <text x="80" y="230" text-anchor="middle" fill="#059669" font-size="11">4. Poll for</text>
+            <text x="80" y="245" text-anchor="middle" fill="#059669" font-size="11">my correlation_id</text>
+
+            <!-- Order Queue -->
+            <rect x="220" y="80" width="200" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" />
+            <text x="320" y="110" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">ORDER QUEUE
+            </text>
+            <text x="320" y="130" text-anchor="middle" fill="#92400e" font-size="10">pizza-orders</text>
+
+            <!-- Response Queue -->
+            <rect x="220" y="200" width="200" height="70" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="320" y="230" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">RESPONSE QUEUE
+            </text>
+            <text x="320" y="250" text-anchor="middle" fill="#065f46" font-size="10">pizza-results</text>
+
+            <!-- Cook -->
+            <rect x="490" y="30" width="140" height="260" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2" />
+            <text x="560" y="55" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">Cook</text>
+            <text x="560" y="75" text-anchor="middle" fill="#047857" font-size="10">(Consumer)</text>
+            <text x="560" y="130" text-anchor="middle" fill="#065f46" font-size="11">2. Receive order</text>
+            <text x="560" y="230" text-anchor="middle" fill="#065f46" font-size="11">3. Send result</text>
+            <text x="560" y="245" text-anchor="middle" fill="#065f46" font-size="11">+ same correlation_id</text>
+
+            <!-- Arrows -->
+            <!-- Customer -> Order Queue -->
+            <line x1="150" y1="120" x2="220" y2="115" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow2)" />
+            <!-- Order Queue -> Cook -->
+            <line x1="420" y1="115" x2="490" y2="120" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow2)" />
+            <!-- Cook -> Response Queue -->
+            <line x1="490" y1="235" x2="420" y2="235" stroke="#10b981" stroke-width="2" marker-end="url(#arrow2)" />
+            <!-- Response Queue -> Customer -->
+            <line x1="220" y1="235" x2="150" y2="235" stroke="#10b981" stroke-width="2" marker-end="url(#arrow2)" />
+
+            <defs>
+                <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                    orient="auto-start-auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Correlation ID in Code</h3>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;">import uuid, json
+
+# CUSTOMER sends an order
+correlation_id = str(uuid.uuid4())
+
+sqs.send_message(
+    QueueUrl=ORDER_QUEUE_URL,
+    MessageBody=json.dumps({
+        'correlation_id': correlation_id,
+        'customer': 'Alice',
+        'toppings': ['pepperoni', 'mushrooms']
+    })
+)
+print(f"Order sent! My ticket number: {correlation_id[:8]}...")</pre>
+    </div>
+
+    <div
+        style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+        <pre style="margin:0;"># COOK receives, processes, and responds
+msg = sqs.receive_message(QueueUrl=ORDER_QUEUE_URL)['Messages'][0]
+order = json.loads(msg['Body'])
+
+print(f"Making pizza for {order['customer']}: {order['toppings']}")
+
+# Send result back with the SAME correlation_id
+sqs.send_message(
+    QueueUrl=RESPONSE_QUEUE_URL,
+    MessageBody=json.dumps({
+        'correlation_id': order['correlation_id'],
+        'status': 'READY',
+        'cook': 'Chef Bob'
+    })
+)
+sqs.delete_message(QueueUrl=ORDER_QUEUE_URL, ReceiptHandle=msg['ReceiptHandle'])</pre>
+    </div>
+
+    <div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+        <ul style="color:#1e293b;font-size:15px;line-height:1.8;">
+            <li>Why do we need <em>two</em> queues instead of one?</li>
+            <li>What would happen if the cook forgot to include the <code
+                    style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">correlation_id</code> in the response?
+            </li>
+            <li>Could you use a <em>database</em> instead of a response queue? What are the trade-offs?</li>
+        </ul>
+    </div>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- PART 5 -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: Safety Nets
+        &mdash; What Can Go Wrong?</h2>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Visibility Timeout</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">When a cook pulls a ticket, SQS doesn't remove it. It
+        <strong>hides</strong> it for a set period (the <em>Visibility Timeout</em>). If the cook finishes and calls
+        <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">delete_message</code>, the ticket is gone
+        for good. But if the cook crashes (or takes too long), the ticket <strong>reappears</strong> on the rack for
+        someone else to pick up.
+    </p>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">This is why the timeout value matters: set it too short and
+        a slow cook causes duplicate pizzas. Set it too long and a crashed cook causes a long delay before retry.</p>
+
+    <!-- Visibility Timeout Timeline SVG -->
+    <div style="text-align:center;margin:30px 0;">
+        <svg viewBox="0 0 800 300" style="max-width:800px;width:100%;font-family:Arial,sans-serif;">
+            <text x="400" y="25" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Visibility
+                Timeout: Two Scenarios</text>
+
+            <!-- HAPPY PATH -->
+            <text x="50" y="65" fill="#065f46" font-size="12" font-weight="bold">✅ Happy Path (Cook finishes in
+                time)</text>
+
+            <!-- Timeline bar -->
+            <rect x="50" y="80" width="700" height="8" rx="4" fill="#e2e8f0" />
+
+            <!-- Visible segment -->
+            <rect x="50" y="80" width="100" height="8" rx="4" fill="#10b981" />
+            <text x="100" y="105" text-anchor="middle" fill="#047857" font-size="9">Visible</text>
+
+            <!-- Hidden segment -->
+            <rect x="150" y="80" width="250" height="8" rx="4" fill="#f59e0b" />
+            <text x="275" y="105" text-anchor="middle" fill="#92400e" font-size="9">Hidden (cook is working)</text>
+
+            <!-- Delete happens -->
+            <line x1="400" y1="70" x2="400" y2="95" stroke="#10b981" stroke-width="2" />
+            <text x="400" y="65" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">delete_message()
+                ✅</text>
+
+            <!-- Gone segment -->
+            <rect x="400" y="80" width="350" height="8" rx="4" fill="#d1fae5" />
+            <text x="575" y="105" text-anchor="middle" fill="#047857" font-size="9">Message gone forever</text>
+
+            <!-- Events -->
+            <circle cx="150" cy="84" r="5" fill="#3b82f6" />
+            <text x="150" y="120" text-anchor="middle" fill="#3b82f6" font-size="9">Cook pulls ticket</text>
+
+            <!-- SAD PATH -->
+            <text x="50" y="175" fill="#b91c1c" font-size="12" font-weight="bold">❌ Sad Path (Cook is too slow /
+                crashes)</text>
+
+            <!-- Timeline bar -->
+            <rect x="50" y="190" width="700" height="8" rx="4" fill="#e2e8f0" />
+
+            <!-- Visible segment -->
+            <rect x="50" y="190" width="100" height="8" rx="4" fill="#10b981" />
+            <text x="100" y="215" text-anchor="middle" fill="#047857" font-size="9">Visible</text>
+
+            <!-- Hidden segment -->
+            <rect x="150" y="190" width="300" height="8" rx="4" fill="#f59e0b" />
+            <text x="300" y="215" text-anchor="middle" fill="#92400e" font-size="9">Hidden (timeout = 30s)</text>
+
+            <!-- Timeout expires -->
+            <line x1="450" y1="180" x2="450" y2="205" stroke="#ef4444" stroke-width="2" />
+            <text x="450" y="175" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="bold">⏰ Timeout
+                expires!</text>
+
+            <!-- Visible again -->
+            <rect x="450" y="190" width="300" height="8" rx="4" fill="#fecaca" />
+            <text x="600" y="215" text-anchor="middle" fill="#b91c1c" font-size="9">Visible AGAIN — another cook picks
+                it up</text>
+
+            <!-- Events -->
+            <circle cx="150" cy="194" r="5" fill="#3b82f6" />
+            <text x="150" y="230" text-anchor="middle" fill="#3b82f6" font-size="9">Cook pulls ticket</text>
+
+            <circle cx="500" cy="194" r="5" fill="#ef4444" />
+            <text x="500" y="230" text-anchor="middle" fill="#ef4444" font-size="9">Cook 2 picks up</text>
+
+            <!-- Warning box -->
+            <rect x="150" y="255" width="500" height="30" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1" />
+            <text x="400" y="275" text-anchor="middle" fill="#b91c1c" font-size="11">⚠️ Result: DUPLICATE PIZZA — same
+                order processed by two cooks!</text>
+        </svg>
+    </div>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">At-Least-Once Delivery</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">SQS guarantees that every message will be delivered
+        <strong>at least once</strong>. This means, occasionally, a message may be delivered <em>twice</em> (for
+        example,
+        due to a timeout or a network glitch). Your code must handle this gracefully.
+    </p>
+
+    <h3 style="color:#1d4ed8;margin-top:25px;">Idempotency</h3>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;">If processing the same message twice produces the same
+        result as processing it once, the operation is <strong>idempotent</strong>. This is how you protect against
+        at-least-once delivery:</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+        <thead>
+            <tr style="background-color:#f1f5f9;">
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Operation</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Idempotent?</th>
+                <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Set status to "READY"</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;font-weight:bold;">Yes</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Setting the same value twice has no
+                    side effect.</td>
+            </tr>
+            <tr style="background-color:#f8fafc;">
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Charge credit card $10</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#ef4444;font-weight:bold;">No</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Processing twice = double charge. Use a
+                    unique transaction key.</td>
+            </tr>
+            <tr>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Add $5 to balance</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#ef4444;font-weight:bold;">No</td>
+                <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Processing twice = $10 added. Use a
+                    conditional check.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+    <!-- ========================================== -->
+    <!-- SUMMARY -->
+    <!-- ========================================== -->
+    <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary</h2>
+
+    <div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">Key Takeaways</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+            <tbody>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;width:200px;">
+                        <strong>Message Queue</strong>
+                    </td>
+                    <td style="padding:8px 0;color:#1e293b;">A buffer between producers and consumers. Neither side
+                        needs to know about the other.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;"><strong>Temporal Decoupling</strong>
+                    </td>
+                    <td style="padding:8px 0;color:#1e293b;">Producer and consumer don't need to be running at the same
+                        time.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;"><strong>SQS</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">AWS's managed queue: create, send, receive, delete. Four
+                        API calls.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;"><strong>Correlation ID</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">A unique ID that lets a producer find the response to their
+                        specific request in a shared response queue.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;"><strong>Visibility Timeout</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">How long a message is hidden after being received. Prevents
+                        duplicates when set correctly.</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#1e293b;vertical-align:top;"><strong>Idempotency</strong></td>
+                    <td style="padding:8px 0;color:#1e293b;">Designing operations so processing a message twice is safe.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>Next:</strong> Open the <a
+            href="lab_2.html" style="color:#3b82f6;font-weight:bold;">Messaging Lab</a> where you will use these exact
+        concepts in a live classroom exercise &mdash; half the class sends pizza orders, the other half cooks them.</p>
+
+    <div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+        <h3 style="color:#1d4ed8;margin-top:5px;">References</h3>
+        <ul>
+            <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html"
+                    style="color:#3b82f6;">SQS Developer Guide</a></li>
+            <li><a href="https://www.enterpriseintegrationpatterns.com/patterns/messaging/CorrelationIdentifier.html"
+                    style="color:#3b82f6;">Enterprise Integration Patterns: Correlation Identifier</a></li>
+            <li><a href="https://aws.amazon.com/blogs/compute/operating-lambda-with-sqs/" style="color:#3b82f6;">AWS
+                    Blog: Best practices for Lambda and SQS</a></li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

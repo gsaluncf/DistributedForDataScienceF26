@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 3 Lecture 2: Persistence with DynamoDB</title>
+</head>
+<body>
+
+<h1>Week 3 Lecture 2: Persistence with DynamoDB</h1>
+
+<p style="color:#1e293b;font-size:16px;line-height:1.8;margin-top:20px;">In Lecture 1, we learned how to build serverless APIs with Lambda and API Gateway. But what happens when your Lambda function finishes executing? All data in memory is lost. To build real applications, we need persistent storage. That's where <strong>Amazon DynamoDB</strong> comes in.</p>
+
+<p style="color:#1e293b;font-size:16px;line-height:1.8;">DynamoDB is AWS's fully managed NoSQL database service. It's designed for applications that need consistent, single-digit millisecond latency at any scale. In this lecture, we'll explore how DynamoDB works, how to design tables effectively, and how to integrate it with Lambda functions.</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: What is DynamoDB?</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">NoSQL vs SQL Databases</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Before diving into DynamoDB, let's understand the difference between SQL and NoSQL databases:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Aspect</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">SQL (Relational)</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">NoSQL (DynamoDB)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Data Model</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Tables with fixed schemas, rows and columns</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Key-value and document store, flexible schema</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Relationships</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Foreign keys, JOINs across tables</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Denormalized data, no JOINs</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scaling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Vertical (bigger servers)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Horizontal (more partitions)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Query Language</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQL (SELECT, JOIN, WHERE)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">API calls (get_item, put_item, query)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Best For</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Complex queries, transactions, reporting</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">High-speed reads/writes, simple queries, massive scale</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">DynamoDB Key Features</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Feature</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Fully Managed</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No servers to provision, patch, or manage</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Performance</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Single-digit millisecond latency at any scale</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scalability</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Automatically scales to handle trillions of requests per day</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Flexible Schema</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Each item can have different attributes</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Built-in Security</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Encryption at rest, IAM integration, VPC endpoints</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: Table Design - Keys and Access Patterns</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding Partition Keys and Sort Keys</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">DynamoDB tables are organized around <strong>keys</strong>. Every table must have a <strong>partition key</strong> (also called a hash key), and optionally a <strong>sort key</strong> (also called a range key).</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Key Type</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Purpose</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Partition Key</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Determines which partition stores the item. Must be unique if no sort key.</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">user_id, order_id, product_id</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Sort Key</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Sorts items with the same partition key. Enables range queries.</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">timestamp, date, version</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Composite Key</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Partition key + sort key together form a unique identifier</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">user_id + timestamp</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Our Project's Table Design</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Let's look at how our SAM template defines the DynamoDB table:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">ItemsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub '${AWS::StackName}-items'
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    BillingMode: PAY_PER_REQUEST</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Let's break down each part:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Property</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Value</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Explanation</th>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Access Patterns: Design for Your Queries</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Unlike SQL databases where you design normalized tables first and then write queries, with DynamoDB you <strong>design your table based on your access patterns</strong>. You need to know how you'll query the data before you create the table.</p>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Common Access Patterns</h4>
+  <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+    <thead>
+      <tr style="background-color:#dbeafe;">
+        <th style="padding:10px;text-align:left;color:#1e40af;">Pattern</th>
+        <th style="padding:10px;text-align:left;color:#1e40af;">Key Design</th>
+        <th style="padding:10px;text-align:left;color:#1e40af;">Example</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px;color:#1e293b;"><strong>Get single item</strong></td>
+        <td style="padding:10px;color:#1e293b;">Partition key only</td>
+        <td style="padding:10px;color:#1e293b;font-family:monospace;font-size:12px;">Get user by user_id</td>
+      </tr>
+      <tr style="background-color:#f0f9ff;">
+        <td style="padding:10px;color:#1e293b;"><strong>Get related items</strong></td>
+        <td style="padding:10px;color:#1e293b;">Partition key + sort key</td>
+        <td style="padding:10px;color:#1e293b;font-family:monospace;font-size:12px;">Get all orders for user_id</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;color:#1e293b;"><strong>Range queries</strong></td>
+        <td style="padding:10px;color:#1e293b;">Partition key + sort key</td>
+        <td style="padding:10px;color:#1e293b;font-family:monospace;font-size:12px;">Get orders between dates</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Our simple table uses only a partition key (id) because our access pattern is straightforward: retrieve a single item by its ID.</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: Throughput Models - On-Demand vs Provisioned</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding Capacity Modes</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">DynamoDB offers two capacity modes that determine how you pay for read and write throughput:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Aspect</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">On-Demand (PAY_PER_REQUEST)</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Provisioned</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Pricing Model</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Pay per request (read/write)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Pay for provisioned capacity (hourly)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Capacity Planning</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">None required, auto-scales</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Must specify read/write capacity units</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Best For</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Unpredictable workloads, new applications, development</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Predictable traffic, cost optimization</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Throttling Risk</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Very low (handles spikes automatically)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Higher (if traffic exceeds provisioned capacity)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Cost</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Higher per request, but no waste</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lower per request, but pay even if unused</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why We Use On-Demand Mode</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Our SAM template uses <strong>PAY_PER_REQUEST</strong> (on-demand mode) because:</p>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">1. We don't know how many students will deploy this lab</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">2. Traffic is unpredictable during testing and development</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">3. No capacity planning required - perfect for learning</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;">4. You only pay for what you use (likely pennies for this lab)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding Hot Partitions</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">A <strong>hot partition</strong> occurs when one partition receives significantly more traffic than others. This can cause performance issues and throttling.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Scenario</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Problem</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Celebrity User</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">One user_id gets millions of requests</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use caching (ElastiCache), add random suffix to partition key</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Sequential IDs</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">All new items go to same partition (e.g., timestamp-based keys)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use UUIDs or add random prefix</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Uneven Access</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Some items accessed far more than others</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use DAX (DynamoDB Accelerator) for caching</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Best Practice: Distribute Partition Keys Evenly</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">Choose partition keys that distribute requests evenly across partitions. Good examples: user_id (UUID), order_id (UUID), email address. Bad examples: status (only a few values), date (all writes go to today's partition).</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: Integrating Lambda with DynamoDB</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How SAM Connects Lambda to DynamoDB</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Our SAM template automatically sets up the connection between Lambda and DynamoDB. Let's see how:</p>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">ApiFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: src/
+    Handler: handler.lambda_handler
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ItemsTable
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref ItemsTable</pre>
+</div>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;">Let's break down what SAM does for us:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">SAM Configuration</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What It Does</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">TABLE_NAME: !Ref ItemsTable</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Passes table name as environment variable</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda code can access table name dynamically</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">DynamoDBCrudPolicy</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Creates IAM role with DynamoDB permissions</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Lambda can read/write to the table securely</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">DynamoDB Operations in Python (Boto3)</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Our Lambda handler uses the Boto3 library to interact with DynamoDB. Let's examine the key operations:</p>
+
+<h4 style="color:#1d4ed8;margin-top:20px;">1. Initialization (Outside Handler)</h4>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">import boto3
+import os
+
+# Initialize once per container (cold start only)
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ.get('TABLE_NAME', 'items'))</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Code</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Explanation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">boto3.resource('dynamodb')</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Creates a high-level DynamoDB resource object</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">os.environ.get('TABLE_NAME')</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reads table name from environment variable (set by SAM)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">dynamodb.Table(...)</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Creates a Table resource for performing operations</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 style="color:#1d4ed8;margin-top:20px;">2. PUT Operation (Create Item)</h4>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">def handle_post(event):
+    body = json.loads(event.get('body', '{}'))
+    item_id = body.get('id')
+
+    # Convert floats to Decimal for DynamoDB
+    item = convert_floats(body)
+
+    # Store item in DynamoDB
+    table.put_item(Item=item)
+
+    return {
+        'statusCode': 201,
+        'body': json.dumps({'message': 'Item created', 'id': item_id})
+    }</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1. Parse JSON</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Convert request body string to Python dict</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2. Convert floats</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB requires Decimal type for numbers (not float)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3. put_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Writes item to DynamoDB (creates or replaces)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4. Return 201</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">HTTP 201 Created status code</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 style="color:#1d4ed8;margin-top:20px;">3. GET Operation (Retrieve Item)</h4>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">def handle_get(event):
+    item_id = event.get('pathParameters', {}).get('id')
+
+    # Get item from DynamoDB
+    response = table.get_item(Key={'id': item_id})
+
+    if 'Item' in response:
+        # Convert Decimal to float for JSON serialization
+        item = convert_decimals(response['Item'])
+        return {
+            'statusCode': 200,
+            'body': json.dumps(item)
+        }
+    else:
+        return {
+            'statusCode': 404,
+            'body': json.dumps({'error': 'Item not found'})
+        }</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Step</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">What Happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">1. Extract ID</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Get item ID from URL path parameters</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">2. get_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retrieve item by partition key</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">3. Check if found</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Response contains 'Item' key if found</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">4. Convert Decimals</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">JSON doesn't support Decimal, convert to float</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">5. Return result</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">200 if found, 404 if not found</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Decimal Problem and Solution</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">One of the most common issues when working with DynamoDB in Python is the <strong>Decimal type mismatch</strong>. Here's why it happens and how we solve it:</p>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">The Problem</h4>
+  <table style="width:100%;margin-top:10px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>JSON uses:</strong> float for numbers (e.g., 29.99)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>DynamoDB requires:</strong> Decimal for numbers (to avoid floating-point precision errors)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Result:</strong> If you try to store a float in DynamoDB, you get a TypeError</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">The Solution: Helper Functions</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">We use two helper functions to convert between float and Decimal:</p>
+</div>
+
+<div style="background-color:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;margin:20px 0;font-family:monospace;font-size:13px;">
+<pre style="margin:0;">from decimal import Decimal
+
+def convert_floats(obj):
+    """Recursively convert float to Decimal for DynamoDB storage"""
+    if isinstance(obj, list):
+        return [convert_floats(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, float):
+        return Decimal(str(obj))  # Convert float to Decimal
+    else:
+        return obj
+
+def convert_decimals(obj):
+    """Recursively convert Decimal to float for JSON serialization"""
+    if isinstance(obj, list):
+        return [convert_decimals(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return float(obj)  # Convert Decimal to float
+    else:
+        return obj</pre>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Function</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">When to Use</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">convert_floats()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Before writing to DynamoDB</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB requires Decimal for numbers</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">convert_decimals()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">After reading from DynamoDB</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">JSON doesn't support Decimal type</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why Recursive?</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">The functions are recursive because your data might have nested structures. For example:</p>
+  <div style="background-color:#1e293b;color:#e2e8f0;padding:10px;border-radius:4px;margin:10px 0;font-family:monospace;font-size:12px;">
+<pre style="margin:0;">{
+  "id": "product-123",
+  "name": "Widget",
+  "price": 29.99,
+  "dimensions": {
+    "width": 10.5,
+    "height": 5.25
+  },
+  "prices": [19.99, 29.99, 39.99]
+}</pre>
+  </div>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;">All the floats (29.99, 10.5, 5.25, 19.99, etc.) need to be converted, no matter how deeply nested they are.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: Best Practices and Common Patterns</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">DynamoDB Best Practices</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Best Practice</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why It Matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Design for access patterns first</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB is optimized for specific query patterns, not ad-hoc queries</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Use UUIDs for partition keys</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Ensures even distribution across partitions</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Initialize boto3 outside handler</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Reuse connections across warm starts for better performance</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Handle Decimal conversion</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Avoid TypeError when working with numbers</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Use on-demand for unpredictable workloads</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Avoid throttling and capacity planning complexity</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Add error handling</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">DynamoDB operations can fail (network issues, throttling, etc.)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Common DynamoDB Operations</h3>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Operation</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Boto3 Method</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Performance</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Use Case</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Create/Update</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">put_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Fast (single-digit ms)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Write a single item (creates or replaces)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Read</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">get_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Fast (single-digit ms)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Retrieve a single item by key</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Query</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">query()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Fast (reads one partition)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Get multiple items with same partition key</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Scan</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">scan()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#ef4444;"><strong>SLOW (reads entire table)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Read entire table (expensive, avoid in production)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Delete</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">delete_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Fast (single-digit ms)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Remove a single item by key</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Batch Write</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">batch_write_item()</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#10b981;"><strong>Efficient (up to 25 items)</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Write up to 25 items in one request</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#dc2626;margin-top:5px;">Warning: Avoid scan() in Production</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>scan()</strong> reads EVERY item in the table, which is slow and expensive. For a table with 1 million items, scan() reads all 1 million items even if you only need 10 results. Use <strong>query()</strong> with proper partition keys instead.</p>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:10px;"><strong>Example:</strong> If scan() takes 10 seconds on a 100,000-item table, it will take 100 seconds on a 1,000,000-item table. query() stays fast regardless of table size.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">DynamoDB Pricing and Cost Considerations</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">Understanding DynamoDB pricing helps you build cost-effective applications:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Cost Component</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">On-Demand Pricing</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">How to Minimize</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Read Requests</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">$0.25 per million requests</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use get_item() instead of scan(), cache frequently accessed data</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Write Requests</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">$1.25 per million requests</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Use batch_write_item() for bulk operations</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Storage</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">$0.25 per GB-month</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Delete old data, use TTL for automatic expiration</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Data Transfer</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Free within same region</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Keep Lambda and DynamoDB in same region</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="background-color:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#059669;margin-top:5px;">Cost Example for This Lab</h4>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;">If you make 100 requests during the lab (50 writes, 50 reads), your cost will be approximately <strong>$0.00008</strong> (less than 1 cent). DynamoDB's free tier includes 25 GB storage and 25 million read/write requests per month, so this lab will likely cost you nothing.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">When NOT to Use DynamoDB</h3>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;">DynamoDB is powerful, but it's not the right choice for every use case:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Use Case</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Why DynamoDB is NOT Ideal</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Better Alternative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Complex JOINs</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No JOIN support, requires denormalization</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">PostgreSQL (RDS), MySQL (RDS)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Ad-hoc Queries</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Must design for specific access patterns</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">SQL databases with flexible querying</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Analytics/Reporting</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Not optimized for aggregations, GROUP BY</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Amazon Redshift, Athena</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Full-Text Search</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">No built-in search capabilities</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Amazon OpenSearch, Elasticsearch</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Graph Relationships</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Not designed for traversing relationships</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">Amazon Neptune (graph database)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:#1e293b;font-size:15px;line-height:1.6;margin-top:15px;"><strong>DynamoDB excels at:</strong> High-speed key-value lookups, user sessions, shopping carts, gaming leaderboards, IoT data, and mobile app backends where you know your access patterns in advance.</p>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Resources for Further Learning</h2>
+
+<table style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background-color:#f1f5f9;">
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Resource</th>
+      <th style="padding:12px;text-align:left;border:1px solid #cbd5e1;color:#1e40af;">Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB Developer Guide</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/dynamodb/" style="color:#3b82f6;">docs.aws.amazon.com/dynamodb/</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>Boto3 DynamoDB Documentation</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html" style="color:#3b82f6;">boto3 DynamoDB Reference</a></td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>DynamoDB Best Practices</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices.html" style="color:#3b82f6;">AWS Best Practices Guide</a></td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><strong>The DynamoDB Book</strong></td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;"><a href="https://www.dynamodbbook.com/" style="color:#3b82f6;">dynamodbbook.com (by Alex DeBrie)</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Summary</h2>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Takeaways</h3>
+  <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+    <tbody>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>NoSQL vs SQL:</strong> DynamoDB is a NoSQL database optimized for speed and scale, not complex queries</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Keys:</strong> Every table needs a partition key; optionally add a sort key for range queries</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Access Patterns:</strong> Design your table based on how you'll query the data</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Capacity Modes:</strong> On-demand for unpredictable workloads, provisioned for cost optimization</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Hot Partitions:</strong> Distribute partition keys evenly to avoid performance issues</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Lambda Integration:</strong> SAM handles environment variables and IAM permissions automatically</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Decimal Conversion:</strong> Always convert float to Decimal before writing, Decimal to float after reading</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#1e293b;"><strong>Boto3 Operations:</strong> put_item() to write, get_item() to read by key</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Next Steps</h3>
+  <p style="color:#1e293b;font-size:15px;line-height:1.6;"><strong>Lab:</strong> Now that you understand DynamoDB, you're ready to deploy the complete serverless API. In the lab, you'll use SAM to deploy Lambda, API Gateway, and DynamoDB, then test the end-to-end integration.</p>
+</div>
+
+</body>
+</html>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">AttributeName</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">id</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">The partition key attribute name</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">AttributeType</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">S</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">String type (S=String, N=Number, B=Binary)</td>
+    </tr>
+    <tr style="background-color:#f8fafc;">
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">KeyType</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">HASH</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">HASH means partition key (RANGE would be sort key)</td>
+    </tr>
+    <tr>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">BillingMode</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;font-family:monospace;font-size:12px;">PAY_PER_REQUEST</td>
+      <td style="padding:12px;border:1px solid #cbd5e1;color:#1e293b;">On-demand pricing (we'll discuss this in Part 3)</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
+

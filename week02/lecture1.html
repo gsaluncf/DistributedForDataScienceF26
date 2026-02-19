@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 2 Lecture — Distributed Computing and Cloud Fundamentals</title>
+</head>
+<body>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:10px;">Lecture: Distributed Computing and Cloud Fundamentals</h2>
+  <p style="color:#1e293b;">Before we dive into AWS S3, we need to understand the foundational concepts of distributed computing, client-server architectures, and what "the cloud" actually means. This lecture will build your mental model for how modern applications are structured and deployed.</p>
+</div>
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 1: Understanding Distributed Computing</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Interactive Demo: Cannon Trajectory Simulator</h3>
+
+<p style="color:#1e293b;">Let's start with a hands-on example. Open this physics simulator in your browser:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Demo:</strong> <a href="https://ncfdatascience.com/cannon-trajectory-simulator.html" target="_blank" style="color:#3b82f6;">Cannon Trajectory Simulator</a></p>
+  <p style="color:#1e293b;margin-top:10px;">Play with the simulator for a minute. Adjust the angle, speed, and gravity. Watch the projectile arc through the air.</p>
+
+  <div style="text-align:center;margin:20px 0;">
+    <img src="https://ncfdatascience.com/distributedfords/images/week02/cannon.png" alt="Cannon Trajectory Simulator Screenshot" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px;">
+    <p style="color:#64748b;font-size:14px;margin-top:10px;"><em>Figure: The cannon trajectory simulator - a physics simulation running entirely in your browser</em></p>
+  </div>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Discussion Question</h3>
+  <p style="color:#1e293b;"><strong>How is this application implemented?</strong></p>
+  <p style="color:#1e293b;margin-top:10px;">Think about:</p>
+  <ul style="color:#1e293b;">
+    <li>Where are the physics calculations happening?</li>
+    <li>Is there a server involved?</li>
+    <li>Where is the data stored?</li>
+    <li>What happens if you refresh the page?</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Answer: Client-Only Implementation</h3>
+
+<p style="color:#1e293b;">This simulator is implemented <strong>entirely in the browser</strong> using JavaScript. All physics calculations happen on your computer (the client). There is:</p>
+
+<ul style="color:#1e293b;">
+  <li><strong>No server</strong> performing calculations</li>
+  <li><strong>No database</strong> storing your trajectory data</li>
+  <li><strong>No API calls</strong> being made</li>
+  <li><strong>No persistent state</strong> — refresh and everything resets</li>
+</ul>
+
+<p style="color:#1e293b;margin-top:10px;">This is the simplest architecture: <strong>client-only</strong>.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How COULD We Implement This with Client/Server Architecture?</h3>
+
+<p style="color:#1e293b;">Let's explore different architectural patterns for implementing the same application:</p>
+
+<div style="text-align:center;margin:30px 0;">
+  <img src="https://ncfdatascience.com/distributedfords/images/week02/client_server_diagram.png" alt="Client-Server Architecture Diagram" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px;">
+  <p style="color:#64748b;font-size:14px;margin-top:10px;"><em>Figure: Basic client-server architecture - the client (web browser) requests resources from the server (source: Mozilla Developer Network)</em></p>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>Option 1: Client-Only (Current Implementation)</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Architecture:</strong> Browser does everything</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Pros:</strong> Fast, no server costs, works offline, simple</li>
+    <li><strong>Cons:</strong> No data persistence, no sharing, limited by browser capabilities</li>
+    <li><strong>Use case:</strong> Simple calculators, games, visualizations</li>
+  </ul>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>Option 2: Client + API Server</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Architecture:</strong> Browser sends parameters to server, server calculates trajectory, returns results</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Pros:</strong> Can log usage, validate inputs, rate-limit requests, hide calculation logic</li>
+    <li><strong>Cons:</strong> Slower (network latency), requires server infrastructure, costs money</li>
+    <li><strong>Use case:</strong> When you need server-side validation or want to protect intellectual property</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Example API call:</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">POST /api/calculate-trajectory
+{
+  "angle": 45,
+  "speed": 50,
+  "gravity": 9.8
+}
+
+Response:
+{
+  "points": [[0,0], [5,12.5], [10,20], ...],
+  "maxHeight": 31.9,
+  "range": 255.1
+}</pre>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>Option 3: Client + Database</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Architecture:</strong> Browser calculates locally, saves trajectories to database for later retrieval</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Pros:</strong> Persistent storage, can share trajectories, build history</li>
+    <li><strong>Cons:</strong> Requires backend, authentication, data management</li>
+    <li><strong>Use case:</strong> When users need to save and retrieve their work</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Example workflow:</strong></p>
+  <ol style="color:#1e293b;">
+    <li>User fires cannon (client calculates)</li>
+    <li>User clicks "Save Trajectory"</li>
+    <li>Client sends trajectory data to API: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">POST /api/trajectories</code></li>
+    <li>Server stores in database (PostgreSQL, DynamoDB, etc.)</li>
+    <li>Later: User retrieves saved trajectories: <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">GET /api/trajectories</code></li>
+  </ol>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>Option 4: Client + Compute Server for Physics</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Architecture:</strong> Browser sends parameters, server runs complex physics simulation, returns results</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Pros:</strong> Can handle complex simulations beyond browser capabilities, leverage GPUs/specialized hardware</li>
+    <li><strong>Cons:</strong> Expensive, slower, requires significant infrastructure</li>
+    <li><strong>Use case:</strong> Computational fluid dynamics, molecular dynamics, weather simulation</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world example:</strong> A climate modeling application where:</p>
+  <ul style="color:#1e293b;">
+    <li>Browser provides UI for setting parameters</li>
+    <li>Server runs multi-hour simulation on GPU cluster</li>
+    <li>Results streamed back to browser for visualization</li>
+  </ul>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+  <ul>
+    <li>Why might you choose client-only over client+server for a simple calculator?</li>
+    <li>When would you need a database in addition to an API server?</li>
+    <li>What are the trade-offs between client-side and server-side computation?</li>
+    <li>Can you think of an application that requires all three: client, server, and database?</li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 2: Types of Distributed Systems</h2>
+
+<p style="color:#1e293b;">Now that we understand client-server patterns, let's zoom out and look at how systems can be organized at a higher level. There are three fundamental architectures for distributed systems:</p>
+
+<div style="text-align:center;margin:30px 0;">
+  <img src="https://ncfdatascience.com/distributedfords/images/week02/distributed_nodes.png" alt="Distributed System Architectures: Centralized, Distributed, and Decentralized" style="max-width:100%;border:1px solid #cbd5e1;border-radius:8px;">
+  <p style="color:#64748b;font-size:14px;margin-top:10px;"><em>Figure: Three fundamental architectures for distributed systems</em></p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">1. Centralized (Single Node)</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Structure:</strong> One central server handles all requests</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Characteristics:</strong> Single point of control, all data flows through one node</li>
+    <li><strong>Pros:</strong> Simple to build and reason about, consistent state, easy to debug</li>
+    <li><strong>Cons:</strong> Single point of failure, limited scalability, bottleneck under load</li>
+    <li><strong>Examples:</strong> Traditional web server, single database, your laptop</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world analogy:</strong> A single cashier at a store — simple, but creates a line when busy</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">2. Distributed</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Structure:</strong> Multiple nodes coordinated by a central authority</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Characteristics:</strong> Central coordinator delegates work to worker nodes</li>
+    <li><strong>Pros:</strong> Scalable (add more workers), fault-tolerant (workers can fail), efficient (parallel processing)</li>
+    <li><strong>Cons:</strong> Coordinator is still a single point of failure, more complex than centralized</li>
+    <li><strong>Examples:</strong> AWS (you interact with AWS services, they manage the infrastructure), Spark clusters, load-balanced web servers</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world analogy:</strong> A restaurant with one host (coordinator) and multiple servers (workers)</p>
+  <p style="color:#1e293b;margin-top:10px;"><strong>This is what AWS provides:</strong> You make requests to AWS APIs, and AWS distributes the work across their massive infrastructure</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">3. Decentralized</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Structure:</strong> No central authority — all nodes are equal peers</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Characteristics:</strong> Peer-to-peer communication, consensus mechanisms, no single point of control</li>
+    <li><strong>Pros:</strong> Highly fault-tolerant (no single point of failure), censorship-resistant, democratic</li>
+    <li><strong>Cons:</strong> Complex to build, slower consensus, harder to coordinate, potential for conflicts</li>
+    <li><strong>Examples:</strong> Bitcoin, BitTorrent, IPFS, some blockchain systems</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world analogy:</strong> A potluck dinner where everyone brings food and coordinates directly with each other</p>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">💭 Thought Experiment: The Two Generals Problem</h3>
+
+  <p style="color:#1e293b;margin-top:15px;">Imagine this scenario:</p>
+
+  <div style="background-color:#fff;border:1px solid #d97706;border-radius:6px;padding:15px;margin:15px 0;">
+    <p style="color:#1e293b;"><strong>The Setup:</strong></p>
+    <p style="color:#1e293b;">Two generals are camped on opposite sides of an enemy city. They need to attack <strong>at the same time</strong> to win. If only one attacks, they'll be defeated.</p>
+
+    <p style="color:#1e293b;margin-top:10px;"><strong>The Problem:</strong></p>
+    <p style="color:#1e293b;">They can only communicate by sending messengers through enemy territory. Any messenger might be captured.</p>
+
+    <ul style="color:#1e293b;margin-top:10px;">
+      <li><strong>General A</strong> sends a message: "Attack at dawn"</li>
+      <li>But how does General A know the message was received?</li>
+      <li><strong>General B</strong> could send back: "Message received, will attack at dawn"</li>
+      <li>But how does General B know <em>that</em> message was received?</li>
+      <li>General A could send: "Acknowledged your acknowledgment"</li>
+      <li>But how does General A know <em>that</em> was received?</li>
+      <li>...and so on, forever</li>
+    </ul>
+  </div>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>The Question:</strong> Is there a protocol that guarantees both generals attack at the same time, even with unreliable communication?</p>
+
+  <p style="color:#1e293b;margin-top:10px;font-style:italic;">Take a moment to think about this. Can you design a solution?</p>
+</div>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">What Happens When You Break Things Apart</h3>
+  <p style="color:#1e293b;">The Two Generals Problem illustrates a fundamental challenge in distributed systems:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Communication is unreliable:</strong> Networks fail, messages get lost, servers crash</li>
+    <li><strong>Coordination is hard:</strong> How do you ensure multiple computers agree on the same state?</li>
+    <li><strong>Perfect synchronization is impossible:</strong> There's no way to guarantee 100% certainty in distributed systems</li>
+    <li><strong>Trade-offs are inevitable:</strong> You must choose between consistency, availability, and partition tolerance</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>Why this matters for data science:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>When you use AWS, your data is distributed across multiple servers and data centers</li>
+    <li>Understanding these limitations helps you design better systems</li>
+    <li>You'll encounter concepts like "eventual consistency" and "at-least-once delivery"</li>
+  </ul>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+  <ul>
+    <li>What happens to a centralized system if the central server crashes?</li>
+    <li>In a distributed system, what role does the coordinator play?</li>
+    <li>Why might a decentralized system be slower than a distributed one?</li>
+    <li>Which architecture does AWS use? Why?</li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 3: What is "The Cloud"?</h2>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Official Definition from AWS</h3>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>According to Amazon Web Services:</strong></p>
+  <blockquote style="border-left:4px solid #3b82f6;padding-left:15px;margin:20px 0;font-style:italic;color:#1e293b;">
+    "Cloud computing is the <strong>on-demand delivery</strong> of compute power, database, storage, applications, and other IT resources through a cloud services platform via the internet with <strong>pay-as-you-go pricing</strong>."
+  </blockquote>
+  <p style="color:#64748b;font-size:14px;margin-top:10px;">
+    Source: <a href="https://docs.aws.amazon.com/whitepapers/latest/aws-overview/what-is-cloud-computing.html" target="_blank" style="color:#3b82f6;">AWS Whitepapers - What is cloud computing?</a>
+  </p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Breaking Down the Definition</h3>
+
+<p style="color:#1e293b;">Let's unpack the key concepts:</p>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>1. On-Demand Delivery</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;">
+    <li><strong>Traditional approach:</strong> Buy a server, wait weeks for delivery, install it, configure it</li>
+    <li><strong>Cloud approach:</strong> Click a button, get a server in seconds</li>
+    <li><strong>Example:</strong> Need a GPU for training a model? Spin one up in 30 seconds, use it for 2 hours, shut it down</li>
+  </ul>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>2. Pay-As-You-Go Pricing</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;">
+    <li><strong>Traditional approach:</strong> Buy a $50,000 server upfront, pay for electricity 24/7 whether you use it or not</li>
+    <li><strong>Cloud approach:</strong> Pay only for what you use, by the hour or by the second</li>
+    <li><strong>Example:</strong> S3 storage costs ~$0.023 per GB per month. Store 10 GB = $0.23/month. Delete it = $0</li>
+  </ul>
+</div>
+
+<h4 style="color:#1e293b;margin-top:20px;"><strong>3. Via the Internet</strong></h4>
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <ul style="color:#1e293b;">
+    <li><strong>Traditional approach:</strong> Physical access to servers in your office or data center</li>
+    <li><strong>Cloud approach:</strong> Access everything through web APIs and management consoles</li>
+    <li><strong>Example:</strong> Create an S3 bucket from your laptop in Florida, access it from a server in Tokyo</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Cloud is NOT Magic — It's Just Someone Else's Computers</h3>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Important Reality Check:</strong></p>
+  <p style="color:#1e293b;margin-top:10px;">"The cloud" is a marketing term for <strong>renting computing resources from a company that owns massive data centers</strong>. When you use AWS:</p>
+  <ul style="color:#1e293b;">
+    <li>Your data is stored on physical hard drives in Amazon's data centers</li>
+    <li>Your code runs on physical servers (or virtual machines on physical servers)</li>
+    <li>Your requests travel over physical network cables</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;">The "magic" is in the <strong>abstraction</strong> — you don't have to think about the physical infrastructure. You just use APIs.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Traditional vs. Cloud Computing</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <table style="width:100%;border-collapse:collapse;color:#1e293b;">
+    <thead>
+      <tr style="background-color:#e2e8f0;">
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Aspect</th>
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Traditional (Pre-2006)</th>
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Cloud (AWS, Azure, GCP)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Upfront Cost</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$10,000 - $1,000,000+</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0 (pay as you go)</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Time to Deploy</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Weeks to months</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Seconds to minutes</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Scaling</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Buy more hardware</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Click a button (or auto-scale)</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Maintenance</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">You handle everything</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Provider handles hardware</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Global Reach</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Build data centers worldwide</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Deploy to 30+ regions instantly</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>Idle Costs</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Pay for capacity 24/7</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Pay only when running</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">The Business Case: OpEx vs. CapEx (Why CFOs Love the Cloud)</h3>
+
+<p style="color:#1e293b;">There's a critical financial reason why cloud computing exploded in popularity beyond just technical benefits: <strong>tax implications</strong>.</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>Capital Expenses (CapEx) — Traditional IT</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Buying physical assets (servers, storage, networking equipment)</li>
+    <li><strong>Tax treatment:</strong> Must be <strong>depreciated over 3-7 years</strong> (in the US)</li>
+    <li><strong>Example:</strong> Buy a $100,000 server → Can only deduct ~$14,000-$33,000 per year</li>
+    <li><strong>Cash flow impact:</strong> Pay $100,000 upfront, but tax benefit spreads over years</li>
+    <li><strong>Accounting:</strong> Goes on the balance sheet as an asset</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Operational Expenses (OpEx) — Cloud Computing</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Renting services (AWS, Azure, SaaS subscriptions)</li>
+    <li><strong>Tax treatment:</strong> <strong>Fully deductible in the year incurred</strong></li>
+    <li><strong>Example:</strong> Spend $100,000 on AWS this year → Deduct the full $100,000 this year</li>
+    <li><strong>Cash flow impact:</strong> Pay as you go, immediate tax benefit</li>
+    <li><strong>Accounting:</strong> Expense on the income statement (not an asset)</li>
+  </ul>
+</div>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Why This Matters for Businesses</h4>
+  <p style="color:#1e293b;"><strong>Scenario:</strong> A company needs $100,000 worth of computing resources</p>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Option A: Buy servers (CapEx)</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Pay $100,000 upfront</li>
+    <li>Deduct ~$20,000/year for 5 years</li>
+    <li>At 21% corporate tax rate: Save ~$4,200/year in taxes</li>
+    <li>Stuck with the hardware even if needs change</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Option B: Use AWS (OpEx)</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Pay $100,000 over the year (or less if you scale down)</li>
+    <li>Deduct the full $100,000 this year</li>
+    <li>At 21% corporate tax rate: Save $21,000 in taxes <strong>immediately</strong></li>
+    <li>Can scale up or down as needed</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Result:</strong> OpEx provides <strong>5x faster tax benefits</strong> plus flexibility. This is why CFOs approve cloud migrations.</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">How SaaS/Cloud Companies Benefit from This</h3>
+
+<p style="color:#1e293b;">This creates a powerful business dynamic for cloud providers like AWS, Salesforce, and Snowflake:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>The SaaS Sales Advantage</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Easier to sell:</strong> "This is an operating expense, fully deductible this year" is a compelling pitch</li>
+    <li><strong>Lower approval threshold:</strong> OpEx often doesn't require board approval; CapEx usually does</li>
+    <li><strong>Faster sales cycles:</strong> No need for multi-year depreciation planning</li>
+    <li><strong>Predictable revenue:</strong> Subscription model = recurring revenue (investors love this)</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>The Lock-In Effect</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Switching costs:</strong> Once you build on AWS, migrating is expensive (data transfer, retraining, re-architecting)</li>
+    <li><strong>Incremental expansion:</strong> Start with S3, then add Lambda, then RDS, then SageMaker... suddenly you're spending $1M/year</li>
+    <li><strong>Consumption-based pricing:</strong> As your business grows, AWS revenue grows automatically</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Why AWS is So Profitable</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Economies of scale:</strong> AWS buys servers in bulk, depreciates them, then rents them to you at a markup</li>
+    <li><strong>High margins:</strong> AWS operating margin is ~30% (vs. Amazon retail at ~5%)</li>
+    <li><strong>Customer lifetime value:</strong> Average enterprise customer stays for 5+ years, spending increases over time</li>
+  </ul>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">The Bottom Line for Data Scientists</h4>
+  <p style="color:#1e293b;">Understanding OpEx vs. CapEx helps you:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Make better architecture decisions:</strong> "Should we buy a GPU server or use SageMaker?" — Consider tax implications</li>
+    <li><strong>Communicate with stakeholders:</strong> When proposing cloud solutions, mention the OpEx benefit to finance teams</li>
+    <li><strong>Understand vendor incentives:</strong> Why does AWS push you toward more services? Because it increases their recurring revenue</li>
+    <li><strong>Negotiate better:</strong> Know that cloud providers have high margins and room to discount for committed spend</li>
+  </ul>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Check your understanding</h3>
+  <ul>
+    <li>What does "on-demand" mean in the context of cloud computing?</li>
+    <li>How is cloud pricing different from buying your own server?</li>
+    <li>What's the difference between CapEx and OpEx in terms of tax treatment?</li>
+    <li>Why do CFOs often prefer cloud computing over buying servers?</li>
+    <li>How do SaaS companies benefit from the OpEx model?</li>
+    <li>What are potential disadvantages of cloud computing?</li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 4: What is AWS (Amazon Web Services)?</h2>
+
+<p style="color:#1e293b;">AWS is Amazon's cloud computing platform — the largest cloud provider in the world. It's a <strong>distributed system</strong> (remember Part 2?) where you interact with AWS APIs, and AWS manages the underlying infrastructure.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">AWS Market Position</h3>
+
+<ul style="color:#1e293b;">
+  <li><strong>32% cloud market share</strong> (2026) — larger than Microsoft Azure + Google Cloud combined</li>
+  <li><strong>200+ services</strong> — from basic storage to AI/ML, databases, IoT, and quantum computing</li>
+  <li><strong>Used by millions</strong> — startups, Fortune 500s, governments, researchers</li>
+  <li><strong>Career relevance:</strong> AWS skills appear in 60%+ of cloud and data engineering job postings</li>
+</ul>
+
+<p style="color:#1e293b;margin-top:10px;"><strong>Source:</strong> <a href="https://aws.amazon.com/about-aws/" target="_blank" style="color:#3b82f6;">AWS Overview</a></p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Why AWS Matters for Data Scientists</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;">Modern data science happens in the cloud because:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Datasets are too big</strong> for your laptop (multi-terabyte training data)</li>
+    <li><strong>Processing is too slow</strong> on local machines (distributed computing needed)</li>
+    <li><strong>Collaboration requires shared infrastructure</strong> (team access to data/models)</li>
+    <li><strong>Production systems need reliability</strong> (24/7 uptime, auto-scaling)</li>
+    <li><strong>Cost efficiency</strong> — rent a $50,000 GPU cluster for 2 hours instead of buying it</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Real-world examples:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Training large language models (GPUs/TPUs in the cloud)</li>
+    <li>Processing genomic data (petabyte-scale analysis)</li>
+    <li>Running A/B tests on millions of users (distributed systems)</li>
+    <li>Serving ML models to mobile apps (auto-scaling APIs)</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Understanding AWS Services by Category</h3>
+
+<p style="color:#1e293b;">AWS has 200+ services, but they fall into a few key categories. Each category represents a different type of "node" or "service" in the distributed system architecture we discussed earlier.</p>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Key Insight: Services Map to Architecture Components</h3>
+  <p style="color:#1e293b;">Remember our client-server discussion? AWS provides services for each component:</p>
+  <ul style="color:#1e293b;">
+    <li><strong>Storage services</strong> (like S3) = where data lives</li>
+    <li><strong>Compute services</strong> (like EC2, Lambda) = where code runs</li>
+    <li><strong>Database services</strong> (like RDS, DynamoDB) = where structured data is stored and queried</li>
+    <li><strong>Networking services</strong> (like CloudFront, Route 53) = how data moves between components</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;">Understanding this mapping helps you choose the right service for your architecture!</p>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">AWS Services Overview (By Category)</h2>
+
+<p style="color:#1e293b;">Let's explore the main categories of AWS services. We'll start from the bottom of the stack (storage) and work our way up to higher-level services.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">1. Storage Services</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Store files, objects, and data</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon S3 (Simple Storage Service)</strong> ← We'll focus on this in Week 2</h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Object storage for any type of file (images, videos, data, backups, static websites)</li>
+    <li><strong>Use case:</strong> Data lakes, website hosting, backups, ML training data</li>
+    <li><strong>Pricing:</strong> ~$0.023 per GB per month</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/s3/" target="_blank" style="color:#3b82f6;">S3 Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon EFS (Elastic File System)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Shared POSIX file system for Linux workloads</li>
+    <li><strong>Use case:</strong> Shared storage across multiple EC2 instances</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/efs/" target="_blank" style="color:#3b82f6;">EFS Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">2. Database Services</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Store and query structured data</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon RDS (Relational Database Service)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Managed relational databases (PostgreSQL, MySQL, etc.)</li>
+    <li><strong>Use case:</strong> Traditional SQL databases for transactional data</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/rds/" target="_blank" style="color:#3b82f6;">RDS Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon DynamoDB</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Serverless NoSQL key-value database with single-digit ms latency</li>
+    <li><strong>Use case:</strong> High-scale, low-latency applications (gaming, IoT, mobile apps)</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/dynamodb/" target="_blank" style="color:#3b82f6;">DynamoDB Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Aurora</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> High-performance MySQL/PostgreSQL-compatible database</li>
+    <li><strong>Use case:</strong> When you need better performance than standard RDS</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/rds/aurora/" target="_blank" style="color:#3b82f6;">Aurora Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">3. Compute Services</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Run code and applications</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon EC2 (Elastic Compute Cloud)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Virtual servers in the cloud (like renting a computer)</li>
+    <li><strong>Use case:</strong> Web servers, application servers, batch processing, custom workloads</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/ec2/" target="_blank" style="color:#3b82f6;">EC2 Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS Lambda</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Serverless compute — run code without managing servers</li>
+    <li><strong>Use case:</strong> Event-driven processing, APIs, data transformations, scheduled tasks</li>
+    <li><strong>Pricing:</strong> Pay per request and compute time (first 1M requests/month free)</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/lambda/" target="_blank" style="color:#3b82f6;">Lambda Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon ECS/EKS (Container Services)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Run Docker containers at scale</li>
+    <li><strong>Use case:</strong> Microservices, containerized applications</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/ecs/" target="_blank" style="color:#3b82f6;">ECS Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">4. Data Integration and Orchestration</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Move, transform, and orchestrate data workflows</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS Glue</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Serverless ETL (Extract, Transform, Load) service</li>
+    <li><strong>Use case:</strong> Data preparation, cataloging, and transformation for analytics</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/glue/" target="_blank" style="color:#3b82f6;">Glue Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS Step Functions</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Visual workflow orchestration for distributed applications</li>
+    <li><strong>Use case:</strong> Coordinate multiple AWS services into serverless workflows</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/step-functions/" target="_blank" style="color:#3b82f6;">Step Functions Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon EventBridge</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Serverless event bus for application integration</li>
+    <li><strong>Use case:</strong> Event-driven architectures, connecting SaaS apps to AWS services</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/eventbridge/" target="_blank" style="color:#3b82f6;">EventBridge Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">5. Analytics and Big Data</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Analyze large datasets</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Athena</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Serverless SQL queries directly on S3 data</li>
+    <li><strong>Use case:</strong> Ad-hoc analysis of data lakes without loading into a database</li>
+    <li><strong>Pricing:</strong> $5 per TB of data scanned</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/athena/" target="_blank" style="color:#3b82f6;">Athena Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon EMR (Elastic MapReduce)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Managed Hadoop/Spark clusters for big data processing</li>
+    <li><strong>Use case:</strong> Large-scale data processing, machine learning, log analysis</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/emr/" target="_blank" style="color:#3b82f6;">EMR Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Redshift</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Data warehouse for analytics (petabyte-scale)</li>
+    <li><strong>Use case:</strong> Business intelligence, complex SQL queries on large datasets</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/redshift/" target="_blank" style="color:#3b82f6;">Redshift Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Kinesis</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Real-time data streaming and processing</li>
+    <li><strong>Use case:</strong> Log processing, real-time analytics, IoT data ingestion</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/kinesis/" target="_blank" style="color:#3b82f6;">Kinesis Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">6. Machine Learning and AI</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Build, train, and deploy ML models</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon SageMaker</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Fully managed ML platform (notebooks, training, deployment)</li>
+    <li><strong>Use case:</strong> End-to-end ML workflows from experimentation to production</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/sagemaker/" target="_blank" style="color:#3b82f6;">SageMaker Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Bedrock</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Access foundation models (LLMs) via API</li>
+    <li><strong>Use case:</strong> Build generative AI applications without training your own models</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/bedrock/" target="_blank" style="color:#3b82f6;">Bedrock Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Comprehend</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Natural language processing (NLP) service</li>
+    <li><strong>Use case:</strong> Sentiment analysis, entity extraction, topic modeling</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/comprehend/" target="_blank" style="color:#3b82f6;">Comprehend Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">7. Networking, Content Delivery, and APIs</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Deliver content and manage network infrastructure</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon CloudFront</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Content Delivery Network (CDN) — caches content globally</li>
+    <li><strong>Use case:</strong> Fast delivery of websites, videos, APIs to users worldwide</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/cloudfront/" target="_blank" style="color:#3b82f6;">CloudFront Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon Route 53</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> DNS service (domain name system)</li>
+    <li><strong>Use case:</strong> Route users to your application, manage domain names</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/route53/" target="_blank" style="color:#3b82f6;">Route 53 Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon API Gateway</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Create, publish, and manage REST/WebSocket APIs</li>
+    <li><strong>Use case:</strong> Build serverless APIs backed by Lambda functions</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/api-gateway/" target="_blank" style="color:#3b82f6;">API Gateway Product Page</a></li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">8. Security, Identity, and Monitoring</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>Purpose:</strong> Secure and monitor your AWS resources</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS IAM (Identity and Access Management)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Control who can access what in your AWS account</li>
+    <li><strong>Use case:</strong> User permissions, service roles, security policies</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/iam/" target="_blank" style="color:#3b82f6;">IAM Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS KMS (Key Management Service)</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Encryption key management</li>
+    <li><strong>Use case:</strong> Encrypt data at rest and in transit</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/kms/" target="_blank" style="color:#3b82f6;">KMS Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS Secrets Manager</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Store and rotate API keys, passwords, credentials</li>
+    <li><strong>Use case:</strong> Securely manage application secrets</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/secrets-manager/" target="_blank" style="color:#3b82f6;">Secrets Manager Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Amazon CloudWatch</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Monitoring and observability (logs, metrics, alarms)</li>
+    <li><strong>Use case:</strong> Track application performance, set up alerts, debug issues</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/cloudwatch/" target="_blank" style="color:#3b82f6;">CloudWatch Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS CloudTrail</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Audit log of all API calls in your account</li>
+    <li><strong>Use case:</strong> Security auditing, compliance, troubleshooting</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/cloudtrail/" target="_blank" style="color:#3b82f6;">CloudTrail Product Page</a></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>AWS Cost Explorer</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What it is:</strong> Visualize and manage AWS spending</li>
+    <li><strong>Use case:</strong> Track costs, identify savings opportunities, budget alerts</li>
+    <li><strong>Learn more:</strong> <a href="https://aws.amazon.com/aws-cost-management/aws-cost-explorer/" target="_blank" style="color:#3b82f6;">Cost Explorer Product Page</a></li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">When to Choose What?</h2>
+
+<p style="color:#1e293b;">With so many services, how do you choose? Here's a decision guide:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>I need to store files/data:</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Unstructured files</strong> (images, videos, backups) → <strong>S3</strong></li>
+    <li><strong>Structured data with SQL</strong> → <strong>RDS</strong> or <strong>Aurora</strong></li>
+    <li><strong>High-speed key-value lookups</strong> → <strong>DynamoDB</strong></li>
+    <li><strong>Data warehouse for analytics</strong> → <strong>Redshift</strong></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>I need to run code:</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Simple functions triggered by events</strong> → <strong>Lambda</strong></li>
+    <li><strong>Long-running applications/servers</strong> → <strong>EC2</strong></li>
+    <li><strong>Containerized microservices</strong> → <strong>ECS/EKS</strong></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>I need to analyze data:</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>SQL queries on S3 data</strong> → <strong>Athena</strong></li>
+    <li><strong>Big data processing (Spark/Hadoop)</strong> → <strong>EMR</strong></li>
+    <li><strong>Real-time streaming</strong> → <strong>Kinesis</strong></li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>I need to build ML models:</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Full ML workflow</strong> → <strong>SageMaker</strong></li>
+    <li><strong>Use pre-trained LLMs</strong> → <strong>Bedrock</strong></li>
+    <li><strong>NLP tasks</strong> → <strong>Comprehend</strong></li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Where This Course Goes Next</h2>
+
+<p style="color:#1e293b;">Now that you understand the landscape of distributed computing and cloud services, we're going to dive deep into <strong>Amazon S3</strong> — the foundational storage service.</p>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Why Start with S3?</h3>
+  <ul style="color:#1e293b;">
+    <li><strong>Foundation for everything:</strong> Most AWS services interact with S3 in some way</li>
+    <li><strong>Simple but powerful:</strong> Easy to learn, but scales to petabytes</li>
+    <li><strong>Practical applications:</strong> Data lakes, static websites, backups, ML datasets</li>
+    <li><strong>RESTful API:</strong> Learn how cloud services expose HTTP APIs</li>
+    <li><strong>Cost-effective:</strong> Cheapest way to store large amounts of data</li>
+  </ul>
+</div>
+
+<p style="color:#1e293b;margin-top:20px;">In the next section, we'll explore:</p>
+<ul style="color:#1e293b;">
+  <li>What S3 is and how it works (buckets, objects, regions)</li>
+  <li>How to interact with S3 via RESTful APIs</li>
+  <li>How to host a static website on S3</li>
+  <li>Security and access control (IAM policies, bucket policies)</li>
+  <li>Hands-on lab: Deploy your own static website to S3</li>
+</ul>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Final Check: Are You Ready?</h3>
+  <p style="color:#1e293b;">Before moving on, make sure you can answer:</p>
+  <ul>
+    <li>What are the four client-server architecture patterns we discussed?</li>
+    <li>What's the difference between centralized, distributed, and decentralized systems?</li>
+    <li>How does AWS define "cloud computing"?</li>
+    <li>What are the main categories of AWS services?</li>
+    <li>When would you use S3 vs. RDS vs. DynamoDB?</li>
+    <li>When would you use Lambda vs. EC2?</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;">If you can answer these, you're ready to dive into S3!</p>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Part 5: Amazon S3 — The Complete Guide</h2>
+
+<p style="color:#1e293b;">Now let's dive deep into S3 (Simple Storage Service) — AWS's foundational object storage service and the backbone of most cloud data workflows.</p>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What is S3?</h3>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <p style="color:#1e293b;"><strong>S3 (Simple Storage Service)</strong> is an object storage service that stores data as <strong>objects</strong> within <strong>buckets</strong>. Think of it as a massive, infinitely scalable hard drive accessible via HTTP/HTTPS.</p>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>Key characteristics:</strong></p>
+  <ul style="color:#1e293b;">
+    <li><strong>Object storage:</strong> Files are stored as objects (not a file system)</li>
+    <li><strong>Globally unique bucket names:</strong> Your bucket name must be unique across ALL of AWS</li>
+    <li><strong>Regional storage:</strong> Data is stored in a specific AWS region (e.g., us-east-1, eu-west-1)</li>
+    <li><strong>Virtually unlimited capacity:</strong> No storage limits (pay for what you use)</li>
+    <li><strong>99.999999999% durability:</strong> AWS replicates your data across multiple facilities</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Core Concepts: Buckets and Objects</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>Buckets</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What:</strong> Top-level containers for objects (like a folder, but not quite)</li>
+    <li><strong>Naming:</strong> Must be globally unique, lowercase, 3-63 characters, DNS-compliant</li>
+    <li><strong>Examples:</strong> <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">my-data-lake-2026</code>, <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">ncf-student-websites</code></li>
+    <li><strong>Region-specific:</strong> Created in a specific region, data doesn't leave unless you move it</li>
+    <li><strong>Limit:</strong> 100 buckets per AWS account (soft limit, can request increase)</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>Objects</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>What:</strong> The actual files you store (images, videos, CSVs, HTML, etc.)</li>
+    <li><strong>Key:</strong> The object's name/path (e.g., <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">data/2026/sales.csv</code>)</li>
+    <li><strong>Value:</strong> The file content (up to 5 TB per object)</li>
+    <li><strong>Metadata:</strong> Key-value pairs describing the object (content-type, custom tags)</li>
+    <li><strong>Version ID:</strong> If versioning is enabled, each update creates a new version</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>S3 URL Structure</strong></h4>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">https://BUCKET-NAME.s3.REGION.amazonaws.com/OBJECT-KEY
+
+Example:
+https://my-website-bucket.s3.us-east-1.amazonaws.com/index.html
+https://my-data-lake.s3.us-west-2.amazonaws.com/data/2026/sales.csv</pre>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What S3 CAN Do</h3>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>✅ Storage Capabilities</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Store any file type:</strong> Images, videos, documents, code, databases, ML models</li>
+    <li><strong>Massive scale:</strong> Single objects up to 5 TB, unlimited total storage</li>
+    <li><strong>Static website hosting:</strong> Serve HTML/CSS/JS directly from S3 (what we'll do in the lab!)</li>
+    <li><strong>Data lakes:</strong> Store petabytes of raw data for analytics</li>
+    <li><strong>Backup and archival:</strong> Long-term storage with Glacier storage classes</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>✅ Access and Delivery</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>HTTPS access:</strong> All S3 endpoints support HTTPS (encrypted in transit)</li>
+    <li><strong>Public or private:</strong> Control access with bucket policies and IAM</li>
+    <li><strong>Pre-signed URLs:</strong> Temporary access to private objects (expires after X seconds)</li>
+    <li><strong>CDN integration:</strong> Use CloudFront to cache content globally</li>
+    <li><strong>Cross-region replication:</strong> Automatically copy objects to other regions</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>✅ Data Management</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Versioning:</strong> Keep multiple versions of objects (undo deletes/overwrites)</li>
+    <li><strong>Lifecycle policies:</strong> Auto-delete or move to cheaper storage after X days</li>
+    <li><strong>Encryption:</strong> Server-side encryption (SSE-S3, SSE-KMS) or client-side</li>
+    <li><strong>Event notifications:</strong> Trigger Lambda functions when objects are created/deleted</li>
+    <li><strong>Object tagging:</strong> Organize and track costs by project/team</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>✅ Integration with AWS Services</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Athena:</strong> Query data in S3 using SQL (no loading required)</li>
+    <li><strong>Lambda:</strong> Process objects automatically (resize images, transform data)</li>
+    <li><strong>SageMaker:</strong> Read training data from S3, save models to S3</li>
+    <li><strong>EMR/Spark:</strong> Distributed processing of S3 data</li>
+    <li><strong>Glue:</strong> ETL jobs reading from and writing to S3</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">What S3 CANNOT Do</h3>
+
+<div style="background-color:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>❌ Not a File System</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>No directories:</strong> S3 has a flat structure (keys can contain <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">/</code> but they're just part of the name)</li>
+    <li><strong>No partial updates:</strong> Can't edit a file in place — must upload the entire object again</li>
+    <li><strong>No file locking:</strong> Multiple writers can overwrite each other (last write wins)</li>
+    <li><strong>No POSIX operations:</strong> Can't <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">cd</code>, <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">mv</code>, or <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">chmod</code> like a Linux filesystem</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>❌ Not a Database</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>No SQL queries:</strong> Can't query object contents directly (use Athena for that)</li>
+    <li><strong>No indexing:</strong> Can't search by object content, only by key name</li>
+    <li><strong>No transactions:</strong> Can't atomically update multiple objects</li>
+    <li><strong>No joins:</strong> Can't relate objects to each other</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>❌ Not for Dynamic Web Applications</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Static content only:</strong> Can serve HTML/CSS/JS, but can't run server-side code (PHP, Python, Node.js)</li>
+    <li><strong>No server-side processing:</strong> Can't connect to databases, can't handle form submissions</li>
+    <li><strong>No custom domains with HTTPS (directly):</strong> Need CloudFront for <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">https://yourdomain.com</code></li>
+    <li><strong>No WebSockets:</strong> Can't maintain persistent connections</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>❌ Performance Limitations</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Eventual consistency (for some operations):</strong> Overwrites/deletes may take seconds to propagate</li>
+    <li><strong>Latency:</strong> First-byte latency is ~100-200ms (use CloudFront for faster delivery)</li>
+    <li><strong>Request rate limits:</strong> 3,500 PUT/COPY/POST/DELETE and 5,500 GET/HEAD requests per second per prefix</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">S3's RESTful API: How You Actually Interact with S3</h3>
+
+<p style="color:#1e293b;">S3 is accessed via a <strong>RESTful HTTP API</strong>. Every operation (upload, download, delete) is an HTTP request. Understanding this is crucial for working with S3 programmatically.</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>Common S3 API Operations</strong></h4>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>1. Upload an object (PUT)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">PUT /my-file.txt HTTP/1.1
+Host: my-bucket.s3.us-east-1.amazonaws.com
+Content-Type: text/plain
+Authorization: AWS4-HMAC-SHA256 Credential=...
+
+[file content here]</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>2. Download an object (GET)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">GET /my-file.txt HTTP/1.1
+Host: my-bucket.s3.us-east-1.amazonaws.com
+Authorization: AWS4-HMAC-SHA256 Credential=...</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>3. List objects in a bucket (GET)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">GET /?list-type=2&prefix=data/ HTTP/1.1
+Host: my-bucket.s3.us-east-1.amazonaws.com
+Authorization: AWS4-HMAC-SHA256 Credential=...</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>4. Delete an object (DELETE)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">DELETE /my-file.txt HTTP/1.1
+Host: my-bucket.s3.us-east-1.amazonaws.com
+Authorization: AWS4-HMAC-SHA256 Credential=...</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>5. Get object metadata (HEAD)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">HEAD /my-file.txt HTTP/1.1
+Host: my-bucket.s3.us-east-1.amazonaws.com
+Authorization: AWS4-HMAC-SHA256 Credential=...</pre>
+</div>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h4 style="color:#1e40af;margin-top:5px;">How You Actually Use S3 (You Don't Write Raw HTTP)</h4>
+  <p style="color:#1e293b;">In practice, you use tools that wrap the REST API:</p>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>1. AWS CLI (Command Line Interface)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;"># Upload a file
+aws s3 cp myfile.txt s3://my-bucket/
+
+# Download a file
+aws s3 cp s3://my-bucket/myfile.txt ./
+
+# List objects
+aws s3 ls s3://my-bucket/
+
+# Sync a directory (like rsync)
+aws s3 sync ./my-website s3://my-bucket/</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>2. AWS SDKs (Python, JavaScript, Java, etc.)</strong></p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;"># Python (boto3)
+import boto3
+s3 = boto3.client('s3')
+
+# Upload
+s3.upload_file('myfile.txt', 'my-bucket', 'myfile.txt')
+
+# Download
+s3.download_file('my-bucket', 'myfile.txt', 'downloaded.txt')
+
+# List
+response = s3.list_objects_v2(Bucket='my-bucket')
+for obj in response['Contents']:
+    print(obj['Key'])</pre>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>3. AWS Console (Web UI)</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Point-and-click interface for managing buckets and objects</li>
+    <li>Good for learning and one-off tasks</li>
+    <li>Not recommended for production workflows (use CLI/SDK instead)</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">S3 Storage Classes: Optimizing for Cost</h3>
+
+<p style="color:#1e293b;">S3 offers different storage classes with different pricing and performance characteristics:</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <table style="width:100%;border-collapse:collapse;color:#1e293b;">
+    <thead>
+      <tr style="background-color:#e2e8f0;">
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Storage Class</th>
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Use Case</th>
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Cost (per GB/month)</th>
+        <th style="border:1px solid #cbd5e1;padding:10px;text-align:left;">Retrieval Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Standard</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Frequently accessed data</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.023</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Instant</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Intelligent-Tiering</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Unknown/changing access patterns</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.023 + monitoring fee</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Instant</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Standard-IA</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Infrequently accessed (backups)</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.0125</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Instant</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Glacier Instant Retrieval</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Archive with instant access</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.004</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Instant</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Glacier Flexible Retrieval</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Long-term archive</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.0036</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Minutes to hours</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #cbd5e1;padding:10px;"><strong>S3 Glacier Deep Archive</strong></td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">Compliance/regulatory (7-10 years)</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">$0.00099</td>
+        <td style="border:1px solid #cbd5e1;padding:10px;">12-48 hours</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#64748b;font-size:14px;margin-top:10px;"><em>Prices are approximate for us-east-1 region as of 2026. Check <a href="https://aws.amazon.com/s3/pricing/" target="_blank" style="color:#3b82f6;">AWS S3 Pricing</a> for current rates.</em></p>
+</div>
+
+<div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Cost Optimization Tip</h4>
+  <p style="color:#1e293b;">Use <strong>lifecycle policies</strong> to automatically transition objects to cheaper storage classes:</p>
+  <ul style="color:#1e293b;">
+    <li>Keep data in S3 Standard for 30 days (frequent access)</li>
+    <li>Move to S3 Standard-IA after 30 days (occasional access)</li>
+    <li>Move to Glacier after 90 days (archive)</li>
+    <li>Delete after 365 days (if no longer needed)</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Example savings:</strong> 1 TB stored for 1 year</p>
+  <ul style="color:#1e293b;">
+    <li>S3 Standard all year: $276</li>
+    <li>With lifecycle policy: ~$100 (64% savings!)</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">S3 Security and Access Control</h3>
+
+<p style="color:#1e293b;">S3 has multiple layers of security. Understanding these is critical for both protecting your data and making it accessible when needed.</p>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>1. Bucket Policies (Resource-Based)</strong></h4>
+  <p style="color:#1e293b;">JSON policies attached to buckets that control who can access what.</p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::my-website-bucket/*"
+  }]
+}</pre>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Translation:</strong> Allow anyone (<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">Principal: "*"</code>) to read (<code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">GetObject</code>) all objects in this bucket (for public websites).</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>2. IAM Policies (User-Based)</strong></h4>
+  <p style="color:#1e293b;">Policies attached to IAM users/roles that grant permissions.</p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:GetObject", "s3:PutObject"],
+    "Resource": "arn:aws:s3:::my-data-bucket/*"
+  }]
+}</pre>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Translation:</strong> This user can read and write objects in <code style="background:#e2e8f0;padding:2px 4px;border-radius:3px;">my-data-bucket</code>.</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>3. Block Public Access Settings</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>Default:</strong> All new buckets block public access (AWS learned from data breaches)</li>
+    <li><strong>For static websites:</strong> You must explicitly disable this setting</li>
+    <li><strong>Best practice:</strong> Only make public what needs to be public</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>4. Pre-Signed URLs (Temporary Access)</strong></h4>
+  <p style="color:#1e293b;">Generate time-limited URLs for private objects:</p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;"># Generate a URL that expires in 1 hour
+aws s3 presign s3://my-bucket/private-file.pdf --expires-in 3600
+
+# Result:
+https://my-bucket.s3.amazonaws.com/private-file.pdf?
+  X-Amz-Algorithm=AWS4-HMAC-SHA256&
+  X-Amz-Credential=...&
+  X-Amz-Expires=3600&
+  X-Amz-Signature=...</pre>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Use case:</strong> Share a private file with someone without making the whole bucket public.</p>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>5. Encryption</strong></h4>
+  <ul style="color:#1e293b;">
+    <li><strong>In transit:</strong> Always use HTTPS (S3 supports both HTTP and HTTPS, but use HTTPS)</li>
+    <li><strong>At rest:</strong> Server-side encryption (SSE-S3, SSE-KMS, SSE-C) or client-side encryption</li>
+    <li><strong>Default:</strong> As of 2023, all new objects are encrypted by default (SSE-S3)</li>
+  </ul>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">S3 Pricing: What You Actually Pay For</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>Three Main Cost Components:</strong></h4>
+
+  <p style="color:#1e293b;margin-top:10px;"><strong>1. Storage ($0.023/GB/month for S3 Standard)</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Charged for the amount of data stored</li>
+    <li>Calculated daily, billed monthly</li>
+    <li>Example: 100 GB for 1 month = $2.30</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>2. Requests ($0.0004 per 1,000 PUT requests, $0.0004 per 10,000 GET requests)</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Charged per API call (upload, download, list, delete)</li>
+    <li>GET/HEAD requests are cheaper than PUT/POST/DELETE</li>
+    <li>Example: 1 million GET requests = $0.40</li>
+  </ul>
+
+  <p style="color:#1e293b;margin-top:15px;"><strong>3. Data Transfer ($0.09/GB out to internet, free within AWS region)</strong></p>
+  <ul style="color:#1e293b;">
+    <li><strong>Free:</strong> Data transfer INTO S3</li>
+    <li><strong>Free:</strong> Data transfer between S3 and EC2 in the same region</li>
+    <li><strong>Paid:</strong> Data transfer OUT to the internet ($0.09/GB for first 10 TB)</li>
+    <li>Example: Serve 1 TB of images to users = $90</li>
+  </ul>
+</div>
+
+<div style="background-color:#dcfce7;border:1px solid #16a34a;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1d4ed8;margin-top:5px;">Real-World Cost Example: Static Website</h4>
+  <p style="color:#1e293b;"><strong>Scenario:</strong> Personal portfolio website</p>
+  <ul style="color:#1e293b;">
+    <li>Website size: 50 MB (HTML, CSS, JS, images)</li>
+    <li>Traffic: 1,000 visitors/month, 10 pages each = 10,000 requests</li>
+    <li>Data transfer: 50 MB × 1,000 visitors = 50 GB out</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>Monthly cost:</strong></p>
+  <ul style="color:#1e293b;">
+    <li>Storage: 0.05 GB × $0.023 = $0.001</li>
+    <li>Requests: 10,000 GET × $0.0004/10,000 = $0.0004</li>
+    <li>Data transfer: 50 GB × $0.09 = $4.50</li>
+    <li><strong>Total: ~$4.50/month</strong></li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>With CloudFront CDN:</strong> ~$0.50/month (CloudFront has cheaper data transfer rates)</p>
+</div>
+
+<h3 style="color:#1d4ed8;margin-top:25px;">Practical Use Cases for Data Scientists</h3>
+
+<div style="background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:15px;margin:20px 0;">
+  <h4 style="color:#1e293b;margin-top:10px;"><strong>1. Data Lakes</strong></h4>
+  <p style="color:#1e293b;">Store raw data in S3, query with Athena/Spark:</p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">s3://my-data-lake/
+  raw/
+    2026/01/sales.csv
+    2026/02/sales.csv
+  processed/
+    2026/sales_aggregated.parquet
+  models/
+    sales_forecast_v1.pkl</pre>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>2. ML Training Data</strong></h4>
+  <p style="color:#1e293b;">Store datasets, read directly from SageMaker/PyTorch:</p>
+  <pre style="background-color:#f1f5f9;border:1px solid #cbd5e1;border-left:4px solid #3b82f6;padding:15px;border-radius:5px;overflow-x:auto;font-family:'Courier New',monospace;font-size:14px;">import pandas as pd
+
+# Read CSV directly from S3
+df = pd.read_csv('s3://my-bucket/training-data.csv')
+
+# Save model to S3
+model.save('s3://my-bucket/models/model_v1.h5')</pre>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>3. Static Website Hosting (This Week's Lab!)</strong></h4>
+  <p style="color:#1e293b;">Host HTML/CSS/JS sites without a server:</p>
+  <ul style="color:#1e293b;">
+    <li>Upload files to S3</li>
+    <li>Enable static website hosting</li>
+    <li>Make bucket public</li>
+    <li>Access via S3 URL or custom domain (with CloudFront)</li>
+  </ul>
+
+  <h4 style="color:#1e293b;margin-top:15px;"><strong>4. Backup and Disaster Recovery</strong></h4>
+  <p style="color:#1e293b;">Automated backups with lifecycle policies:</p>
+  <ul style="color:#1e293b;">
+    <li>Daily database backups → S3 Standard</li>
+    <li>After 30 days → S3 Standard-IA</li>
+    <li>After 90 days → Glacier</li>
+    <li>Delete after 7 years (compliance requirement)</li>
+  </ul>
+</div>
+
+<div style="background-color:#eff6ff;border:1px solid #60a5fa;border-radius:8px;padding:15px;margin:20px 0;">
+  <h3 style="color:#1d4ed8;margin-top:5px;">Check Your Understanding: S3 Edition</h3>
+  <ul>
+    <li>What's the difference between a bucket and an object?</li>
+    <li>Can you edit a file in place on S3? Why or why not?</li>
+    <li>What HTTP methods does S3 use for upload, download, and delete?</li>
+    <li>What's the difference between a bucket policy and an IAM policy?</li>
+    <li>Why would you use a pre-signed URL?</li>
+    <li>What are the three main cost components of S3?</li>
+    <li>When would you use S3 Glacier instead of S3 Standard?</li>
+    <li>Can S3 run server-side code (like PHP or Python)? What about JavaScript?</li>
+  </ul>
+</div>
+
+<hr style="border:1px solid #cbd5e1;margin:30px 0;">
+
+<h2 style="color:#1e40af;border-left:4px solid #3b82f6;padding-left:15px;margin-top:30px;">Next Steps: Hands-On Lab</h2>
+
+<p style="color:#1e293b;">Now that you understand the theory, it's time to get hands-on! In the lab, you'll:</p>
+
+<ol style="color:#1e293b;">
+  <li>Create an S3 bucket</li>
+  <li>Upload a static website (HTML, CSS, JavaScript)</li>
+  <li>Configure the bucket for static website hosting</li>
+  <li>Make the bucket public (with proper security understanding)</li>
+  <li>Access your website via the S3 URL</li>
+  <li>(Optional) Add CloudFront for HTTPS and custom domain</li>
+</ol>
+
+<div style="background-color:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:20px;margin:20px 0;">
+  <h3 style="color:#1e40af;margin-top:5px;">What You've Learned</h3>
+  <p style="color:#1e293b;">In this lecture, you've built a complete mental model of cloud computing and S3:</p>
+  <ul style="color:#1e293b;">
+    <li>✅ Client-server architecture patterns (client-only, client+server, client+database, client+compute)</li>
+    <li>✅ Distributed system types (centralized, distributed, decentralized)</li>
+    <li>✅ Cloud computing definition and OpEx vs. CapEx implications</li>
+    <li>✅ AWS service categories and when to use each</li>
+    <li>✅ S3 fundamentals (buckets, objects, regions, durability)</li>
+    <li>✅ What S3 can and cannot do</li>
+    <li>✅ RESTful API operations (PUT, GET, DELETE, HEAD)</li>
+    <li>✅ Storage classes and cost optimization</li>
+    <li>✅ Security models (bucket policies, IAM, pre-signed URLs, encryption)</li>
+    <li>✅ Pricing structure (storage, requests, data transfer)</li>
+    <li>✅ Real-world use cases for data science</li>
+  </ul>
+  <p style="color:#1e293b;margin-top:10px;"><strong>You're now ready to deploy your first cloud application!</strong></p>
+</div>
+
+<div style="text-align:center;margin:30px 0;">
+  <p style="color:#1e293b;"><a href="index.html" style="color:#3b82f6;font-weight:bold;">← Back to Week 2 Overview</a> | <a href="lab.html" style="color:#3b82f6;font-weight:bold;">Next: Hands-On Lab →</a></p>
+</div>
+
+</body>
+</html>

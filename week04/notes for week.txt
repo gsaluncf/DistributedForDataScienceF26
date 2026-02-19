@@ -1,0 +1,23 @@
+watch this video: Throughput vs. Latency: How To Debug A Latency Problem
+https://www.youtube.com/watch?v=f7VsHLk_Z8c
+    00:00 Intro
+    00:28 Servers & Threads
+    00:53 What Is Latency?
+    01:24 What Is Throughput?
+    01:46 Ice Cream Analogy
+    02:19 Max Throughput
+    03:32 Queueing Latency
+    04:36 Server Simulation (don't miss this!)
+    07:17 Summary
+    07:58 How To Debug High Latency
+    08:33 Things Can Be Even More Complicated
+and
+What are P50, P95, P99? - Backend Performance 101
+    https://www.youtube.com/watch?v=9rlGSahksLQ
+
+
+
+please note how amdahl's law is used to calculate the speedup of a program when it is parallelized.
+Please also note Amdahl's departure from IBM and how really forecasted, along with Moore the future of computing, especially when it comes to parallel computing.
+Please use the image of Amdahl
+Please also use the image of Amdahl's law from the Definition Section on https://en.wikipedia.org/wiki/Amdahl%27s_law
