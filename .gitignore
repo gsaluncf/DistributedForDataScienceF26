@@ -43,5 +43,6 @@ node_modules/
 env/
 venv/
 
-# Agent Scratch Directory - prevents random agent code from going to Git
-_agent_scratch/
+# Ignore any file or directory starting with an underscore (e.g. _secrets.json, _agent_scratch/, _scripts.py)
+_*
+_*/
