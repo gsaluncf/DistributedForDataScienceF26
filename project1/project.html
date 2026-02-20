@@ -540,7 +540,7 @@
             <div class="resp-label">You Write</div>
             The Lambda bid engine — four functions in <code>lambda_handler.py</code>
         </div>
-        <div class="resp-item provided">
+        <div class="resp-item yours">
             <div class="resp-label">You Write</div>
             The analyst report — four questions in <code>analysis/analysis.ipynb</code>
         </div>
@@ -748,6 +748,11 @@
                     <td>ISO 8601 string</td>
                     <td>UTC timestamp of when your Lambda processed this — used to measure latency</td>
                 </tr>
+                <tr>
+                    <td>content_category</td>
+                    <td>string</td>
+                    <td>Copied from the input message — needed for category-level analysis in Part 5</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -883,9 +888,235 @@ score_margin = 6.7375 - 5.7750 = 0.9625</pre>
         the pieces communicate before analysis is possible. Work through these steps in order — each is a prerequisite
         for the next.</p>
 
-    <h3 class="section">3.1 Project Structure</h3>
+    <div class="diagram">
+        <svg width="720" height="140" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="720" height="140" fill="#fafafa" rx="8" />
+            <text x="360" y="20" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a1a2e">Setup and Deployment Overview</text>
+
+            <!-- Phase 1: Credentials -->
+            <rect x="10" y="40" width="120" height="60" rx="6" fill="#fdf6e3" stroke="#b07d20" stroke-width="1.5" />
+            <text x="70" y="62" text-anchor="middle" font-size="9" font-weight="bold" fill="#b07d20">3.1 Credentials</text>
+            <text x="70" y="76" text-anchor="middle" font-size="8" fill="#4a4a6a">aws sts</text>
+            <text x="70" y="88" text-anchor="middle" font-size="8" fill="#4a4a6a">get-caller-identity</text>
+
+            <line x1="132" y1="70" x2="148" y2="70" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrsetup)" />
+
+            <!-- Phase 2: Venv -->
+            <rect x="150" y="40" width="120" height="60" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="210" y="62" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a4fa0">3.4 Venv + Deps</text>
+            <text x="210" y="76" text-anchor="middle" font-size="8" fill="#4a4a6a">python -m venv</text>
+            <text x="210" y="88" text-anchor="middle" font-size="8" fill="#4a4a6a">pip install</text>
+
+            <line x1="272" y1="70" x2="288" y2="70" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrsetup)" />
+
+            <!-- Phase 3: Local Tests -->
+            <rect x="290" y="40" width="120" height="60" rx="6" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="350" y="62" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a6b3a">3.4 Local Tests</text>
+            <text x="350" y="76" text-anchor="middle" font-size="8" fill="#4a4a6a">pytest (expect</text>
+            <text x="350" y="88" text-anchor="middle" font-size="8" fill="#4a4a6a">8 failures)</text>
+
+            <line x1="412" y1="70" x2="428" y2="70" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrsetup)" />
+
+            <!-- Phase 4: Deploy -->
+            <rect x="430" y="40" width="120" height="60" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="490" y="62" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a4fa0">3.5 Deploy</text>
+            <text x="490" y="76" text-anchor="middle" font-size="8" fill="#4a4a6a">sam build</text>
+            <text x="490" y="88" text-anchor="middle" font-size="8" fill="#4a4a6a">sam deploy --guided</text>
+
+            <line x1="552" y1="70" x2="568" y2="70" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrsetup)" />
+
+            <!-- Phase 5: Test Apparatus -->
+            <rect x="570" y="40" width="140" height="60" rx="6" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="640" y="62" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a6b3a">3.6 Test Apparatus</text>
+            <text x="640" y="76" text-anchor="middle" font-size="8" fill="#4a4a6a">Verify pipeline</text>
+            <text x="640" y="88" text-anchor="middle" font-size="8" fill="#4a4a6a">end-to-end</text>
+
+            <text x="360" y="125" text-anchor="middle" font-size="9" fill="#8888aa">Complete these five phases before writing any code in Part 4.</text>
+
+            <defs>
+                <marker id="arrsetup" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">The five setup phases. Each must succeed before moving to the next.</div>
+    </div>
+
+    <h3 class="section">3.1 Pre-Flight Check (AWS Credentials)</h3>
+
+    <p>This project uses two sets of AWS credentials for different purposes. Keeping them separate protects your
+        account from accidental charges.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Credential</th>
+                    <th>Used For</th>
+                    <th>Who Sees It</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Admin credentials</strong></td>
+                    <td><code>sam build</code>, <code>sam deploy</code>, <code>sam delete</code></td>
+                    <td>You only &mdash; never share these</td>
+                </tr>
+                <tr>
+                    <td><strong>Project-scoped credentials</strong></td>
+                    <td>Test apparatus (browser), sharing with instructor for grading</td>
+                    <td>You + instructor</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h4 class="subsection">Step A: Verify your admin credentials</h4>
+    <p>Your admin credentials are the ones tied to your AWS account. Export <code>AWS_ACCESS_KEY_ID</code> and
+        <code>AWS_SECRET_ACCESS_KEY</code> (and <code>AWS_SESSION_TOKEN</code> if using temporary credentials) in
+        your terminal, then confirm connectivity:</p>
+    <pre>aws sts get-caller-identity</pre>
+    <p>If you see an error, stop here and resolve your AWS account connectivity before proceeding. These credentials
+        are used only for <code>sam deploy</code> and should never be pasted into the browser test apparatus or
+        shared with anyone.</p>
+
+    <h4 class="subsection">Step B: Create a project-scoped IAM user</h4>
+    <p>Create a dedicated IAM user in your account that can <strong>only</strong> access your project's SQS queues and
+        DynamoDB table. This user cannot create EC2 instances, modify billing, or touch any other AWS service. These
+        are the credentials you will use in the test apparatus and share with the instructor for grading.</p>
+
+    <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+            <h4>Create the IAM user</h4>
+            <p>In the AWS Console, go to <strong>IAM</strong> &rarr; <strong>Users</strong> &rarr;
+                <strong>Create user</strong>. Name it <code>adflow-tester</code>. Do not enable console access &mdash;
+                this user only needs programmatic (API) access.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+            <h4>Attach an inline policy</h4>
+            <p>On the <strong>Set permissions</strong> page, choose <strong>Attach policies directly</strong>, then
+                click <strong>Create policy</strong>. Switch to the <strong>JSON</strong> tab and paste the policy
+                below. Replace <code>YOUR-ACCOUNT-ID</code> with your 12-digit AWS account ID and
+                <code>YOURID</code> with the student ID you will use at deploy time (e.g. <code>gsalu</code>).</p>
+            <pre>{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AdFlowSQS",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:CreateQueue",
+                "sqs:DeleteQueue",
+                "sqs:TagQueue",
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+                "sqs:PurgeQueue",
+                "sqs:ListQueues"
+            ],
+            "Resource": [
+                "arn:aws:sqs:us-east-1:YOUR-ACCOUNT-ID:adflow-YOURID-*"
+            ]
+        },
+        {
+            "Sid": "AdFlowSQSList",
+            "Effect": "Allow",
+            "Action": "sqs:ListQueues",
+            "Resource": "*"
+        },
+        {
+            "Sid": "AdFlowDynamoDB",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "dynamodb:DeleteTable",
+                "dynamodb:TagResource",
+                "dynamodb:PutItem",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:Query",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:ListTables"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:us-east-1:YOUR-ACCOUNT-ID:table/adflow-YOURID-*"
+            ]
+        },
+        {
+            "Sid": "AdFlowDynamoDBList",
+            "Effect": "Allow",
+            "Action": "dynamodb:ListTables",
+            "Resource": "*"
+        }
+    ]
+}</pre>
+            <p>Name the policy <code>adflow-project-policy</code> and create it. Back on the user creation page,
+                search for and attach this policy, then finish creating the user.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+            <h4>Create an access key</h4>
+            <p>Open the <code>adflow-tester</code> user, go to the <strong>Security credentials</strong> tab, and
+                click <strong>Create access key</strong>. Choose <strong>Application running outside AWS</strong> as
+                the use case.</p>
+        </div>
+    </div>
+
+    <div class="callout green">
+        <div class="callout-label">Command-Line Alternative (Recommended)</div>
+        <p>If you prefer the command line, you can do all three steps with the AWS CLI. These commands work on
+            Windows, macOS, and Linux. First, open <code>iam-policy.json</code> in your project root and replace
+            <code>YOUR-ACCOUNT-ID</code> with your 12-digit AWS account ID and <code>YOURID</code> with your
+            student ID. Then run:</p>
+        <pre># 1. Create the user
+aws iam create-user --user-name adflow-tester
+
+# 2. Attach the scoped policy from the file
+aws iam put-user-policy --user-name adflow-tester --policy-name adflow-project-policy --policy-document file://iam-policy.json
+
+# 3. Create an access key (copy the output immediately!)
+aws iam create-access-key --user-name adflow-tester</pre>
+        <p>The last command prints both the <code>AccessKeyId</code> and <code>SecretAccessKey</code>. Copy them
+            into your <code>_secrets.env</code> file right away.</p>
+    </div>
+
+    <div class="callout red">
+        <div class="callout-label">Copy Your Secret Key Immediately</div>
+        <p>AWS shows the <code>Secret Access Key</code> <strong>exactly once</strong>. If you close the dialog or
+            navigate away without copying it, the secret is gone permanently and you must delete the key and create a
+            new one. Copy both the <code>Access Key ID</code> and the <code>Secret Access Key</code> the moment they
+            appear.</p>
+    </div>
+
+    <div class="callout gold">
+        <div class="callout-label">Save Your Project Credentials</div>
+        <p>Create a file named <code>_secrets.env</code> in your project root and store the
+            <strong>project-scoped</strong> credentials there:</p>
+        <pre># Project-scoped credentials (adflow-tester user)
+# Safe to share with instructor for grading
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=wJalr...</pre>
+        <p>This file must never be committed to Git. You will use these same credentials in the browser test
+            apparatus (Section 3.6) and share them with the instructor when submitting. Because this user can only
+            access your adflow SQS queues and DynamoDB table, sharing these keys does not expose your account to
+            billing risk.</p>
+    </div>
+
+    <h3 class="section">3.2 Project Structure</h3>
     <pre>week4-adflow/
   template.yaml              # SAM template — creates all AWS resources
+  iam-policy.json            # Scoped IAM policy for the tester user
   worker/
     lambda_handler.py        # Your implementation — four tasks to complete
     requirements.txt         # Dependencies (boto3 is excluded; see note inside)
@@ -896,7 +1127,7 @@ score_margin = 6.7375 - 5.7750 = 0.9625</pre>
   cleanup.py                 # Purge queues + recreate DynamoDB table between runs
   README.md</pre>
 
-    <h3 class="section">3.2 The SAM Template</h3>
+    <h3 class="section">3.3 The SAM Template</h3>
     <p>The <code>template.yaml</code> below creates everything your Lambda needs: the input queue, results queue,
         DynamoDB results table, Lambda function, and SQS event source mapping. You pass your student ID at deploy time
         and all resources are named <code>adflow-{StudentId}-{resource}</code>.</p>
@@ -998,15 +1229,89 @@ Outputs:
     Description: CloudWatch log group for viewing Lambda logs
     Value: !Sub "/aws/lambda/adflow-${StudentId}-worker"</pre>
 
-    <div class="callout green">
-        <div class="callout-label">Note on requirements.txt</div>
-        <p><code>boto3</code> is included in the Lambda Python 3.12 runtime. Do not add it to
-            <code>requirements.txt</code> — doing so bloats the deployment package by ~15 MB and adds 2–3 seconds to
+    <div class="callout red">
+        <div class="callout-label">WARNING: NO BOTO3</div>
+        <p><code>boto3</code> is already included in the Lambda Python 3.12 runtime. Do <strong>not</strong> add it to
+            <code>requirements.txt</code> — doing so bloats the deployment package by ~15 MB, dramatically increasing deployment times and adding 2–3 seconds to
             every cold start. The provided <code>requirements.txt</code> is intentionally empty.
         </p>
     </div>
 
-    <h3 class="section">3.3 Deploying with SAM</h3>
+    <h3 class="section">3.4 Verifying Your Local Test Environment</h3>
+    <p>The starter code includes three test suites that mock AWS services with <code>moto</code> — a library that
+        simulates SQS and DynamoDB locally so you can test without hitting real AWS.</p>
+
+    <h4 class="subsection">Setting Up a Virtual Environment</h4>
+    <p>Before installing dependencies, create and activate a Python virtual environment to keep your project packages
+        isolated. Choose the method that matches your setup:</p>
+
+    <div class="callout">
+        <div class="callout-label">Terminal (Command Line)</div>
+        <pre># Create the virtual environment (run once)
+python -m venv .venv
+
+# Activate it (run every time you open a new terminal)
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt):
+.venv\Scripts\activate.bat
+
+# macOS / Linux:
+source .venv/bin/activate</pre>
+        <p>You will see <code>(.venv)</code> appear in your terminal prompt when the environment is active. All
+            <code>pip install</code> and <code>pytest</code> commands must be run with the environment active.</p>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">VS Code</div>
+        <p>Open the Command Palette (<code>Ctrl+Shift+P</code> on Windows, <code>Cmd+Shift+P</code> on macOS) and
+            select <strong>Python: Create Environment</strong>. Choose <strong>Venv</strong>, then pick your Python
+            3.12 interpreter. VS Code will create <code>.venv/</code> and automatically activate it in the integrated
+            terminal. If you already have a <code>.venv</code>, use <strong>Python: Select Interpreter</strong> and
+            point it to <code>.venv/Scripts/python.exe</code> (Windows) or <code>.venv/bin/python</code>
+            (macOS/Linux).</p>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">PyCharm</div>
+        <p>Go to <strong>Settings</strong> (or <strong>Preferences</strong> on macOS) and navigate to
+            <strong>Project: week4-adflow</strong> then <strong>Python Interpreter</strong>. Click the gear icon and
+            select <strong>Add Interpreter</strong> then <strong>Add Local Interpreter</strong>. Choose
+            <strong>Virtualenv Environment</strong>, set the location to your project’s <code>.venv</code> folder,
+            and click OK. PyCharm will activate it automatically for all run configurations and the built-in
+            terminal.</p>
+    </div>
+
+    <div class="callout red">
+        <div class="callout-label">Activate Before Every Session</div>
+        <p>Every time you open a new terminal window, you must re-activate the virtual environment before running
+            any <code>pip</code>, <code>pytest</code>, or <code>sam</code> commands. If you do not see
+            <code>(.venv)</code> in your prompt, your packages are not available and commands will fail.</p>
+    </div>
+
+    <h4 class="subsection">Installing Test Dependencies</h4>
+    <p>With your virtual environment active, install the test dependencies:</p>
+    <pre>pip install moto[sqs,dynamodb] pytest</pre>
+    <p>Then run the tests:</p>
+    <pre>pytest worker/tests/test_handler.py -v</pre>
+
+    <div class="callout gold">
+        <div class="callout-label">Expected: All Tests Fail Right Now</div>
+        <p>The starter code raises <code>NotImplementedError</code> for every function. All 8 tests will
+            fail at this point — that is expected and correct. The purpose of running <code>pytest</code> now is to
+            confirm that Python, moto, and pytest are installed and working. You will re-run these tests after
+            implementing each task in Part 4. All tests must pass before you deploy to AWS.</p>
+    </div>
+
+    <p>The three test suites verify:</p>
+    <ul>
+        <li><strong>Scoring accuracy</strong> — your formula produces exact values for known inputs, including edge cases (zero bid, missing category, malformed timestamp).</li>
+        <li><strong>Winner selection</strong> — the lower bidder wins when relevance outweighs raw bid amount; margin is computed correctly.</li>
+        <li><strong>End-to-end batch</strong> — a full Lambda invocation processes all records with results landing in both SQS and DynamoDB.</li>
+    </ul>
+
+    <h3 class="section">3.5 Deploying with SAM</h3>
 
     <div class="step">
         <div class="step-num">1</div>
@@ -1025,9 +1330,27 @@ Outputs:
                 <code>samconfig.toml</code>. Subsequent deploys just run <code>sam deploy</code>.
             </p>
             <pre>sam deploy --guided --stack-name adflow-YOURID</pre>
-            <p>When prompted for <code>StudentId</code>, enter your chosen ID (lowercase letters and numbers only, e.g.
-                <code>gsalu</code>). SAM will display the stack outputs — copy the <code>InputQueueUrl</code> and
-                <code>ResultsQueueUrl</code>; you will paste them into the test apparatus.
+            <p>SAM will ask several questions. Here is what each prompt means and what to enter:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Prompt</th><th>What to Enter</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Stack Name</td><td>Already set via <code>--stack-name</code>. Confirm or re-type <code>adflow-YOURID</code>.</td></tr>
+                        <tr><td>AWS Region</td><td><code>us-east-1</code> (or the region your instructor specified).</td></tr>
+                        <tr><td>Parameter StudentId</td><td>Your chosen ID — lowercase letters and numbers only (e.g. <code>gsalu</code>).</td></tr>
+                        <tr><td>Confirm changes before deploy</td><td><code>N</code> — speeds up iteration.</td></tr>
+                        <tr><td>Allow SAM CLI IAM role creation</td><td><code>Y</code> — SAM needs this to create the Lambda execution role.</td></tr>
+                        <tr><td>Disable rollback</td><td><code>N</code> — keep rollback enabled so failed deploys clean up.</td></tr>
+                        <tr><td>Save arguments to config file</td><td><code>Y</code> — saves your answers to <code>samconfig.toml</code> so future deploys are one command.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>After deployment completes, SAM prints your stack outputs. Copy everything — you will need the
+                <code>InputQueueUrl</code> and <code>ResultsQueueUrl</code> values. Verify they follow the naming
+                pattern <code>adflow-YOURID-input</code> and <code>adflow-YOURID-results</code>. Keep these URLs
+                accessible; you will reference them when configuring the test apparatus.
             </p>
         </div>
     </div>
@@ -1066,7 +1389,7 @@ aws dynamodb describe-table --table-name adflow-YOURID-results</pre>
         </div>
     </div>
 
-    <h3 class="section">3.4 The Test Apparatus</h3>
+    <h3 class="section">3.6 The Test Apparatus</h3>
 
     <!-- Test Apparatus Diagram -->
     <div class="diagram">
@@ -1108,11 +1431,20 @@ aws dynamodb describe-table --table-name adflow-YOURID-results</pre>
     </div>
 
     <p>The test apparatus is a single HTML file — double-click <code>test-apparatus/index.html</code> and it opens in
-        your browser. No server or Python process needed. Enter your student ID and AWS credentials, choose a test
-        profile, and click <strong>Run Test</strong>. The tool generates opportunity messages, sends them directly to
-        your SQS input queue via the AWS JavaScript SDK, and polls your results queue as Lambda responds. Queue names
-        (<code>adflow-{id}-input</code>, <code>adflow-{id}-results</code>) are derived automatically from your student
-        ID.</p>
+        your browser. No server or Python process needed. Enter your student ID and the same AWS credentials you saved
+        to <code>_secrets.env</code> in Section 3.1 (Access Key ID, Secret Access Key, and Session Token if applicable).
+        Choose a test profile and click <strong>Run Test</strong>. The tool generates opportunity messages, sends them
+        directly to your SQS input queue via the AWS JavaScript SDK, and polls your results queue as Lambda responds.
+        Queue names (<code>adflow-{id}-input</code>, <code>adflow-{id}-results</code>) are derived automatically from
+        your student ID.</p>
+
+    <div class="callout green">
+        <div class="callout-label">Credential Safety</div>
+        <p>The test apparatus stores your AWS credentials in your browser's <code>localStorage</code> for convenience
+            between sessions. These credentials never leave your computer except as direct HTTPS calls to the AWS API
+            endpoints. They are not sent to any third-party server. When you are finished with the project, use the
+            browser's developer tools to clear localStorage or simply revoke the credentials in AWS.</p>
+    </div>
 
     <p>Test profiles control how messages are sent:</p>
     <div class="table-wrap">
@@ -1170,16 +1502,6 @@ aws dynamodb describe-table --table-name adflow-YOURID-results</pre>
                 href="command-reference.html"><strong>command-reference.html</strong></a>.</p>
     </div>
 
-    <h3 class="section">3.5 Testing Locally Before Deploying</h3>
-    <p>The starter code includes three test suites that mock AWS with <code>moto</code>. Run them before every deploy —
-        a Lambda that fails locally will fail in AWS.</p>
-    <pre>pip install moto[sqs,dynamodb] pytest
-pytest worker/tests/test_handler.py -v</pre>
-    <p>The tests verify: that your scoring formula produces correct values, that the lower bidder wins when relevance
-        outweighs raw bid amount, and that a full batch processes end-to-end with results landing in both SQS and
-        DynamoDB. All three suites must pass.</p>
-
-
     <!-- ══════════════════════════════════════════════════════════════════
      PART 4 — THE BID ENGINE
 ══════════════════════════════════════════════════════════════════ -->
@@ -1231,13 +1553,23 @@ pytest worker/tests/test_handler.py -v</pre>
                 <li>Call <code>select_winner()</code> to get the winning bid.</li>
                 <li>Build the result record (all fields from Section 2.2), setting <code>processed_at</code> to the
                     current UTC time formatted as an ISO 8601 string.</li>
-                <li>Post the result to <code>RESULTS_QUEUE_URL</code> with <code>sqs.send_message()</code>.</li>
-                <li>Write the record to DynamoDB with <code>table.put_item()</code>. Note that DynamoDB does not accept
-                    Python <code>float</code> — wrap float values in <code>Decimal(str(value))</code> before writing.
-                </li>
+                <li>Post the result to <code>RESULTS_QUEUE_URL</code> with <code>sqs.send_message()</code>. The message
+                    body must be a JSON string — use <code>json.dumps()</code> on your result dict.</li>
+                <li>Write the record to DynamoDB with <code>table.put_item()</code>.</li>
             </ol>
             <p>The SQS post comes first — it is on the latency-measured path. DynamoDB is persistence and can tolerate
                 slightly more time.</p>
+
+            <div class="callout red" style="margin-top:14px;">
+                <div class="callout-label">Two Formats for the Same Record</div>
+                <p>SQS and DynamoDB expect different data types. For the SQS message, use standard Python
+                    <code>float</code> values and serialize with <code>json.dumps()</code>. For the DynamoDB write,
+                    DynamoDB does not accept Python <code>float</code> — you must wrap every numeric value in
+                    <code>Decimal(str(value))</code> before calling <code>put_item()</code>. Build the DynamoDB item
+                    separately or convert after the SQS post.
+                </p>
+            </div>
+
             <div class="callout gold" style="margin-top:14px;">
                 <div class="callout-label">Latency Note</div>
                 <p>The <code>processed_at</code> timestamp is stamped at the moment your Lambda posts to the results
@@ -1256,12 +1588,29 @@ pytest worker/tests/test_handler.py -v</pre>
         </div>
         <div class="task-body">
             <p>This is the Lambda entry point. <code>event["Records"]</code> is a list of SQS message records. For each
-                record: parse the JSON body, call <code>process_opportunity()</code>, and catch any exceptions so a
-                single malformed message does not abort the entire batch. Track failed message IDs and return them in
+                record: parse the JSON body with <code>json.loads(record["body"])</code>, call
+                <code>process_opportunity()</code>, and catch any exceptions so a single malformed message does not
+                abort the entire batch.</p>
+
+            <h4 class="subsection">Finding the Message ID</h4>
+            <p>Each SQS record includes a unique identifier at <code>record["messageId"]</code>. This is the value you
+                need to report in <code>batchItemFailures</code> if processing fails. It also serves as a
+                correlation ID — you can log it alongside your processing output to trace a specific message through
+                CloudWatch logs, the results queue, and DynamoDB.</p>
+
+            <div class="callout gold" style="margin-top:14px;">
+                <div class="callout-label">Defensive Programming</div>
+                <p>Not every message in a queue is perfectly formed. Wrap your parsing logic in a
+                    <code>try/except</code> block and catch <code>json.JSONDecodeError</code> and general
+                    <code>Exception</code> separately. If parsing or processing fails, log the error with the message
+                    ID but allow the function to continue processing the rest of the batch.</p>
+            </div>
+
+            <p>Track failed message IDs and return them in
                 the <code>batchItemFailures</code> format so SQS retries only those messages:</p>
             <pre>return {
     "batchItemFailures": [
-        {"itemIdentifier": msg_id},
+        {"itemIdentifier": record["messageId"]},
         ...
     ]
 }</pre>
@@ -1271,7 +1620,7 @@ pytest worker/tests/test_handler.py -v</pre>
                 format is wrong.
             </p>
             <p>Log wall-clock timing for the full batch using <code>time.perf_counter()</code> and
-                <code>logger.info()</code>. The module docstring shows the log command pattern.
+                <code>logger.info()</code>. The module docstring shows the expected log format.
             </p>
         </div>
     </div>
@@ -1322,6 +1671,74 @@ pytest worker/tests/test_handler.py -v</pre>
         </table>
     </div>
 
+
+    <!-- ==================================================================
+     DEVELOPMENT CYCLE
+================================================================== -->
+    <h2 class="part"><span class="part-num">Part 4 cont.</span> The Development Cycle</h2>
+
+    <p>After implementing the four tasks in Part 4, follow this cycle to iterate on your code. Each loop takes only a
+        few minutes once you are familiar with the commands.</p>
+
+    <div class="diagram">
+        <svg width="720" height="260" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="720" height="260" fill="#fafafa" rx="8" />
+            <text x="360" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Development
+                Cycle — Repeat Until All Tests Pass and Burst Run Succeeds</text>
+
+            <!-- Step 1: Edit Code -->
+            <rect x="30" y="60" width="130" height="70" rx="7" fill="#fdf6e3" stroke="#b07d20" stroke-width="2" />
+            <text x="95" y="88" text-anchor="middle" font-size="10" font-weight="bold" fill="#b07d20">1. Edit Code</text>
+            <text x="95" y="104" text-anchor="middle" font-size="9" fill="#4a4a6a">lambda_handler.py</text>
+            <text x="95" y="118" text-anchor="middle" font-size="9" fill="#4a4a6a">Tasks 1–4</text>
+
+            <!-- Arrow 1 to 2 -->
+            <line x1="162" y1="95" x2="192" y2="95" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrcyc)" />
+
+            <!-- Step 2: Run pytest -->
+            <rect x="194" y="60" width="130" height="70" rx="7" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="259" y="88" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a6b3a">2. Run pytest</text>
+            <text x="259" y="104" text-anchor="middle" font-size="9" fill="#4a4a6a">All 8 tests must</text>
+            <text x="259" y="118" text-anchor="middle" font-size="9" fill="#4a4a6a">pass locally</text>
+
+            <!-- Arrow 2 to 3 -->
+            <line x1="326" y1="95" x2="356" y2="95" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrcyc)" />
+
+            <!-- Step 3: Build and Deploy -->
+            <rect x="358" y="60" width="130" height="70" rx="7" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="423" y="84" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">3. Deploy</text>
+            <text x="423" y="100" text-anchor="middle" font-size="9" fill="#4a4a6a">sam build</text>
+            <text x="423" y="114" text-anchor="middle" font-size="9" fill="#4a4a6a">sam deploy</text>
+
+            <!-- Arrow 3 to 4 -->
+            <line x1="490" y1="95" x2="520" y2="95" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrcyc)" />
+
+            <!-- Step 4: Test Apparatus -->
+            <rect x="522" y="60" width="168" height="70" rx="7" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="606" y="84" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a6b3a">4. Test Apparatus</text>
+            <text x="606" y="100" text-anchor="middle" font-size="9" fill="#4a4a6a">Warmup (10 msgs)</text>
+            <text x="606" y="114" text-anchor="middle" font-size="9" fill="#4a4a6a">then Burst (500)</text>
+
+            <!-- Return arrow (bottom) -->
+            <line x1="606" y1="132" x2="606" y2="190" stroke="#8888aa" stroke-width="1" stroke-dasharray="4,2" />
+            <line x1="606" y1="190" x2="95" y2="190" stroke="#8888aa" stroke-width="1" stroke-dasharray="4,2" />
+            <line x1="95" y1="190" x2="95" y2="132" stroke="#8888aa" stroke-width="1" stroke-dasharray="4,2"
+                marker-end="url(#arrcyc)" />
+            <text x="350" y="210" text-anchor="middle" font-size="9" fill="#8888aa">If something is wrong, edit
+                and repeat</text>
+
+            <!-- Success label -->
+            <text x="606" y="245" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a6b3a">All results arriving? Move to Part 5.</text>
+
+            <defs>
+                <marker id="arrcyc" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">The typical development loop. Most students iterate 2–3 times before all tests
+            pass and the Burst run succeeds end-to-end.</div>
+    </div>
 
 
     <!-- ══════════════════════════════════════════════════════════════════
@@ -1439,9 +1856,45 @@ pytest worker/tests/test_handler.py -v</pre>
 ══════════════════════════════════════════════════════════════════ -->
     <h2 class="part"><span class="part-num">Part 5</span> The Analyst Report</h2>
 
-    <p>After you have run the test apparatus and collected results, open <code>analysis/analysis.ipynb</code> and answer
-        four questions. Pull your data from DynamoDB using the Scan API. Round numeric answers to 2 decimal places and
-        include the code that produced each result.</p>
+    <p>After you have run the test apparatus and collected results, open <code>analysis/analysis.ipynb</code> and
+        complete the sections below. The notebook serves two purposes: it is your evidence that the pipeline worked, and
+        it contains two short analysis questions. Round numeric answers to 2 decimal places and include the code that
+        produced each result.</p>
+
+    <h3 class="section">Exporting Your Data from DynamoDB</h3>
+    <p>Before you tear down your stack, pull your results into a Python list. The following snippet scans the entire
+        table and handles DynamoDB pagination automatically. Run this in your <code>analysis.ipynb</code> notebook:</p>
+    <pre>import boto3
+from decimal import Decimal
+
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+table = dynamodb.Table("adflow-YOURID-results")
+
+results = []
+response = table.scan()
+results.extend(response["Items"])
+
+# Handle pagination if the table has more than 1 MB of data
+while "LastEvaluatedKey" in response:
+    response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+    results.extend(response["Items"])
+
+print(f"Loaded {len(results)} records")
+
+# Convert Decimal types to float for analysis
+for item in results:
+    for key in ["winning_bid_amount", "winning_score", "score_margin"]:
+        if key in item:
+            item[key] = float(item[key])</pre>
+    <p>Once you have the <code>results</code> list, you can use standard Python (pandas, collections, etc.) to answer
+        the questions below.</p>
+
+    <div class="callout gold">
+        <div class="callout-label">Data Types in Python</div>
+        <p>When you query DynamoDB with boto3, numeric values are returned as <code>Decimal</code> types. To plot or
+            compute averages in Python, you will need to map these back to standard <code>float</code> types (e.g.
+            <code>float(item["winning_score"])</code>) as you process the scan results.</p>
+    </div>
 
     <div class="callout red">
         <div class="callout-label">Before you begin</div>
@@ -1451,68 +1904,64 @@ pytest worker/tests/test_handler.py -v</pre>
         </p>
     </div>
 
+    <h3 class="section">Notebook Section 1: Pipeline Evidence</h3>
+    <p>This section is not graded for analysis quality — it is your proof that the pipeline ran successfully. Include
+        the following in your notebook with cell outputs visible:</p>
+    <ol>
+        <li>The DynamoDB scan output showing the total number of records loaded (from the export snippet above).</li>
+        <li>A count of auction wins per advertiser (a simple <code>Counter</code> or <code>value_counts()</code> on
+            <code>winning_advertiser_id</code>).</li>
+        <li>A screenshot of the test apparatus showing a completed Burst run with results arriving.</li>
+    </ol>
+    <p>This allows us to quickly verify that your pipeline processed messages end-to-end without needing to redeploy
+        your stack.</p>
+
     <div class="task">
         <div class="task-header">
             <span class="task-num">Q1</span>
-            <span class="task-name">Winner Distribution</span>
+            <span class="task-name">Results Analysis</span>
         </div>
         <div class="task-body">
-            <p>Which advertiser won the most auctions overall? Show a count of auction wins per advertiser. Then filter
-                to opportunities with <code>content_category = sports</code> and show the top three winners for that
-                category specifically.</p>
-            <p>Explain in 2–3 sentences why the rankings differ between the overall and category-filtered views.</p>
+            <p>Using the data you exported from DynamoDB, answer the following:</p>
+            <ul>
+                <li>Which advertiser won the most auctions overall? Which advertiser won the most in the
+                    <code>sports</code> content category specifically?</li>
+                <li>Why do the overall and sports-specific rankings differ? Explain in 2–3 sentences, referencing
+                    the relevance multiplier table.</li>
+            </ul>
         </div>
     </div>
 
     <div class="task">
         <div class="task-header">
             <span class="task-num">Q2</span>
-            <span class="task-name">Relevance Premium</span>
+            <span class="task-name">Code Reflection</span>
         </div>
         <div class="task-body">
-            <p>For every matching content/advertiser category pair in the relevance table, estimate the average score
-                premium earned from context matching. Compare pairs that have a multiplier above 1.0 against all other
-                winning bids. Report the mean winning score for each group.</p>
-            <p>To complete this question you will need to know which advertiser category each winning advertiser belongs
-                to. That mapping can be inferred from the <code>winning_advertiser_id</code> field — for example,
-                <code>adv_sportswear_01</code> belongs to the sportswear category.
-            </p>
-        </div>
-    </div>
-
-    <div class="task">
-        <div class="task-header">
-            <span class="task-num">Q3</span>
-            <span class="task-name">Latency Analysis</span>
-        </div>
-        <div class="task-body">
-            <p>Plot a histogram of <code>score_margin</code> across all processed opportunities. What does the
-                distribution tell you about competitiveness? Are most auctions decided by a large margin or a small one?
-            </p>
-            <p>Additionally: report the median score margin. If a second advertiser wanted to capture wins from the
-                current top winner in the <code>finance</code> category, by approximately how much would they need to
-                increase their bid to overcome the relevance gap?</p>
-        </div>
-    </div>
-
-    <div class="task">
-        <div class="task-header">
-            <span class="task-num">Q4</span>
-            <span class="task-name">Open Question: What Would You Change?</span>
-        </div>
-        <div class="task-body">
-            <p>The current scoring system uses a fixed relevance table and static time windows. Propose one concrete
-                improvement to the scoring model that would make auction results more accurate or fair. Your proposal
-                should be specific — describe the change, what data it would use, and what outcome you would expect. A
-                well-argued two-paragraph response is sufficient.</p>
+            <p>Answer one of the following (your choice):</p>
+            <ul>
+                <li><strong>Option A:</strong> The current scoring system uses a fixed relevance table. Propose one
+                    concrete improvement to the scoring model. Describe the change, what data it would use, and what
+                    outcome you would expect.</li>
+                <li><strong>Option B:</strong> Explain how your Lambda handles a malformed message that cannot be
+                    parsed as JSON. Walk through the code path from the moment <code>json.loads()</code> raises an
+                    exception to the point where the message ID is added to <code>batchItemFailures</code>.
+                    Why is this important for reliability?</li>
+            </ul>
+            <p>A well-argued two-paragraph response is sufficient for either option.</p>
         </div>
     </div>
 
 
-    <!-- ══════════════════════════════════════════════════════════════════
+    <!-- ==================================================================
      PART 6 — GRADING
-══════════════════════════════════════════════════════════════════ -->
+================================================================== -->
     <h2 class="part"><span class="part-num">Part 6</span> Grading</h2>
+
+    <p>This project is worth <strong>100 points</strong>. The majority of your grade comes from code that works
+        correctly — tasks are evaluated by running the provided test suite against your <code>lambda_handler.py</code>
+        and by checking that your deployed pipeline produced results in DynamoDB. Written analysis is a smaller
+        portion.</p>
 
     <div class="table-wrap">
         <table class="grade-table">
@@ -1520,81 +1969,166 @@ pytest worker/tests/test_handler.py -v</pre>
                 <tr>
                     <th>Component</th>
                     <th>Points</th>
-                    <th>What We Look For</th>
+                    <th>How It Is Evaluated</th>
                 </tr>
             </thead>
             <tbody>
+                <tr style="background:#eaf5ee;">
+                    <td colspan="3" style="font-weight:bold; color:#1a6b3a;">Code (80 points)</td>
+                </tr>
                 <tr>
                     <td>Task 1 — compute_score</td>
                     <td>15</td>
-                    <td>Formula matches spec exactly. Edge cases handled (zero bid, missing category, malformed
-                        timestamp). Tests pass.</td>
+                    <td>We run the test suite. Tests for correct formula, relevance lookup, time bonus, device bonus,
+                        and edge cases (zero bid, missing category, bad timestamp) must all pass.</td>
                 </tr>
                 <tr>
                     <td>Task 2 — select_winner</td>
                     <td>15</td>
-                    <td>Correctly sorts all bids by score, returns winner fields and margin. Returns None for empty
-                        bids. Tests pass.</td>
+                    <td>Tests for correct winner selection, score margin calculation, and returning None for empty bids
+                        must pass.</td>
                 </tr>
                 <tr>
                     <td>Task 3 — process_opportunity</td>
                     <td>15</td>
-                    <td>SQS post before DynamoDB write. Correct result schema including processed_at. DynamoDB write
-                        uses Decimal.</td>
+                    <td>Tests for correct result schema (including content_category and processed_at), SQS post, and
+                        DynamoDB write with Decimal conversion must pass.</td>
                 </tr>
                 <tr>
                     <td>Task 4 — lambda_handler</td>
                     <td>20</td>
-                    <td>All records processed without whole-batch failure. batchItemFailures returned correctly. Batch
-                        timing logged.</td>
+                    <td>Tests for full batch processing, batchItemFailures format, exception isolation (one bad
+                        message does not crash the batch), and batch timing logging must pass.</td>
                 </tr>
                 <tr>
                     <td>End-to-end pipeline</td>
+                    <td>15</td>
+                    <td>Your notebook shows 450+ records loaded from DynamoDB after a Burst run. Screenshot of the
+                        test apparatus confirms results arrived. This proves the full SQS-to-Lambda-to-DynamoDB path
+                        worked.</td>
+                </tr>
+                <tr style="background:#fdf6e3;">
+                    <td colspan="3" style="font-weight:bold; color:#b07d20;">Analysis (20 points)</td>
+                </tr>
+                <tr>
+                    <td>Q1 — Results Analysis</td>
                     <td>10</td>
-                    <td>Test apparatus Burst run completes with results appearing in both SQS results queue and DynamoDB
-                        table.</td>
+                    <td>Winner counts shown (overall and sports-filtered). Explanation references relevance
+                        multipliers and is logically sound.</td>
                 </tr>
                 <tr>
-                    <td>Q1 — Winner Distribution</td>
-                    <td>5</td>
-                    <td>Correct counts. Both overall and category-filtered views shown. Explanation addresses relevance
-                        multipliers.</td>
-                </tr>
-                <tr>
-                    <td>Q2 — Relevance Premium</td>
-                    <td>5</td>
-                    <td>Matched vs. unmatched groups defined correctly. Mean scores computed from actual data.</td>
-                </tr>
-                <tr>
-                    <td>Q3 — Latency Analysis</td>
+                    <td>Q2 — Code Reflection</td>
                     <td>10</td>
-                    <td>Histogram plotted. Median reported. Finance category analysis is specific and numerically
-                        grounded.</td>
-                </tr>
-                <tr>
-                    <td>Q4 — Open Question</td>
-                    <td>5</td>
-                    <td>Proposal is concrete, references a specific data source or mechanism, predicts a measurable
-                        outcome.</td>
+                    <td>Proposal (Option A) is concrete and references a specific mechanism, or code walkthrough
+                        (Option B) accurately traces the exception handling path.</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div class="callout">
-        <div class="callout-label">Submission</div>
-        <p>Submit a zip file containing <code>worker/lambda_handler.py</code> and <code>analysis/analysis.ipynb</code>.
-            Your notebook must have all cells executed and outputs visible — do not strip outputs before submitting.
-            Include a screenshot of the test apparatus showing a completed Burst run with at least 400 results received.
-        </p>
+    <h3 class="section">Partial Credit</h3>
+    <p>We want to reward progress even if your pipeline is not fully working. Here is how partial credit is
+        applied:</p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Scenario</th>
+                    <th>Points Earned</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>All 8 tests pass, Burst run produces 450+ results, both questions complete</td>
+                    <td>Full marks (100)</td>
+                </tr>
+                <tr>
+                    <td>All 8 tests pass, but no deployed results (DynamoDB empty or stack not deployed)</td>
+                    <td>Up to 65 (Tasks 1–4 only)</td>
+                </tr>
+                <tr>
+                    <td>Some tests pass (e.g. Tasks 1–2 work but Tasks 3–4 do not)</td>
+                    <td>Points for passing tasks only</td>
+                </tr>
+                <tr>
+                    <td>No tests pass, but code shows meaningful attempt (not just the starter skeleton)</td>
+                    <td>Up to 10 (effort credit at instructor discretion)</td>
+                </tr>
+                <tr>
+                    <td>Starter code submitted unchanged</td>
+                    <td>0</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">Submission via GitHub Classroom</h3>
+    <p>This project uses <strong>GitHub Classroom</strong> for submission. Your work is submitted by pushing to the
+        repository that was created when you accepted the assignment invitation.</p>
+
+    <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+            <h4>Accept the assignment invitation</h4>
+            <p>Click the GitHub Classroom invitation link provided on Canvas. This creates a private repository
+                under the course organization with your GitHub username. You only need to do this once.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+            <h4>Clone your repository</h4>
+            <pre>git clone https://github.com/YOUR-ORG/project1-YOURUSERNAME.git
+cd project1-YOURUSERNAME</pre>
+            <p>The repository already contains the starter code. Work directly in this directory.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+            <h4>Add your screenshots</h4>
+            <p>Save your test apparatus screenshot (and any other evidence images) directly into the repository —
+                for example, in a <code>screenshots/</code> folder. Reference them from your notebook if you like.
+                These files are committed and pushed along with your code.</p>
+            <pre>mkdir screenshots
+# save your screenshot into screenshots/
+git add screenshots/</pre>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+            <h4>Commit and push</h4>
+            <p>When you are ready to submit (or at any checkpoint along the way), commit and push:</p>
+            <pre>git add -A
+git commit -m "Project 1 submission"
+git push origin main</pre>
+            <p>You can push as many times as you want before the deadline. We grade the most recent commit on
+                <code>main</code> at the due date.</p>
+        </div>
+    </div>
+
+    <div class="callout gold">
+        <div class="callout-label">What Gets Graded</div>
+        <p>We pull your repository at the deadline and run the test suite against
+            <code>worker/lambda_handler.py</code>. We then open <code>analysis/analysis.ipynb</code> to check
+            pipeline evidence and your two written answers. Make sure your notebook has all cells executed with
+            outputs visible — do not clear outputs before pushing. Screenshots of the test apparatus should be
+            committed to the repo so we can see them without redeploying your stack.</p>
     </div>
 
 
     <footer class="doc-footer">
-        Project 1 &nbsp;·&nbsp; Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida
-        &nbsp;·&nbsp; Spring 2026
+        Project 1 &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida
+        &nbsp;&middot;&nbsp; Spring 2026
     </footer>
+
 
 </body>
 
 </html>
+
+

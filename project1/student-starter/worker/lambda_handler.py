@@ -158,6 +158,7 @@ def process_opportunity(opportunity):
 
     Result record schema:
         opportunity_id (str)       - copied from input
+        content_category (str)     - copied from input (needed for Part 5 analysis)
         winning_advertiser_id (str)
         winning_bid_amount (float)
         winning_score (float)

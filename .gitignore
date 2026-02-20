@@ -22,6 +22,7 @@
 !*.pdf
 !*.yaml
 !*.yml
+!*.json
 
 # Configuration and System files to explicitly keep
 !README.md
@@ -39,6 +40,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 node_modules/
+.aws-sam/
 .venv/
 env/
 venv/
