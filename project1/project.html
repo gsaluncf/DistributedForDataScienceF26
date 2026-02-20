@@ -1940,13 +1940,8 @@ for item in results:
         <div class="task-body">
             <p>Answer one of the following (your choice):</p>
             <ul>
-                <li><strong>Option A:</strong> The current scoring system uses a fixed relevance table. Propose one
-                    concrete improvement to the scoring model. Describe the change, what data it would use, and what
-                    outcome you would expect.</li>
-                <li><strong>Option B:</strong> Explain how your Lambda handles a malformed message that cannot be
-                    parsed as JSON. Walk through the code path from the moment <code>json.loads()</code> raises an
-                    exception to the point where the message ID is added to <code>batchItemFailures</code>.
-                    Why is this important for reliability?</li>
+                <li><strong>Option A (Scale & Limits):</strong> The test apparatus sent messages in small batches. If traffic suddenly spiked from 10 opportunities a second to 10,000 a second, what specific components of our current pipeline (SQS limits, Lambda concurrency, DynamoDB throughput) would become bottlenecks first, and what AWS settings would you adjust to handle the load?</li>
+                <li><strong>Option B (The Distributed Process):</strong> Writing code for an event-driven, queue-based pipeline is very different from writing a single local script. What was the most challenging part of getting SQS, Lambda, and DynamoDB to communicate correctly, or the most confusing bug you encountered, and what did it teach you about distributed architecture?</li>
             </ul>
             <p>A well-argued two-paragraph response is sufficient for either option.</p>
         </div>
