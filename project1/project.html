@@ -2057,26 +2057,27 @@ for item in results:
         </table>
     </div>
 
-    <h3 class="section">Submission via GitHub Classroom</h3>
-    <p>This project uses <strong>GitHub Classroom</strong> for submission. Your work is submitted by pushing to the
-        repository that was created when you accepted the assignment invitation.</p>
+    <h3 class="section">Submission via GitHub</h3>
+    <p>Submit your work by pushing to the course repository on a branch named after your student ID. Do
+        <strong>not</strong> push to <code>main</code>.</p>
 
     <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-            <h4>Accept the assignment invitation</h4>
-            <p>Click the GitHub Classroom invitation link provided on Canvas. This creates a private repository
-                under the course organization with your GitHub username. You only need to do this once.</p>
+            <h4>Clone the course repository</h4>
+            <pre>git clone https://github.com/gsaluncf/DistributedForDataScienceF26.git
+cd DistributedForDataScienceF26</pre>
+            <p>The starter code is in <code>project1/student-starter/</code>. That is the folder you will work in.</p>
         </div>
     </div>
 
     <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-            <h4>Clone your repository</h4>
-            <pre>git clone https://github.com/YOUR-ORG/project1-YOURUSERNAME.git
-cd project1-YOURUSERNAME</pre>
-            <p>The repository already contains the starter code. Work directly in this directory.</p>
+            <h4>Create your student branch</h4>
+            <p>Use the same student ID you chose for your AWS resources (e.g. <code>gsalu</code>):</p>
+            <pre>git checkout -b YOURID</pre>
+            <p>All your commits will live on this branch. Never commit directly to <code>main</code>.</p>
         </div>
     </div>
 
@@ -2084,35 +2085,37 @@ cd project1-YOURUSERNAME</pre>
         <div class="step-num">3</div>
         <div class="step-body">
             <h4>Add your screenshots</h4>
-            <p>Save your test apparatus screenshot (and any other evidence images) directly into the repository —
-                for example, in a <code>screenshots/</code> folder. Reference them from your notebook if you like.
-                These files are committed and pushed along with your code.</p>
-            <pre>mkdir screenshots
-# save your screenshot into screenshots/
-git add screenshots/</pre>
+            <p>Save your test apparatus screenshot (and any other evidence images) into a
+                <code>screenshots/</code> folder inside <code>project1/student-starter/</code>.
+                Reference them from your notebook if you like.</p>
+            <pre>mkdir project1/student-starter/screenshots
+# save your screenshot into that folder
+git add project1/student-starter/screenshots/</pre>
         </div>
     </div>
 
     <div class="step">
         <div class="step-num">4</div>
         <div class="step-body">
-            <h4>Commit and push</h4>
-            <p>When you are ready to submit (or at any checkpoint along the way), commit and push:</p>
+            <h4>Commit and push to your branch</h4>
+            <p>When you are ready to submit (or at any checkpoint), commit and push to your named branch:</p>
             <pre>git add -A
 git commit -m "Project 1 submission"
-git push origin main</pre>
-            <p>You can push as many times as you want before the deadline. We grade the most recent commit on
-                <code>main</code> at the due date.</p>
+git push origin YOURID</pre>
+            <p>Replace <code>YOURID</code> with your actual student ID (e.g. <code>git push origin gsalu</code>).
+                You can push as many times as you want before the deadline. We grade the most recent commit on
+                your branch at the due date.</p>
         </div>
     </div>
 
     <div class="callout gold">
         <div class="callout-label">What Gets Graded</div>
-        <p>We pull your repository at the deadline and run the test suite against
-            <code>worker/lambda_handler.py</code>. We then open <code>analysis/analysis.ipynb</code> to check
-            pipeline evidence and your two written answers. Make sure your notebook has all cells executed with
-            outputs visible — do not clear outputs before pushing. Screenshots of the test apparatus should be
-            committed to the repo so we can see them without redeploying your stack.</p>
+        <p>We check out your branch (<code>YOURID</code>) at the deadline and run the test suite against
+            <code>project1/student-starter/worker/lambda_handler.py</code>. We then open
+            <code>project1/student-starter/analysis/analysis.ipynb</code> to check pipeline evidence and your
+            two written answers. Make sure your notebook has all cells executed with outputs visible — do not
+            clear outputs before pushing. Screenshots of the test apparatus should be committed to the repo so
+            we can see them without redeploying your stack.</p>
     </div>
 
 
