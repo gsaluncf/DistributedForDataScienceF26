@@ -307,8 +307,16 @@
     <!-- AWS Credentials -->
     <div class="card card-green">
         <h2 style="margin-top:0; border-left:none; padding-left:0;">AWS Credentials</h2>
-        <p class="cred-note">Your credentials stay in this browser tab. Click "Save Config" to remember them in your
-            browser's local storage for next time.</p>
+        <p class="cred-note">Your credentials stay in this browser tab. Save profiles to quickly switch between student deployments.</p>
+        <div style="margin-bottom:12px;">
+            <label for="savedProfiles" style="font-weight:600;">Saved Profiles</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <select id="savedProfiles" onchange="loadProfile()" style="flex:1; max-width:400px;">
+                    <option value="">— Select a saved profile —</option>
+                </select>
+                <button class="btn-secondary" onclick="deleteProfile()" style="padding:8px 12px; font-size:12px;">Delete Selected</button>
+            </div>
+        </div>
         <div class="grid-3">
             <div>
                 <label for="accessKeyId">Access Key ID</label>
@@ -331,8 +339,8 @@
         </div>
         <div class="btn-group">
             <button class="btn-primary" onclick="testConnection()">Test Connection</button>
-            <button class="btn-secondary" onclick="saveConfig()">Save Config</button>
-            <button class="btn-secondary" onclick="clearSavedConfig()">Clear Saved</button>
+            <button class="btn-secondary" onclick="saveConfig()">Save Profile</button>
+            <button class="btn-secondary" onclick="clearAllProfiles()">Clear All</button>
             <span id="connectionStatus" class="connected-badge badge-wait">Not tested</span>
             <span id="saveStatus" style="font-size:12px; color:#64748b;"></span>
         </div>
@@ -391,6 +399,18 @@
                 <input type="number" id="batchDelay" value="0" min="0" max="10000">
             </div>
         </div>
+        <div id="customWaveRow" class="grid-2" style="display:none; margin-top:10px;">
+            <div>
+                <label for="wavePattern">Wave Pattern (comma-separated)</label>
+                <input type="text" id="wavePattern" placeholder="e.g. 50,50,10" value="50,50,10">
+            </div>
+            <div>
+                <label for="totalMessages">Total Messages</label>
+                <input type="number" id="totalMessages" value="500" min="1" max="10000">
+            </div>
+        </div>
+        <div id="profileDesc" style="margin-top:10px; padding:10px 14px; background:#f1f5f9; border-left:3px solid #3b82f6; border-radius:4px; font-size:13px; color:#475569; line-height:1.5;"></div>
+        </div>
 
         <div class="btn-group">
             <button class="btn-primary" id="btnRun" onclick="runTest()">Run Test</button>
@@ -430,8 +450,8 @@
     <!-- Performance Stats -->
     <div class="card">
         <h2 style="margin-top:0; border-left:none; padding-left:0;">Performance Stats
-            <span style="font-size:12px; font-weight:400; color:#64748b; font-family:monospace;">— latency = time from
-                SQS send to processed_at in result</span>
+            <span style="font-size:12px; font-weight:400; color:#64748b; font-family:monospace;">— latency = round-trip time from
+                SQS send to result received</span>
         </h2>
 
         <!-- Stat boxes -->
@@ -658,21 +678,69 @@
         }
 
         const PROFILES = {
-            warmup: { count: 10, delay: 500 },
-            steady: { count: 100, delay: 100 },
-            burst: { count: 500, delay: 0 },
-            ramp: { count: 500, delay: 0 },
-            soak: { count: 200, delay: 1000 },
-            custom: { count: null, delay: null },
+            warmup:  { count: 10,   delay: 500,  delayUsed: true },
+            steady:  { count: 100,  delay: 100,  delayUsed: true },
+            burst:   { count: 500,  delay: 0,    delayUsed: false },
+            ramp:    { count: 500,  delay: 0,    delayUsed: false },
+            soak:    { count: 200,  delay: 1000, delayUsed: true },
+            custom:  { count: null, delay: null, delayUsed: true },
         };
+
+        function getProfileDescription(profile) {
+            const count = document.getElementById('msgCount').value;
+            const delay = document.getElementById('batchDelay').value;
+            const descs = {
+                warmup: '<strong>Warmup</strong> — Sends <strong>Message Count</strong> (' + count + ' by default) messages ' +
+                    'in batches of 10, pausing <strong>Delay Between Batches</strong> (' + delay + ' ms) between each batch. ' +
+                    'Ideal for measuring <em>true per-message pipeline latency</em> with no queue backlog. ' +
+                    'Expect sub-500 ms if your Lambda is working correctly.',
+                steady: '<strong>Steady</strong> — Sends <strong>Message Count</strong> (' + count + ' by default) messages ' +
+                    'in batches of 10, pausing <strong>Delay Between Batches</strong> (' + delay + ' ms) between each batch. ' +
+                    'Simulates a moderate, realistic workload. Good for checking sustained throughput without overwhelming the queue.',
+                burst:  '<strong>Burst</strong> — Fires all <strong>Message Count</strong> (' + count + ' by default) messages ' +
+                    'as fast as possible using parallel sends. <strong>Delay Between Batches</strong> is ignored. ' +
+                    'Tests how quickly your pipeline drains a sudden spike. ' +
+                    'High avg latency is expected here because later messages wait in the queue.',
+                ramp:   '<strong>Ramp</strong> — Sends <strong>Message Count</strong> (' + count + ' by default) messages ' +
+                    'with an automatically accelerating pace (starts slower, ends fastest). ' +
+                    '<strong>Delay Between Batches</strong> is ignored. Tests how your pipeline handles increasing load.',
+                soak:   '<strong>Soak</strong> — Sends <strong>Message Count</strong> (' + count + ' by default) messages ' +
+                    'in batches of 10, pausing <strong>Delay Between Batches</strong> (' + delay + ' ms) between each batch. ' +
+                    'Simulates sustained low traffic over a longer period. Good for spotting cold-start issues and memory leaks.',
+                custom: function() {
+                    const wp = document.getElementById('wavePattern').value || '50,50,10';
+                    const total = document.getElementById('totalMessages').value || '500';
+                    return '<strong>Custom</strong> — Uses <strong>Wave Pattern</strong> (<code>' + wp + '</code>) to send messages in repeating waves, ' +
+                        'pausing <strong>Delay Between Batches</strong> (' + delay + ' ms) between each wave. ' +
+                        'The pattern repeats until <strong>Total Messages</strong> (' + total + ') are sent. ' +
+                        'For example, <code>50,50,10</code> sends 50 → pause → 50 → pause → 10 → pause → 50 → ... ' +
+                        'Each wave is sent as a parallel burst internally.';
+                }(),
+            };
+            return descs[profile] || '';
+        }
 
         function updateProfile() {
             const profile = document.getElementById('profile').value;
             const cfg = PROFILES[profile];
+            const delayInput = document.getElementById('batchDelay');
+            const isCustom = (profile === 'custom');
+
             if (cfg.count !== null) {
                 document.getElementById('msgCount').value = cfg.count;
-                document.getElementById('batchDelay').value = cfg.delay;
+                delayInput.value = cfg.delay;
             }
+
+            // Gray out delay if not used by this profile
+            delayInput.disabled = !cfg.delayUsed;
+            delayInput.style.opacity = cfg.delayUsed ? '1' : '0.4';
+
+            // Show/hide custom wave fields; hide msgCount for custom
+            document.getElementById('customWaveRow').style.display = isCustom ? 'grid' : 'none';
+            document.getElementById('msgCount').parentElement.style.display = isCustom ? 'none' : '';
+
+            // Update description
+            document.getElementById('profileDesc').innerHTML = getProfileDescription(profile);
         }
 
         // =====================================================================
@@ -844,10 +912,27 @@
                 return;
             }
 
-            const count = parseInt(document.getElementById('msgCount').value) || 500;
+            const profile = document.getElementById('profile').value;
             const delay = parseInt(document.getElementById('batchDelay').value) || 0;
             const seed = parseInt(document.getElementById('seed').value) || 42;
-            const profile = document.getElementById('profile').value;
+
+            // Determine total message count
+            let count;
+            if (profile === 'custom') {
+                count = parseInt(document.getElementById('totalMessages').value) || 500;
+            } else {
+                count = parseInt(document.getElementById('msgCount').value) || 500;
+            }
+
+            // Parse wave pattern for custom mode
+            let wavePattern = null;
+            if (profile === 'custom') {
+                const raw = document.getElementById('wavePattern').value.trim();
+                if (raw) {
+                    wavePattern = raw.split(',').map(s => parseInt(s.trim())).filter(n => n > 0);
+                    if (wavePattern.length === 0) wavePattern = null;
+                }
+            }
 
             // Reset state
             sentCount = 0;
@@ -888,47 +973,111 @@
             // Start polling for results
             startPollingWithUrl(resultsQueueUrl);
 
-            // Inject messages in batches of 10
+            // Inject messages
             setStatus('Injecting messages...');
             const batchSize = 10;
             let sent = 0;
+            const SEND_PARALLELISM = 5;
 
-            for (let i = 0; i < generatedMessages.length && testRunning; i += batchSize) {
-                const batch = generatedMessages.slice(i, i + batchSize);
-                const entries = batch.map((msg, idx) => ({
-                    Id: String(idx),
-                    MessageBody: JSON.stringify(msg),
-                }));
-
-                try {
-                    const batchSendTime = Date.now();
-                    const startSend = performance.now();
-                    const result = await sqsClient.sendMessageBatch({
-                        QueueUrl: inputQueueUrl,
-                        Entries: entries,
-                    }).promise();
-                    const sendMs = (performance.now() - startSend).toFixed(1);
-                    const ok = (result.Successful || []).length;
-                    // Record send time for each opportunity in this batch
-                    for (const m of batch) {
-                        sendTimes.set(m.opportunity_id, batchSendTime);
-                    }
-                    sent += ok;
-                    sentCount = sent;
-                    updateMetrics();
-                    log('Sent batch ' + Math.ceil((i + 1) / batchSize) + ': ' + ok + ' msgs (' + sendMs + ' ms)');
-                } catch (e) {
-                    log('ERROR sending batch: ' + e.message);
+            // Helper: build SQS batch entries from a slice of generatedMessages
+            function buildBatches(msgs) {
+                const batches = [];
+                for (let i = 0; i < msgs.length; i += batchSize) {
+                    const batch = msgs.slice(i, i + batchSize);
+                    const entries = batch.map((msg, idx) => ({
+                        Id: String(idx),
+                        MessageBody: JSON.stringify(msg),
+                    }));
+                    batches.push({ batch, entries });
                 }
+                return batches;
+            }
 
-                // Apply delay between batches
-                if (delay > 0 && testRunning) {
-                    let actualDelay = delay;
-                    if (profile === 'ramp') {
-                        const progress = i / generatedMessages.length;
-                        actualDelay = Math.max(10, Math.round(delay * (1 - progress)));
+            async function sendOneBatch(b) {
+                const batchSendTime = Date.now();
+                const result = await sqsClient.sendMessageBatch({
+                    QueueUrl: inputQueueUrl,
+                    Entries: b.entries,
+                }).promise();
+                const ok = (result.Successful || []).length;
+                for (const m of b.batch) {
+                    sendTimes.set(m.opportunity_id, batchSendTime);
+                }
+                sent += ok;
+                sentCount = sent;
+                return ok;
+            }
+
+            // Send a wave of N messages as a parallel burst
+            async function sendWave(msgs, waveNum) {
+                const waveBatches = buildBatches(msgs);
+                for (let w = 0; w < waveBatches.length && testRunning; w += SEND_PARALLELISM) {
+                    const chunk = waveBatches.slice(w, w + SEND_PARALLELISM);
+                    try {
+                        const results = await Promise.all(chunk.map(b => sendOneBatch(b)));
+                        const totalOk = results.reduce((a, b) => a + b, 0);
+                        updateMetrics();
+                    } catch (e) {
+                        log('ERROR in wave ' + waveNum + ': ' + e.message);
                     }
-                    await new Promise(r => setTimeout(r, actualDelay));
+                }
+            }
+
+            if (profile === 'custom' && wavePattern) {
+                // Custom wave pattern mode
+                let msgIndex = 0;
+                let waveNum = 0;
+                log('Wave pattern: [' + wavePattern.join(', ') + '] repeating to ' + count + ' total');
+                while (msgIndex < generatedMessages.length && testRunning) {
+                    const waveSize = wavePattern[waveNum % wavePattern.length];
+                    const remaining = generatedMessages.length - msgIndex;
+                    const actual = Math.min(waveSize, remaining);
+                    const waveMsgs = generatedMessages.slice(msgIndex, msgIndex + actual);
+
+                    await sendWave(waveMsgs, waveNum + 1);
+                    log('Wave ' + (waveNum + 1) + ': ' + actual + ' msgs sent (pattern step: ' + waveSize + ')');
+                    msgIndex += actual;
+                    waveNum++;
+
+                    // Delay between waves (if more to send)
+                    if (msgIndex < generatedMessages.length && delay > 0 && testRunning) {
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                }
+            } else if (delay === 0) {
+                // Burst mode: fire all batches in parallel waves
+                const allBatches = buildBatches(generatedMessages);
+                for (let w = 0; w < allBatches.length && testRunning; w += SEND_PARALLELISM) {
+                    const wave = allBatches.slice(w, w + SEND_PARALLELISM);
+                    try {
+                        const results = await Promise.all(wave.map(b => sendOneBatch(b)));
+                        const totalOk = results.reduce((a, b) => a + b, 0);
+                        updateMetrics();
+                        log('Sent wave ' + (Math.floor(w / SEND_PARALLELISM) + 1) + ': ' + totalOk + ' msgs (' + wave.length + ' parallel batches)');
+                    } catch (e) {
+                        log('ERROR sending wave: ' + e.message);
+                    }
+                }
+            } else {
+                // Paced mode: sequential sends with delay
+                const allBatches = buildBatches(generatedMessages);
+                for (let bi = 0; bi < allBatches.length; bi++) {
+                    if (!testRunning) break;
+                    try {
+                        const ok = await sendOneBatch(allBatches[bi]);
+                        updateMetrics();
+                        log('Sent batch ' + (bi + 1) + ': ' + ok + ' msgs');
+                    } catch (e) {
+                        log('ERROR sending batch: ' + e.message);
+                    }
+                    if (delay > 0 && testRunning) {
+                        let actualDelay = delay;
+                        if (profile === 'ramp') {
+                            const progress = bi / allBatches.length;
+                            actualDelay = Math.max(10, Math.round(delay * (1 - progress)));
+                        }
+                        await new Promise(r => setTimeout(r, actualDelay));
+                    }
                 }
             }
 
@@ -971,58 +1120,75 @@
         function startPollingWithUrl(resultsQueueUrl) {
             if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
 
-            log('Polling results queue (100ms loop)...');
+            const PARALLEL_POLLS = 5;  // 5 x 10 = up to 50 msgs per tick
+            log('Polling results queue (' + PARALLEL_POLLS + ' parallel receivers, 50ms loop)...');
             let polling = true;
-            // Store a flag so stopTest can cancel
             pollInterval = { cancel: () => { polling = false; } };
+
+            function processMessages(messages) {
+                if (!messages || messages.length === 0) return [];
+                receivedCount += messages.length;
+                const receiveTime = Date.now();
+                const deletePromises = [];
+
+                for (const msg of messages) {
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(msg.Body);
+                    } catch (_) {
+                        parsed = {};
+                    }
+
+                    // Calculate per-message latency (browser round-trip)
+                    let msgLatencyMs = null;
+                    if (parsed.opportunity_id) {
+                        const sentTime = sendTimes.get(parsed.opportunity_id);
+                        if (sentTime) {
+                            msgLatencyMs = receiveTime - sentTime;
+                            latencies.push(msgLatencyMs);
+                        } else if (testStartTime) {
+                            msgLatencyMs = receiveTime - testStartTime;
+                            latencies.push(msgLatencyMs);
+                        }
+                    }
+
+                    addResultRow(parsed, msgLatencyMs);
+
+                    deletePromises.push(
+                        sqsClient.deleteMessage({
+                            QueueUrl: resultsQueueUrl,
+                            ReceiptHandle: msg.ReceiptHandle,
+                        }).promise()
+                    );
+                }
+                return deletePromises;
+            }
 
             async function pollOnce() {
                 if (!polling) return;
                 try {
-                    const result = await sqsClient.receiveMessage({
-                        QueueUrl: resultsQueueUrl,
-                        MaxNumberOfMessages: 10,
-                        WaitTimeSeconds: 0,
-                    }).promise();
+                    // Fire multiple parallel receive calls
+                    const receivePromises = [];
+                    for (let i = 0; i < PARALLEL_POLLS; i++) {
+                        receivePromises.push(
+                            sqsClient.receiveMessage({
+                                QueueUrl: resultsQueueUrl,
+                                MaxNumberOfMessages: 10,
+                                WaitTimeSeconds: 0,
+                            }).promise()
+                        );
+                    }
 
-                    const messages = result.Messages || [];
-                    if (messages.length > 0) {
-                        receivedCount += messages.length;
+                    const results = await Promise.all(receivePromises);
+                    const allDeletePromises = [];
 
-                        // Delete all messages in parallel for speed
-                        const deletePromises = [];
-                        for (const msg of messages) {
-                            let parsed;
-                            try {
-                                parsed = JSON.parse(msg.Body);
-                            } catch (_) {
-                                parsed = {};
-                            }
+                    for (const result of results) {
+                        const deletes = processMessages(result.Messages || []);
+                        allDeletePromises.push(...deletes);
+                    }
 
-                            // Calculate per-message latency
-                            let msgLatencyMs = null;
-                            if (parsed.processed_at && parsed.opportunity_id) {
-                                const processedTime = new Date(parsed.processed_at).getTime();
-                                const sentTime = sendTimes.get(parsed.opportunity_id);
-                                if (sentTime && processedTime > 0) {
-                                    msgLatencyMs = processedTime - sentTime;
-                                    latencies.push(msgLatencyMs);
-                                } else if (testStartTime && processedTime > 0) {
-                                    msgLatencyMs = processedTime - testStartTime;
-                                    latencies.push(msgLatencyMs);
-                                }
-                            }
-
-                            addResultRow(parsed, msgLatencyMs);
-
-                            deletePromises.push(
-                                sqsClient.deleteMessage({
-                                    QueueUrl: resultsQueueUrl,
-                                    ReceiptHandle: msg.ReceiptHandle,
-                                }).promise()
-                            );
-                        }
-                        await Promise.all(deletePromises);
+                    if (allDeletePromises.length > 0) {
+                        await Promise.all(allDeletePromises);
                         updateMetrics();
                     }
 
@@ -1039,8 +1205,8 @@
                     log('Poll error: ' + e.message);
                 }
 
-                // Schedule next poll after 100ms
-                if (polling) setTimeout(pollOnce, 100);
+                // Schedule next poll after 50ms (faster loop with parallel receives)
+                if (polling) setTimeout(pollOnce, 50);
             }
 
             pollOnce();
@@ -1282,51 +1448,152 @@
         }
 
         // =====================================================================
-        // Save / Load Config (localStorage)
+        // Save / Load Config — Multi-Profile (localStorage)
         // =====================================================================
-        const STORAGE_KEY = 'adflow_test_config';
+        const PROFILES_KEY = 'adflow_profiles';
+        const LEGACY_KEY = 'adflow_test_config';  // migrate old single-config
 
-        function saveConfig() {
-            const config = {
-                accessKeyId: document.getElementById('accessKeyId').value.trim(),
-                secretAccessKey: document.getElementById('secretAccessKey').value.trim(),
-                region: document.getElementById('region').value,
-                studentId: document.getElementById('studentId').value.trim(),
-                seed: document.getElementById('seed').value,
-            };
+        function getProfiles() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-                document.getElementById('saveStatus').textContent = 'Saved!';
-                setTimeout(() => document.getElementById('saveStatus').textContent = '', 3000);
-                log('Config saved to browser local storage.');
-            } catch (e) {
-                log('ERROR saving config: ' + e.message);
+                const raw = localStorage.getItem(PROFILES_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) { return []; }
+        }
+
+        function putProfiles(profiles) {
+            localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+        }
+
+        function profileLabel(p) {
+            const sid = p.studentId || '(no id)';
+            const keyHint = p.accessKeyId ? p.accessKeyId.substring(0, 8) + '...' : '(no key)';
+            return sid + '  [' + keyHint + ']';
+        }
+
+        function refreshProfileDropdown(selectIndex) {
+            const sel = document.getElementById('savedProfiles');
+            const profiles = getProfiles();
+            sel.innerHTML = '<option value="">\u2014 Select a saved profile \u2014</option>';
+            profiles.forEach((p, i) => {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = profileLabel(p);
+                sel.appendChild(opt);
+            });
+            if (selectIndex !== undefined && selectIndex >= 0 && selectIndex < profiles.length) {
+                sel.value = String(selectIndex);
             }
         }
 
-        function clearSavedConfig() {
-            localStorage.removeItem(STORAGE_KEY);
-            document.getElementById('saveStatus').textContent = 'Cleared.';
+        function saveConfig() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const accessKeyId = document.getElementById('accessKeyId').value.trim();
+            const secretAccessKey = document.getElementById('secretAccessKey').value.trim();
+            const region = document.getElementById('region').value;
+            const seed = document.getElementById('seed').value;
+
+            if (!studentId) {
+                log('ERROR: Enter a Student ID before saving.');
+                return;
+            }
+
+            const config = { studentId, accessKeyId, secretAccessKey, region, seed };
+            const profiles = getProfiles();
+
+            // Upsert: if same studentId + accessKeyId exists, update it
+            const existing = profiles.findIndex(p => p.studentId === studentId && p.accessKeyId === accessKeyId);
+            if (existing >= 0) {
+                profiles[existing] = config;
+            } else {
+                profiles.push(config);
+            }
+
+            // Sort profiles alphabetically by studentId
+            profiles.sort((a, b) => (a.studentId || '').localeCompare(b.studentId || ''));
+
+            putProfiles(profiles);
+            const newIdx = profiles.findIndex(p => p.studentId === studentId && p.accessKeyId === accessKeyId);
+            refreshProfileDropdown(newIdx);
+            document.getElementById('saveStatus').textContent = 'Saved!';
             setTimeout(() => document.getElementById('saveStatus').textContent = '', 3000);
-            log('Saved config cleared from browser local storage.');
+            log('Profile saved: ' + profileLabel(config));
+        }
+
+        function loadProfile() {
+            const sel = document.getElementById('savedProfiles');
+            if (!sel.value) return;
+            const profiles = getProfiles();
+            const idx = parseInt(sel.value);
+            const p = profiles[idx];
+            if (!p) return;
+
+            if (p.accessKeyId) document.getElementById('accessKeyId').value = p.accessKeyId;
+            if (p.secretAccessKey) document.getElementById('secretAccessKey').value = p.secretAccessKey;
+            if (p.region) document.getElementById('region').value = p.region;
+            if (p.studentId) {
+                document.getElementById('studentId').value = p.studentId;
+                updateConfig();
+            }
+            if (p.seed) document.getElementById('seed').value = p.seed;
+
+            // Reset connection badge when switching profiles
+            const badge = document.getElementById('connectionStatus');
+            badge.textContent = 'Not tested';
+            badge.className = 'connected-badge badge-wait';
+
+            log('Loaded profile: ' + profileLabel(p));
+        }
+
+        function deleteProfile() {
+            const sel = document.getElementById('savedProfiles');
+            if (!sel.value) {
+                log('No profile selected to delete.');
+                return;
+            }
+            const profiles = getProfiles();
+            const idx = parseInt(sel.value);
+            const removed = profiles.splice(idx, 1)[0];
+            putProfiles(profiles);
+            refreshProfileDropdown();
+            document.getElementById('saveStatus').textContent = 'Deleted.';
+            setTimeout(() => document.getElementById('saveStatus').textContent = '', 3000);
+            log('Deleted profile: ' + profileLabel(removed));
+        }
+
+        function clearAllProfiles() {
+            if (!confirm('Delete ALL saved profiles from local storage?')) return;
+            localStorage.removeItem(PROFILES_KEY);
+            localStorage.removeItem(LEGACY_KEY);
+            refreshProfileDropdown();
+            document.getElementById('saveStatus').textContent = 'All cleared.';
+            setTimeout(() => document.getElementById('saveStatus').textContent = '', 3000);
+            log('All saved profiles cleared.');
         }
 
         function loadSavedConfig() {
+            // Migrate legacy single-config if it exists
             try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return;
-                const config = JSON.parse(raw);
-                if (config.accessKeyId) document.getElementById('accessKeyId').value = config.accessKeyId;
-                if (config.secretAccessKey) document.getElementById('secretAccessKey').value = config.secretAccessKey;
-                if (config.region) document.getElementById('region').value = config.region;
-                if (config.studentId) {
-                    document.getElementById('studentId').value = config.studentId;
-                    updateConfig();
+                const legacy = localStorage.getItem(LEGACY_KEY);
+                if (legacy) {
+                    const old = JSON.parse(legacy);
+                    const profiles = getProfiles();
+                    // Only migrate if we don't already have profiles
+                    if (profiles.length === 0 && old.studentId) {
+                        profiles.push(old);
+                        putProfiles(profiles);
+                        log('Migrated legacy config to profiles.');
+                    }
+                    localStorage.removeItem(LEGACY_KEY);
                 }
-                if (config.seed) document.getElementById('seed').value = config.seed;
-                log('Loaded saved config from browser local storage.');
-            } catch (e) {
-                // Silently ignore parse errors
+            } catch (e) { /* ignore */ }
+
+            refreshProfileDropdown();
+
+            // Auto-load first profile if any exist
+            const profiles = getProfiles();
+            if (profiles.length > 0) {
+                document.getElementById('savedProfiles').value = '0';
+                loadProfile();
             }
         }
 
