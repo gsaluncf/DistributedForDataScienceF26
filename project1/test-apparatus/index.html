@@ -600,6 +600,7 @@
         let testStartTime = null;
         let generatedMessages = [];
         let sendTimes = new Map(); // opportunity_id -> epoch ms when sent to SQS
+        let receivedIds = new Set(); // track unique opportunity_ids to deduplicate SQS at-least-once delivery
         let sqsClient = null;
         let dynamoClient = null;
 
@@ -939,6 +940,7 @@
             receivedCount = 0;
             latencies = [];
             sendTimes = new Map();
+            receivedIds = new Set();
             testStartTime = Date.now();
             document.getElementById('resultsBody').innerHTML = '';
             updateMetrics();
@@ -1127,7 +1129,6 @@
 
             function processMessages(messages) {
                 if (!messages || messages.length === 0) return [];
-                receivedCount += messages.length;
                 const receiveTime = Date.now();
                 const deletePromises = [];
 
@@ -1138,6 +1139,22 @@
                     } catch (_) {
                         parsed = {};
                     }
+
+                    // Deduplicate: SQS standard queues are at-least-once,
+                    // and our parallel polling amplifies duplicates
+                    const oppId = parsed.opportunity_id;
+                    if (oppId && receivedIds.has(oppId)) {
+                        // Still delete the duplicate from the queue
+                        deletePromises.push(
+                            sqsClient.deleteMessage({
+                                QueueUrl: resultsQueueUrl,
+                                ReceiptHandle: msg.ReceiptHandle,
+                            }).promise()
+                        );
+                        continue; // skip counting/latency for duplicates
+                    }
+                    if (oppId) receivedIds.add(oppId);
+                    receivedCount++;
 
                     // Calculate per-message latency (browser round-trip)
                     let msgLatencyMs = null;
