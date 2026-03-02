@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 7 — Spark, the Lakehouse, and Databricks</title>
+    <meta name="description" content="Student guide for Apache Spark, file formats, SQL on distributed compute, and the Databricks Lakehouse platform. Distributed Systems for Data Science course.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --red: #9b1c1c;
+            --red-lt: #fef2f2;
+            --purple: #553c9a;
+            --purple-lt: #f3eeff;
+            --code-bg: #f0f0f8;
+            --spark-orange: #e25a1c;
+            --spark-orange-lt: #fef0e8;
+            --delta-blue: #003366;
+            --delta-blue-lt: #e8f0fa;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
+
+        .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 52px; }
+        .doc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+        h1.doc-title { font-family: 'IBM Plex Serif', serif; font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--ink); margin-bottom: 10px; }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
+
+        h2.part { font-family: 'IBM Plex Serif', serif; font-size: 22px; font-weight: 600; color: var(--ink); margin: 56px 0 20px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); display: flex; align-items: baseline; gap: 12px; }
+        h2.part .part-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 400; }
+
+        h3.section { font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; font-weight: 600; color: var(--accent); margin: 32px 0 10px; }
+        h4.subsection { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); margin: 24px 0 8px; letter-spacing: .02em; }
+
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+
+        .callout { border-left: 4px solid var(--accent); background: var(--accent-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout.gold { border-color: var(--gold); background: var(--gold-lt); }
+        .callout.green { border-color: var(--green); background: var(--green-lt); }
+        .callout.red { border-color: var(--red); background: var(--red-lt); }
+        .callout.purple { border-color: var(--purple); background: var(--purple-lt); }
+        .callout.spark { border-color: var(--spark-orange); background: var(--spark-orange-lt); }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; }
+
+        ul, ol { margin: 10px 0 16px 24px; }
+        li { margin-bottom: 6px; }
+        li strong { color: var(--ink); }
+
+        pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin: 16px 0; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.65; color: var(--ink); }
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+        .table-wrap { overflow-x: auto; margin: 18px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        thead th { background: var(--ink); color: #fff; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; text-align: left; padding: 10px 14px; letter-spacing: .01em; }
+        tbody tr:nth-child(even) { background: #f4f4f8; }
+        tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+        tbody td:first-child { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); }
+
+        .diagram { margin: 28px 0; text-align: center; }
+        .diagram svg { max-width: 100%; height: auto; }
+        .diagram-caption { font-size: 12px; color: var(--ink-faint); font-style: italic; margin-top: 8px; }
+        img.screenshot { display: block; max-width: 100%; border: 1.5px solid var(--rule); border-radius: 8px; margin: 18px auto; }
+        .screenshot-caption { font-size: 12px; color: var(--ink-faint); font-style: italic; text-align: center; margin-top: -10px; margin-bottom: 18px; }
+
+        .api-link { display: inline-flex; align-items: center; gap: 6px; background: var(--code-bg); border: 1px solid var(--rule); padding: 4px 12px; border-radius: 4px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; text-decoration: none; color: var(--accent); margin: 3px 4px 3px 0; transition: background .15s; }
+        .api-link:hover { background: var(--accent-lt); }
+
+        .nb-card { border: 1.5px solid var(--rule); border-radius: 8px; margin: 20px 0; overflow: hidden; }
+        .nb-card-header { background: var(--ink); color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 14px; }
+        .nb-card-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+        .nb-card-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+        .nb-card-body { padding: 16px 18px; font-size: 14px; }
+        .nb-card-body ul { margin-top: 8px; }
+
+        .doc-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
+
+        @media print {
+            body { padding: 40px; font-size: 13px; }
+            h2.part { page-break-before: always; }
+            pre { font-size: 11px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="doc-header">
+        <div class="doc-meta">Week 7 &nbsp;·&nbsp; Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida</div>
+        <h1 class="doc-title">Spark, the Lakehouse, and Databricks</h1>
+        <div class="doc-sub">Move from single-server databases to distributed analytics.
+            Learn Apache Spark, file formats, SQL at scale, and the lakehouse architecture — all on Databricks Free Edition.</div>
+    </header>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 0 — OVERVIEW
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Overview</span> What We Are Building</h2>
+
+    <p>So far in this course, you have built distributed systems on AWS: Lambda functions, SQS queues, DynamoDB tables,
+        and a real-time ad pipeline. You learned that distributed systems trade simplicity for scalability.</p>
+
+    <p>This week, we move to the <strong>data side</strong> of distributed computing. Instead of building infrastructure,
+        you will use <strong>Apache Spark</strong> — a distributed query engine — to process data at a scale that would
+        bring a single-server database to its knees.</p>
+
+    <div class="callout spark">
+        <div class="callout-label">The Core Idea</div>
+        <p><strong>Spark</strong> splits your data across many machines and runs your queries in parallel.
+            You write code that looks like it operates on one table — but it actually runs on a cluster of workers.
+            This is the same principle as your Lambda functions processing SQS messages in parallel,
+            but applied to analytics instead of event processing.</p>
+    </div>
+
+    <h3 class="section">This Week's Notebooks</h3>
+    <p>You will work through three Databricks notebooks, each building on the previous:</p>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 1</span>
+            <span class="nb-card-name">Spark Intro & DataFrames</span>
+        </div>
+        <div class="nb-card-body">
+            <p>Load tables, apply transformations, triggers actions, see the execution plan (DAG).
+                Concepts: lazy evaluation, column pruning, shuffles, broadcast joins.</p>
+            <ul>
+                <li>Load 750K customers with <code>spark.read.table()</code></li>
+                <li>Filter, aggregate, join — watch transformations vs actions</li>
+                <li>Read execution plans with <code>df.explain(True)</code></li>
+                <li>Use the <strong>Query Profile</strong> to visualize distributed execution</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 2</span>
+            <span class="nb-card-name">File Formats & Table Formats</span>
+        </div>
+        <div class="nb-card-body">
+            <p>Write the same dataset in five formats and compare: schema safety, compression, query speed.</p>
+            <ul>
+                <li>CSV → Parquet → Avro → Delta Lake → Iceberg</li>
+                <li>See actual files on disk with <code>dbutils.fs.ls()</code></li>
+                <li>Delta Lake: time travel, schema enforcement, UPDATE/DELETE</li>
+                <li>Unity Catalog Volumes for file storage</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 3</span>
+            <span class="nb-card-name">SQL on Spark</span>
+        </div>
+        <div class="nb-card-body">
+            <p>Everything you know from SQL — but distributed. Same queries, much bigger data.</p>
+            <ul>
+                <li><code>%sql</code> magic cells with interactive visualizations</li>
+                <li><code>spark.sql()</code> — bridge between SQL and Python</li>
+                <li>Temp views, CTEs, window functions (RANK, running totals)</li>
+                <li>CREATE TABLE AS SELECT (CTAS)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 4</span>
+            <span class="nb-card-name">DBSQL &amp; the Modern Stack</span>
+        </div>
+        <div class="nb-card-body">
+            <p>Move beyond PySpark to SQL-first workflows. See how DBSQL abstracts Spark details.</p>
+            <ul>
+                <li>MPP (Massively Parallel Processing) architecture — coordinator + workers</li>
+                <li>Side-by-side: same query in DBSQL vs PySpark</li>
+                <li>Serverless compute — the platform manages your cluster</li>
+                <li>Window functions, partitioning, and Query Profile analysis</li>
+                <li>The evolving ecosystem: Lakeflow, Genie, Databricks Apps, AI Agents</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout gold">
+        <div class="callout-label">Why Both PySpark and DBSQL?</div>
+        <p>The industry is moving toward SQL-first workflows. But PySpark reveals the distributed system
+            underneath. You need to understand partitions, shuffles, and execution plans to debug and optimize
+            when things go wrong. Notebooks 1-3 give you that foundation. Notebook 4 shows you where the
+            industry is headed.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 1 — SPARK CONCEPTS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 1</span> Apache Spark — Distributed Query Engine</h2>
+
+    <h3 class="section">1.1 From Single Server to Distributed Compute</h3>
+
+    <p>In a traditional database (PostgreSQL, MySQL), everything happens on one machine: the data sits on one disk,
+        the query runs on one CPU, and the result goes to one client. This works beautifully for millions of rows.</p>
+
+    <p>But consider a dataset with <strong>30 million rows and 16 columns</strong>
+        (the <code>lineitem</code> table you will use this week). A single-server scan takes seconds.
+        Now imagine 30 <em>billion</em> rows — 1,000x larger. A single machine would take hours.</p>
+
+    <div class="callout">
+        <div class="callout-label">Spark's Approach</div>
+        <p>Spark splits the table into <strong>partitions</strong> — chunks of data assigned to different workers.
+            Each worker processes its chunk independently. A query that takes 60 minutes on one machine might take
+            1 minute across 60 workers. This is <strong>horizontal scaling</strong> — the same principle you used
+            when multiple Lambda functions processed SQS batches in parallel.</p>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Concept</th>
+                    <th>Traditional Database</th>
+                    <th>Apache Spark</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Data location</td>
+                    <td>One server's disk</td>
+                    <td>Distributed across workers</td>
+                </tr>
+                <tr>
+                    <td>Query execution</td>
+                    <td>Single thread (mostly)</td>
+                    <td>Parallel across cluster</td>
+                </tr>
+                <tr>
+                    <td>Data format</td>
+                    <td>Proprietary (MySQL pages, Postgres heap)</td>
+                    <td>Open formats (Parquet, Delta, Iceberg)</td>
+                </tr>
+                <tr>
+                    <td>Scaling</td>
+                    <td>Buy a bigger server (vertical)</td>
+                    <td>Add more workers (horizontal)</td>
+                </tr>
+                <tr>
+                    <td>API</td>
+                    <td>SQL only</td>
+                    <td>SQL + Python + Java + Scala</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">1.2 DataFrames — Distributed Tables</h3>
+
+    <p>A Spark <strong>DataFrame</strong> looks and feels like a pandas DataFrame — you can <code>.filter()</code>,
+        <code>.groupBy()</code>, <code>.join()</code> — but under the hood, the data lives across multiple machines.
+        Spark translates your operations into a distributed execution plan.</p>
+
+    <pre>
+# Load a table — data is distributed across workers automatically
+df = spark.read.table("samples.tpch.customer")
+
+# Filter + select — these are TRANSFORMATIONS (lazy, no execution yet)
+building = df.filter(df.c_mktsegment == "BUILDING")
+selected = building.select("c_custkey", "c_name", "c_acctbal")
+
+# Count — this is an ACTION (triggers distributed execution)
+count = selected.count()  # → 150,297
+    </pre>
+
+    <h3 class="section">1.3 Lazy Evaluation & the DAG</h3>
+
+    <p>The most important concept in Spark: <strong>transformations are lazy</strong>.
+        When you write <code>df.filter(...).select(...).groupBy(...)</code>, Spark does nothing.
+        It records your intent in a plan called a <strong>DAG (Directed Acyclic Graph)</strong>.
+        Only when you call an <strong>action</strong> (<code>.count()</code>, <code>.show()</code>,
+        <code>display()</code>) does Spark compile the DAG, optimize it, and execute it.</p>
+
+    <div class="diagram">
+        <svg width="780" height="200" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="780" height="200" fill="#fafafa" rx="8" />
+            <text x="390" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Lazy Evaluation: Transformations Build the Plan → Actions Execute It</text>
+
+            <!-- Transformations -->
+            <rect x="30" y="50" width="130" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="95" y="68" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">read.table()</text>
+            <text x="95" y="83" text-anchor="middle" font-size="9" fill="#4a4a6a">Transformation</text>
+
+            <line x1="162" y1="72" x2="182" y2="72" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrGuide)" />
+
+            <rect x="184" y="50" width="100" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="234" y="68" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">.filter()</text>
+            <text x="234" y="83" text-anchor="middle" font-size="9" fill="#4a4a6a">Transformation</text>
+
+            <line x1="286" y1="72" x2="306" y2="72" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrGuide)" />
+
+            <rect x="308" y="50" width="100" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="358" y="68" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">.groupBy()</text>
+            <text x="358" y="83" text-anchor="middle" font-size="9" fill="#4a4a6a">Transformation</text>
+
+            <line x1="410" y1="72" x2="430" y2="72" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrGuide)" />
+
+            <rect x="432" y="50" width="90" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="477" y="68" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">.agg()</text>
+            <text x="477" y="83" text-anchor="middle" font-size="9" fill="#4a4a6a">Transformation</text>
+
+            <!-- DIVIDER -->
+            <line x1="545" y1="42" x2="545" y2="102" stroke="#e25a1c" stroke-width="2" stroke-dasharray="4,3" />
+            <text x="545" y="114" text-anchor="middle" font-size="9" fill="#e25a1c" font-weight="bold">EXECUTION BOUNDARY</text>
+
+            <!-- Action -->
+            <rect x="570" y="50" width="100" height="44" rx="6" fill="#fef0e8" stroke="#e25a1c" stroke-width="2" />
+            <text x="620" y="68" text-anchor="middle" font-size="10" font-weight="bold" fill="#e25a1c">.show()</text>
+            <text x="620" y="83" text-anchor="middle" font-size="9" fill="#e25a1c">ACTION</text>
+
+            <line x1="524" y1="72" x2="568" y2="72" stroke="#e25a1c" stroke-width="2" marker-end="url(#arrOrange)" />
+
+            <!-- Bottom labels -->
+            <rect x="30" y="140" width="492" height="32" rx="4" fill="#e8eef9" />
+            <text x="276" y="161" text-anchor="middle" font-size="11" fill="#1a4fa0" font-weight="bold">Nothing happens — just building the plan (instant)</text>
+
+            <rect x="570" y="140" width="100" height="32" rx="4" fill="#fef0e8" />
+            <text x="620" y="161" text-anchor="middle" font-size="11" fill="#e25a1c" font-weight="bold">Execute!</text>
+
+            <!-- Arrow for Spark logo -->
+            <text x="695" y="72" font-size="12" fill="#e25a1c">⚡</text>
+
+            <defs>
+                <marker id="arrGuide" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+                <marker id="arrOrange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#e25a1c" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">Transformations are recorded lazily. Only an Action triggers the distributed execution plan.</div>
+    </div>
+
+    <p><strong>Why lazy?</strong> Because the Catalyst optimizer can see your entire chain of transformations
+        and rearrange them for efficiency. For example, if you filter after a join, Spark moves the filter
+        <em>before</em> the join (predicate pushdown) — so fewer rows need to be shuffled.</p>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 2 — FILE FORMATS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 2</span> File Formats — How Data Is Stored</h2>
+
+    <h3 class="section">2.1 Row-Based vs Columnar Storage</h3>
+
+    <p>This is the most fundamental concept in data engineering. Consider a table with 3 columns and millions of rows:</p>
+
+    <div class="diagram">
+        <svg width="780" height="320" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="780" height="320" fill="#fafafa" rx="8" />
+            <text x="390" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Row-Based vs Columnar Storage</text>
+
+            <!-- SOURCE TABLE -->
+            <text x="390" y="52" text-anchor="middle" font-size="10" fill="#8888aa" font-weight="bold">SOURCE TABLE</text>
+            <!-- Header -->
+            <rect x="260" y="60" width="80" height="22" fill="#1a1a2e" />
+            <text x="300" y="76" text-anchor="middle" font-size="10" fill="white" font-weight="bold">name</text>
+            <rect x="340" y="60" width="60" height="22" fill="#1a1a2e" />
+            <text x="370" y="76" text-anchor="middle" font-size="10" fill="white" font-weight="bold">score</text>
+            <rect x="400" y="60" width="60" height="22" fill="#1a1a2e" />
+            <text x="430" y="76" text-anchor="middle" font-size="10" fill="white" font-weight="bold">city</text>
+            <!-- Data rows -->
+            <rect x="260" y="82" width="80" height="20" fill="#e8eef9" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="300" y="96" text-anchor="middle" font-size="10" fill="#1a1a2e">Alice</text>
+            <rect x="340" y="82" width="60" height="20" fill="#fef0e8" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="370" y="96" text-anchor="middle" font-size="10" fill="#1a1a2e">95</text>
+            <rect x="400" y="82" width="60" height="20" fill="#eaf5ee" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="430" y="96" text-anchor="middle" font-size="10" fill="#1a1a2e">NYC</text>
+
+            <rect x="260" y="102" width="80" height="20" fill="#e8eef9" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="300" y="116" text-anchor="middle" font-size="10" fill="#1a1a2e">Bob</text>
+            <rect x="340" y="102" width="60" height="20" fill="#fef0e8" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="370" y="116" text-anchor="middle" font-size="10" fill="#1a1a2e">87</text>
+            <rect x="400" y="102" width="60" height="20" fill="#eaf5ee" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="430" y="116" text-anchor="middle" font-size="10" fill="#1a1a2e">SF</text>
+
+            <rect x="260" y="122" width="80" height="20" fill="#e8eef9" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="300" y="136" text-anchor="middle" font-size="10" fill="#1a1a2e">Carol</text>
+            <rect x="340" y="122" width="60" height="20" fill="#fef0e8" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="370" y="136" text-anchor="middle" font-size="10" fill="#1a1a2e">92</text>
+            <rect x="400" y="122" width="60" height="20" fill="#eaf5ee" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="430" y="136" text-anchor="middle" font-size="10" fill="#1a1a2e">LA</text>
+
+            <!-- ROW-BASED (LEFT) -->
+            <text x="160" y="176" text-anchor="middle" font-size="11" fill="#1a4fa0" font-weight="bold">ROW-BASED (CSV, Avro)</text>
+            <rect x="30" y="186" width="260" height="22" rx="3" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1" />
+            <text x="160" y="201" text-anchor="middle" font-size="9" fill="#1a1a2e" font-family="'IBM Plex Mono'">Alice, 95, NYC | Bob, 87, SF | Carol...</text>
+            <text x="160" y="226" text-anchor="middle" font-size="9" fill="#8888aa">Must read ALL columns to get avg(score)</text>
+            <text x="160" y="242" text-anchor="middle" font-size="9" fill="#9b1c1c" font-weight="bold">Reads 3 columns × 3 rows = 9 values</text>
+
+            <!-- COLUMNAR (RIGHT) -->
+            <text x="570" y="176" text-anchor="middle" font-size="11" fill="#1a6b3a" font-weight="bold">COLUMNAR (Parquet, Delta)</text>
+            <rect x="440" y="186" width="260" height="22" rx="3" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="570" y="201" text-anchor="middle" font-size="9" fill="#1a1a2e" font-family="'IBM Plex Mono'">scores: [95, 87, 92] — read ONLY this!</text>
+            <rect x="440" y="212" width="260" height="18" rx="3" fill="#f4f4f8" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="570" y="225" text-anchor="middle" font-size="8" fill="#8888aa" font-family="'IBM Plex Mono'">names: [Alice, Bob, Carol] — SKIPPED</text>
+            <rect x="440" y="232" width="260" height="18" rx="3" fill="#f4f4f8" stroke="#d0d0e0" stroke-width="0.5" />
+            <text x="570" y="245" text-anchor="middle" font-size="8" fill="#8888aa" font-family="'IBM Plex Mono'">cities: [NYC, SF, LA] — SKIPPED</text>
+            <text x="570" y="268" text-anchor="middle" font-size="9" fill="#1a6b3a" font-weight="bold">Reads 1 column × 3 rows = 3 values</text>
+
+            <!-- Bottom verdict -->
+            <rect x="140" y="282" width="500" height="28" rx="4" fill="#fdf6e3" stroke="#b07d20" stroke-width="1" />
+            <text x="390" y="301" text-anchor="middle" font-size="11" fill="#b07d20" font-weight="bold">With 100 columns, columnar reads 100× less data = 100× faster for analytics</text>
+        </svg>
+        <div class="diagram-caption">Row-based storage reads everything. Columnar storage reads only the columns your query needs (column pruning).</div>
+    </div>
+
+    <h3 class="section">2.2 The Five Formats</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Format</th>
+                    <th>Storage</th>
+                    <th>Schema</th>
+                    <th>Compression</th>
+                    <th>ACID</th>
+                    <th>Best For</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CSV</td>
+                    <td>Row-based</td>
+                    <td>None (guessed)</td>
+                    <td>None</td>
+                    <td>No</td>
+                    <td>Small data, human-readable exchange</td>
+                </tr>
+                <tr>
+                    <td>Parquet</td>
+                    <td><strong>Columnar</strong></td>
+                    <td>Embedded (exact)</td>
+                    <td>Built-in (Snappy)</td>
+                    <td>No</td>
+                    <td>Analytics, data lakes</td>
+                </tr>
+                <tr>
+                    <td>Avro</td>
+                    <td>Row-based</td>
+                    <td>Embedded (exact)</td>
+                    <td>Built-in</td>
+                    <td>No</td>
+                    <td>Streaming, Kafka, event logs</td>
+                </tr>
+                <tr>
+                    <td>Delta Lake</td>
+                    <td><strong>Columnar</strong> (Parquet)</td>
+                    <td><strong>Enforced</strong></td>
+                    <td>Built-in</td>
+                    <td><strong>Yes</strong></td>
+                    <td>Production data systems</td>
+                </tr>
+                <tr>
+                    <td>Iceberg</td>
+                    <td><strong>Columnar</strong> (Parquet)</td>
+                    <td><strong>Enforced</strong></td>
+                    <td>Built-in</td>
+                    <td><strong>Yes</strong></td>
+                    <td>Multi-engine environments</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">2.3 Delta Lake — Parquet + Transactions</h3>
+
+    <p>Delta Lake is the most important format for production data systems.
+        It takes standard Parquet files and adds a <strong>transaction log</strong> that enables:</p>
+
+    <ul>
+        <li><strong>ACID transactions</strong> — writes are atomic. A crash mid-write cannot corrupt your table.</li>
+        <li><strong>Time travel</strong> — query any previous version with <code>VERSION AS OF n</code></li>
+        <li><strong>Schema enforcement</strong> — rejects writes with wrong data types</li>
+        <li><strong>UPDATE / DELETE</strong> — modify individual rows without rewriting the whole table</li>
+    </ul>
+
+    <pre>
+# Delta Lake on disk:
+my_table/
+├── _delta_log/               ← Transaction log (JSON files)
+│   ├── 000000.json           ← Version 0: "created table, added part-001.parquet"
+│   ├── 000001.json           ← Version 1: "UPDATE 500 rows, added part-003.parquet"
+│   └── 000002.json           ← Version 2: "DELETE WHERE status = 'cancelled'"
+├── part-001.snappy.parquet   ← Standard Parquet data files
+├── part-002.snappy.parquet
+└── part-003.snappy.parquet
+
+# Time travel — read old versions:
+spark.read.format("delta").option("versionAsOf", 0).table("my_table")
+    </pre>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 3 — UNITY CATALOG
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 3</span> Unity Catalog — DNS for Data</h2>
+
+    <h3 class="section">3.1 The Service Discovery Problem</h3>
+
+    <p>In every distributed system, services need to <strong>find</strong> things. Recall:</p>
+    <ul>
+        <li><strong>P2P project</strong>: nodes discovered peers via a gossip protocol</li>
+        <li><strong>AWS project</strong>: Lambda found queues via SQS URLs, tables via DynamoDB names</li>
+        <li><strong>DNS</strong>: browsers find servers by resolving <code>google.com</code> → <code>142.250.80.46</code></li>
+        <li><strong>Kubernetes</strong>: pods find services via the cluster's service registry</li>
+    </ul>
+
+    <p>In a data lakehouse, the problem is: <em>hundreds of notebooks need to find thousands of tables,
+        with access controls, versioning, and lineage tracking.</em></p>
+
+    <div class="callout purple">
+        <div class="callout-label">Unity Catalog = DNS for Data</div>
+        <p>Unity Catalog is a <strong>centralized registry</strong> for all data assets.
+            Every table, view, file, and ML model gets a three-level address:
+            <code>catalog.schema.table</code>. Any notebook, job, or SQL query can find any asset
+            using this address — like DNS for data.</p>
+    </div>
+
+    <div class="diagram">
+        <svg width="780" height="240" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="780" height="240" fill="#fafafa" rx="8" />
+            <text x="390" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Unity Catalog — Three-Level Namespace</text>
+
+            <!-- Catalog level -->
+            <rect x="40" y="50" width="140" height="50" rx="7" fill="#f3eeff" stroke="#553c9a" stroke-width="1.5" />
+            <text x="110" y="70" text-anchor="middle" font-size="10" font-weight="bold" fill="#553c9a">samples</text>
+            <text x="110" y="88" text-anchor="middle" font-size="9" fill="#4a4a6a">(read-only catalog)</text>
+
+            <rect x="40" y="120" width="140" height="50" rx="7" fill="#f3eeff" stroke="#553c9a" stroke-width="1.5" />
+            <text x="110" y="140" text-anchor="middle" font-size="10" font-weight="bold" fill="#553c9a">workspace</text>
+            <text x="110" y="158" text-anchor="middle" font-size="9" fill="#4a4a6a">(your writable catalog)</text>
+
+            <!-- Schema level -->
+            <line x1="182" y1="75" x2="230" y2="75" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrCat)" />
+            <rect x="232" y="50" width="100" height="50" rx="7" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="282" y="70" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">tpch</text>
+            <text x="282" y="88" text-anchor="middle" font-size="9" fill="#4a4a6a">(schema)</text>
+
+            <line x1="182" y1="145" x2="230" y2="145" stroke="#8888aa" stroke-width="1.5" marker-end="url(#arrCat)" />
+            <rect x="232" y="120" width="100" height="50" rx="7" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="282" y="140" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">default</text>
+            <text x="282" y="158" text-anchor="middle" font-size="9" fill="#4a4a6a">(schema)</text>
+
+            <!-- Tables -->
+            <line x1="334" y1="60" x2="395" y2="52" stroke="#8888aa" stroke-width="1" marker-end="url(#arrCat)" />
+            <line x1="334" y1="75" x2="395" y2="75" stroke="#8888aa" stroke-width="1" marker-end="url(#arrCat)" />
+            <line x1="334" y1="90" x2="395" y2="98" stroke="#8888aa" stroke-width="1" marker-end="url(#arrCat)" />
+
+            <rect x="397" y="40" width="160" height="24" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="477" y="56" text-anchor="middle" font-size="9" fill="#1a6b3a" font-weight="bold" font-family="'IBM Plex Mono'">samples.tpch.customer</text>
+            <rect x="397" y="66" width="160" height="24" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="477" y="82" text-anchor="middle" font-size="9" fill="#1a6b3a" font-weight="bold" font-family="'IBM Plex Mono'">samples.tpch.orders</text>
+            <rect x="397" y="92" width="160" height="24" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="477" y="108" text-anchor="middle" font-size="9" fill="#1a6b3a" font-weight="bold" font-family="'IBM Plex Mono'">samples.tpch.lineitem</text>
+
+            <!-- Your tables -->
+            <line x1="334" y1="138" x2="395" y2="135" stroke="#8888aa" stroke-width="1" marker-end="url(#arrCat)" />
+            <line x1="334" y1="153" x2="395" y2="160" stroke="#8888aa" stroke-width="1" marker-end="url(#arrCat)" />
+
+            <rect x="397" y="124" width="160" height="24" rx="4" fill="#fdf6e3" stroke="#b07d20" stroke-width="1" />
+            <text x="477" y="140" text-anchor="middle" font-size="9" fill="#b07d20" font-weight="bold" font-family="'IBM Plex Mono'">your tables here</text>
+            <rect x="397" y="150" width="160" height="24" rx="4" fill="#fdf6e3" stroke="#b07d20" stroke-width="1" />
+            <text x="477" y="166" text-anchor="middle" font-size="9" fill="#b07d20" font-weight="bold" font-family="'IBM Plex Mono'">your volumes here</text>
+
+            <!-- Row counts -->
+            <text x="580" y="56" font-size="9" fill="#8888aa">750K rows</text>
+            <text x="580" y="82" font-size="9" fill="#8888aa">7.5M rows</text>
+            <text x="580" y="108" font-size="9" fill="#8888aa">30M rows</text>
+
+            <!-- Labels -->
+            <text x="110" y="200" text-anchor="middle" font-size="10" fill="#553c9a" font-weight="bold">CATALOG</text>
+            <text x="282" y="200" text-anchor="middle" font-size="10" fill="#1a4fa0" font-weight="bold">SCHEMA</text>
+            <text x="477" y="200" text-anchor="middle" font-size="10" fill="#1a6b3a" font-weight="bold">TABLE / VOLUME</text>
+
+            <text x="390" y="224" text-anchor="middle" font-size="11" fill="#b07d20" font-weight="bold">catalog.schema.table → like DNS: com.company.service</text>
+
+            <defs>
+                <marker id="arrCat" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">Every data asset in Databricks has a three-level address: catalog.schema.table</div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 4 — SQL ON SPARK
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 4</span> SQL on Spark — What You Know, Distributed</h2>
+
+    <h3 class="section">4.1 Three Ways to Use SQL</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Syntax</th>
+                    <th>Returns</th>
+                    <th>When to Use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>%sql magic</td>
+                    <td><code>%sql SELECT * FROM ...</code></td>
+                    <td>Interactive table + charts</td>
+                    <td>Exploration, dashboards</td>
+                </tr>
+                <tr>
+                    <td>spark.sql()</td>
+                    <td><code>df = spark.sql("SELECT ...")</code></td>
+                    <td>DataFrame</td>
+                    <td>SQL → Python pipeline</td>
+                </tr>
+                <tr>
+                    <td>Temp Views</td>
+                    <td><code>df.createOrReplaceTempView("v")</code></td>
+                    <td>—</td>
+                    <td>Python → SQL bridge</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">4.2 The Execution Plan — What Spark Actually Does</h3>
+
+    <p>Every Spark query (SQL or DataFrame) goes through four planning stages:</p>
+
+    <ol>
+        <li><strong>Parsed Logical Plan</strong> — your raw SQL/code converted to an abstract syntax tree</li>
+        <li><strong>Analyzed Logical Plan</strong> — column and table names resolved against Unity Catalog</li>
+        <li><strong>Optimized Logical Plan</strong> — Catalyst optimizer applies rules (predicate pushdown, column pruning, join reordering)</li>
+        <li><strong>Physical Plan</strong> — actual execution strategy: which join algorithm, where to shuffle, how to scan</li>
+    </ol>
+
+    <p>View with <code>df.explain(True)</code> or click <strong>"See performance"</strong> after any cell
+        to open the <a href="https://docs.databricks.com/aws/en/compute/sql-warehouse/query-profile.html" target="_blank">Query Profile</a>
+        — a visual DAG showing exactly how Spark executed your query.</p>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 5 — API REFERENCE
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 5</span> API Reference & Documentation Links</h2>
+
+    <h3 class="section">5.1 PySpark Core APIs</h3>
+
+    <h4 class="subsection">DataFrame Operations</h4>
+    <p>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.table.html" target="_blank">spark.read.table()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.filter.html" target="_blank">.filter()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.select.html" target="_blank">.select()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.groupBy.html" target="_blank">.groupBy()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.GroupedData.agg.html" target="_blank">.agg()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.join.html" target="_blank">.join()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.orderBy.html" target="_blank">.orderBy()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.limit.html" target="_blank">.limit()</a>
+    </p>
+
+    <h4 class="subsection">Actions (Trigger Execution)</h4>
+    <p>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.show.html" target="_blank">.show()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.count.html" target="_blank">.count()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.collect.html" target="_blank">.collect()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.toPandas.html" target="_blank">.toPandas()</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.explain.html" target="_blank">.explain()</a>
+    </p>
+
+    <h4 class="subsection">SQL Functions</h4>
+    <p>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html" target="_blank">pyspark.sql.functions</a>
+        — <code>count</code>, <code>sum</code>, <code>avg</code>, <code>round</code>, <code>col</code>, <code>year</code>, <code>desc</code>, etc.
+    </p>
+
+    <h4 class="subsection">I/O — Reading and Writing</h4>
+    <p>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.html" target="_blank">DataFrameReader</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html" target="_blank">DataFrameWriter</a>
+    </p>
+
+    <h3 class="section">5.2 Databricks-Specific</h3>
+    <p>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/compute/sql-warehouse/query-profile.html" target="_blank">Query Profile (See performance)</a>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/data-governance/unity-catalog/" target="_blank">Unity Catalog</a>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/volumes/" target="_blank">Volumes</a>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/dbutils/" target="_blank">dbutils</a>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/notebooks/visualizations/index.html" target="_blank">display() & Visualizations</a>
+    </p>
+
+    <h3 class="section">5.3 File & Table Format Documentation</h3>
+    <p>
+        <a class="api-link" href="https://parquet.apache.org/" target="_blank">Apache Parquet</a>
+        <a class="api-link" href="https://avro.apache.org/" target="_blank">Apache Avro</a>
+        <a class="api-link" href="https://delta.io/" target="_blank">Delta Lake</a>
+        <a class="api-link" href="https://docs.databricks.com/aws/en/delta/history.html" target="_blank">Delta Time Travel</a>
+        <a class="api-link" href="https://iceberg.apache.org/" target="_blank">Apache Iceberg</a>
+    </p>
+
+    <h3 class="section">5.4 Spark SQL Reference</h3>
+    <p>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/sql-ref.html" target="_blank">Spark SQL Reference</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html" target="_blank">SELECT Statement</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html" target="_blank">Built-in Functions</a>
+        <a class="api-link" href="https://spark.apache.org/docs/latest/sql-performance-tuning.html" target="_blank">Performance Tuning</a>
+    </p>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 6 — GETTING STARTED
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 6</span> Getting Started</h2>
+
+    <h3 class="section">6.1 Sign Up for Databricks Free Edition</h3>
+
+    <p>All work this week happens on <strong>Databricks Free Edition</strong> — no cost, no credit card.
+        This replaces the older "Community Edition" and includes more features.</p>
+
+    <h4 class="subsection">Step 1 — Create your account</h4>
+    <ol>
+        <li>Go to <a href="https://www.databricks.com/learn/free-edition" target="_blank">databricks.com/learn/free-edition</a></li>
+        <li>Click <strong>Sign up for Free Edition</strong></li>
+        <li>Use your school email address if possible</li>
+        <li>If prompted for a cloud provider, select any option — the Free Edition abstracts this away</li>
+    </ol>
+
+    <h4 class="subsection">Step 2 — Verify and log in</h4>
+    <p>Check your inbox for a verification email from Databricks. Click the link, set a password, and log in to your workspace.</p>
+
+    <h4 class="subsection">Step 3 — Quick test</h4>
+    <p>In the Workspace panel, click <strong>Create → Notebook</strong>. In the first cell, type:</p>
+    <pre>%sql
+SELECT 1 + 1 AS test</pre>
+    <p>Run the cell. If you see <code>2</code>, your workspace is working. The first run takes 30-60 seconds (cold start).</p>
+
+    <div class="callout">
+        <div class="callout-label">Key Facts — Free Edition</div>
+        <p><strong>Serverless compute</strong> — cluster managed automatically, no configuration.<br>
+            <strong>Spark Connect</strong> — DataFrame API works; low-level RDD API does not.<br>
+            <strong>Unity Catalog</strong> — your writable catalog is <code>workspace.default</code>.<br>
+            <strong>DBFS disabled</strong> — file storage uses Unity Catalog <strong>Volumes</strong>, not DBFS paths.</p>
+    </div>
+
+    <h3 class="section">6.2 Connect to the Course GitHub Repository</h3>
+
+    <p>The course notebooks live in a GitHub repo. You will clone it into your Databricks workspace
+        so you always have the latest materials.</p>
+
+    <div class="callout gold">
+        <div class="callout-label">Requires GitHub Authentication</div>
+        <p>Databricks needs a <strong>GitHub Personal Access Token (PAT)</strong> to connect. You must create one before proceeding.</p>
+    </div>
+
+    <h4 class="subsection">Step A — Create a GitHub Personal Access Token</h4>
+    <ol>
+        <li>Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+        <li>Click <strong>Generate new token (classic)</strong></li>
+        <li>Name: <code>databricks-course</code> — Expiration: <strong>90 days</strong></li>
+        <li>Under <strong>Select scopes</strong>, check only <code>repo</code></li>
+        <li>Click <strong>Generate token</strong> and copy it immediately — you cannot see it again</li>
+    </ol>
+
+    <h4 class="subsection">Step B — Link Git credentials in Databricks</h4>
+    <ol>
+        <li>In Databricks, click your profile icon (top-right) → <strong>Settings</strong></li>
+        <li>In the left sidebar, click <strong>Linked accounts</strong></li>
+        <li>Under <strong>Git integration</strong>, select <strong>GitHub</strong></li>
+        <li>Enter your GitHub username and paste the PAT from Step A</li>
+        <li>Click <strong>Save</strong></li>
+    </ol>
+
+    <h4 class="subsection">Step C — Clone the course repository</h4>
+    <ol>
+        <li>In the Workspace sidebar, navigate to <strong>Workspace → Repos</strong> (or your user folder)</li>
+        <li>Click <strong>Create Git Folder</strong> (top-right corner)</li>
+    </ol>
+
+    <img class="screenshot" src="RepoScreen.png" alt="Databricks Repos page showing the Create Git Folder button">
+    <p class="screenshot-caption">The Repos page — click "Create Git Folder" to connect a GitHub repository.</p>
+
+    <ol start="3">
+        <li>In the dialog, paste the repository URL and confirm the provider is set to <strong>GitHub</strong>:</li>
+    </ol>
+    <pre>https://github.com/gsaluncf/DistributedForDataScienceF26.git</pre>
+
+    <img class="screenshot" src="BaseGit-ConnectForm.png" alt="Create Git folder dialog with repository URL and GitHub provider">
+    <p class="screenshot-caption">The Git folder dialog — paste the URL, confirm GitHub as provider, then click "Create Git folder".</p>
+    <ol start="4">
+        <li>Click <strong>Create Git folder</strong></li>
+        <li>Navigate into <code>Databricks/student_notebooks</code> to find the course notebooks</li>
+    </ol>
+
+    <div class="callout green">
+        <div class="callout-label">Verify it worked</div>
+        <p>You should see <code>nb1_spark_intro.py</code>, <code>nb2_file_formats.py</code>, <code>nb3_sql.py</code>,
+            and <code>nb4_dbsql.py</code> in the student_notebooks folder.
+            Open any notebook and run the first cell to confirm everything connects.</p>
+    </div>
+
+    <div class="callout red">
+        <div class="callout-label">Troubleshooting — Authentication Failed</div>
+        <p>If you see an "Authentication failed" error when creating the Git folder, Databricks will prompt you to
+            link your GitHub account. You have two options:</p>
+        <ul>
+            <li><strong>Link Git account</strong> (OAuth) — simplest, just click and authorize</li>
+            <li><strong>Personal access token</strong> — paste the PAT you created in Step A</li>
+        </ul>
+        <p>Either method works. Choose whichever you prefer.</p>
+        <img class="screenshot" src="GitError-Choose-Link-Account-or-Pat.png"
+            alt="Authentication failed screen showing Link Git account and Personal access token options"
+            style="border-color: var(--red);">
+        <p class="screenshot-caption" style="color: var(--red);">If you see this error, choose either authentication method to proceed.</p>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Pulling Updates</div>
+        <p>If the instructor pushes new notebooks, open the Git folder in your workspace,
+            click the branch name at the top, and select <strong>Pull</strong>.</p>
+    </div>
+
+    <h3 class="section">6.3 Running the Notebooks</h3>
+
+    <ol>
+        <li>Open a notebook from the cloned repo</li>
+        <li>Click <strong>Run All</strong> or run cells individually</li>
+        <li>After each cell, click <strong>"See performance"</strong> to view the Query Profile</li>
+    </ol>
+
+    <div class="callout green">
+        <div class="callout-label">Tip — Query Profile</div>
+        <p>The Query Profile is one of the most valuable learning tools in Databricks. After running any cell
+            that triggers a Spark action, click <strong>"See performance (1)"</strong> to see a visual DAG showing:
+            how many rows each operator processed, where data was shuffled between workers,
+            which join strategy Spark chose, and how long each stage took. This is how you learn to
+            read and optimize distributed query execution.</p>
+    </div>
+
+    <h3 class="section">6.4 Your Notebooks</h3>
+
+    <p>After cloning the repo (Section 6.2), you will find the following notebooks in
+        <code>Databricks/student_notebooks/</code>. Work through them in order:</p>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 1</span>
+            <span class="nb-card-name">nb1_spark_intro.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>Spark Intro and DataFrames.</strong> Load tables, apply transformations, trigger actions,
+                and see the execution plan (DAG). Learn lazy evaluation, column pruning, shuffles, and broadcast joins.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 2</span>
+            <span class="nb-card-name">nb2_file_formats.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>File Formats and Table Formats.</strong> Write the same dataset in five formats (CSV, Parquet,
+                Avro, Delta Lake, Iceberg) and compare schema safety, compression, and query speed.
+                Explore Delta Lake time travel, schema enforcement, and Unity Catalog Volumes.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 3</span>
+            <span class="nb-card-name">nb3_sql.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>SQL on Spark.</strong> Everything you know from SQL, but distributed. Use <code>%sql</code> magic
+                cells, <code>spark.sql()</code> for Python integration, temp views, CTEs, window functions
+                (RANK, running totals), and CREATE TABLE AS SELECT.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 4</span>
+            <span class="nb-card-name">nb4_dbsql.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>DBSQL and the Modern Stack.</strong> Move beyond PySpark to SQL-first workflows. Covers MPP
+                architecture, side-by-side DBSQL vs PySpark comparisons, serverless compute, partitioning,
+                Query Profile analysis, and the evolving ecosystem (Lakeflow, Genie, Databricks Apps, AI Agents).</p>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 7 — HISTORY AND CONTEXT
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 7</span> A Brief History of Databricks</h2>
+
+    <p>In 2009, the AMPLab (Algorithms, Machines, and People Lab) at UC Berkeley set out to build tools
+        for large-scale data analysis. PhD student Matei Zaharia created <strong>Apache Spark</strong> in 2010
+        as a faster alternative to Hadoop MapReduce — keeping data in memory instead of writing intermediates to disk.</p>
+
+    <p>In 2013, Zaharia and other Spark creators founded <strong>Databricks</strong> to commercialize
+        the technology. The platform evolved significantly:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Milestone</th>
+                    <th>Why It Matters</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2009</td>
+                    <td>AMPLab at UC Berkeley</td>
+                    <td>Research lab where Spark was born</td>
+                </tr>
+                <tr>
+                    <td>2010</td>
+                    <td>Apache Spark created</td>
+                    <td>In-memory processing — 100x faster than MapReduce for iterative workloads</td>
+                </tr>
+                <tr>
+                    <td>2013</td>
+                    <td>Databricks founded</td>
+                    <td>Managed cloud platform around Spark</td>
+                </tr>
+                <tr>
+                    <td>2017</td>
+                    <td>Delta Lake introduced</td>
+                    <td>ACID transactions on data lakes — solved reliability problems</td>
+                </tr>
+                <tr>
+                    <td>2020</td>
+                    <td>Lakehouse architecture</td>
+                    <td>Unified data warehouses and data lakes into one platform</td>
+                </tr>
+                <tr>
+                    <td>2023+</td>
+                    <td>DBSQL / AI era</td>
+                    <td>SQL-first workflows, serverless compute, AI agents, Unity Catalog</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">7.1 Why Databricks?</h3>
+
+    <p>In a distributed systems course, we care about Databricks because it is the most widely-adopted
+        commercial implementation of distributed data processing. It shows how the industry moved from
+        "you manage the distributed system" (install Hadoop, configure YARN, tune Spark) to
+        "the platform manages the distributed system" (write SQL, the platform handles parallelism
+        and fault tolerance).</p>
+
+    <p>The key idea is <strong>convergence</strong>: instead of separate systems for your data warehouse,
+        data lake, ML pipelines, and ETL jobs, Databricks puts everything on one platform with one
+        governance model. This is the Lakehouse architecture.</p>
+
+    <h3 class="section">7.2 Why PySpark Still Matters</h3>
+
+    <p>Even though the industry is shifting toward DBSQL, PySpark remains essential:</p>
+
+    <ul>
+        <li><strong>It reveals the distributed system</strong> — PySpark forces you to think about partitions,
+            shuffles, and transformations vs actions. DBSQL hides this.</li>
+        <li><strong>Legacy codebases are everywhere</strong> — hundreds of thousands of PySpark jobs run in production.
+            You will encounter code that needs maintaining or migrating.</li>
+        <li><strong>Complex transformations need it</strong> — custom UDFs, streaming pipelines, and ML feature
+            engineering often require PySpark or Scala.</li>
+        <li><strong>Interview expectations</strong> — data engineering interviews still test PySpark knowledge.</li>
+    </ul>
+
+    <div class="callout spark">
+        <div class="callout-label">Bottom Line</div>
+        <p>DBSQL is how you will probably work day-to-day. PySpark teaches you what is actually happening underneath.
+            Understanding both levels — the abstraction and the mechanism — is what makes you effective.</p>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        <p>Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida &nbsp;·&nbsp; Spring 2026</p>
+    </footer>
+
+</body>
+
+</html>
