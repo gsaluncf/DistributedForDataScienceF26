@@ -376,6 +376,13 @@ count = selected.count()  # → 150,297
     ══════════════════════════════════════════════════════════════════ -->
     <h2 class="part"><span class="part-num">Part 2</span> File Formats — How Data Is Stored</h2>
 
+    <div class="callout gold">
+        <div class="callout-label">Background Reading</div>
+        <p>Before diving into file formats, make sure you understand what a <strong>data lake</strong> is
+            and why the industry moved from warehouses to lakes to lakehouses.
+            <a href="datalake.html"><strong>Read: What Is a Data Lake? →</strong></a></p>
+    </div>
+
     <h3 class="section">2.1 Row-Based vs Columnar Storage</h3>
 
     <p>This is the most fundamental concept in data engineering. Consider a table with 3 columns and millions of rows:</p>
@@ -1012,6 +1019,22 @@ SELECT 1 + 1 AS test</pre>
         <div class="callout-label">Bottom Line</div>
         <p>DBSQL is how you will probably work day-to-day. PySpark teaches you what is actually happening underneath.
             Understanding both levels — the abstraction and the mechanism — is what makes you effective.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     APPENDIX — ICEBERG
+    ══════════════════════════════════════════════════════════════════ -->
+    <div style="margin-top: 56px; padding: 24px 28px; border: 1.5px solid var(--rule); border-radius: 8px; background: #fff;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;">Further Reading</div>
+        <h3 style="font-family: 'IBM Plex Serif', serif; font-size: 18px; font-weight: 600; margin-bottom: 8px;">Apache Iceberg — The Other Table Format</h3>
+        <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 12px;">We use Delta Lake in this course because it is Databricks' native format.
+            But <strong>Apache Iceberg</strong> (created at Netflix) solves the same problem: ACID transactions,
+            schema evolution, and time travel on top of data lake files. Its killer feature is
+            <strong>engine independence</strong> — one Iceberg table can be read by Spark, Trino, Flink,
+            Snowflake, and BigQuery simultaneously. Knowing both formats shows interviewers you
+            understand the landscape, not just one vendor.</p>
+        <a href="iceberg.html" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent);">Read: What Is Apache Iceberg? →</a>
     </div>
 
 
