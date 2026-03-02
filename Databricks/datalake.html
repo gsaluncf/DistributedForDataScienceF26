@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Is a Data Lake?</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --code-bg: #f0f0f8;
+            --spark-orange: #e25a1c;
+            --spark-orange-lt: #fef0e8;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
+
+        .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 40px; }
+        .doc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+        h1.doc-title { font-family: 'IBM Plex Serif', serif; font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--ink); margin-bottom: 10px; }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
+
+        h3.section { font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; font-weight: 600; color: var(--accent); margin: 28px 0 10px; }
+
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+
+        ul { margin: 10px 0 16px 24px; }
+        li { margin-bottom: 6px; }
+        li strong { color: var(--ink); }
+
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+        .callout { border-left: 4px solid var(--accent); background: var(--accent-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout.spark { border-color: var(--spark-orange); background: var(--spark-orange-lt); }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; }
+
+        .video-wrap {
+            position: relative;
+            width: 480px;
+            max-width: 100%;
+            margin: 28px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1.5px solid var(--rule);
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+        }
+        .video-wrap iframe {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: none;
+        }
+        .video-caption {
+            font-size: 12px;
+            color: var(--ink-faint);
+            font-style: italic;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .doc-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
+    </style>
+</head>
+
+<body>
+
+    <header class="doc-header">
+        <div class="doc-meta">Week 7 &nbsp;·&nbsp; Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida</div>
+        <h1 class="doc-title">What Is a Data Lake?</h1>
+        <div class="doc-sub">A short primer on the concept that sits underneath the Lakehouse architecture.</div>
+    </header>
+
+    <h3 class="section">The Problem</h3>
+
+    <p>Traditionally, organizations stored structured data in <strong>data warehouses</strong> —
+        relational databases optimized for analytics (think: Snowflake, Redshift, BigQuery).
+        But warehouses are expensive, rigid about schema, and struggle with unstructured data
+        like logs, images, and raw JSON.</p>
+
+    <h3 class="section">The Data Lake Idea</h3>
+
+    <p>A <strong>data lake</strong> is a storage system that holds raw data in its native format —
+        structured, semi-structured, and unstructured — at any scale. Instead of transforming
+        data <em>before</em> loading it (ETL), you load everything first and transform it
+        <em>when you need it</em> (ELT).</p>
+
+    <ul>
+        <li><strong>Store everything</strong> — CSV, JSON, Parquet, images, logs, video</li>
+        <li><strong>Schema on read</strong> — impose structure when you query, not when you ingest</li>
+        <li><strong>Cheap storage</strong> — built on object stores (S3, ADLS, GCS) at pennies per GB</li>
+        <li><strong>Decouple storage from compute</strong> — many engines can read the same data</li>
+    </ul>
+
+    <h3 class="section">The Data Lake Problem</h3>
+
+    <p>Without governance, data lakes became <strong>data swamps</strong>: no schema enforcement,
+        no transactions, no way to know what data is reliable. Files got overwritten, schemas drifted,
+        and nobody knew what was in there.</p>
+
+    <h3 class="section">The Lakehouse Solution</h3>
+
+    <p>The <strong>Lakehouse</strong> combines the best of both: the cheap, flexible storage of a
+        data lake with the reliability and governance of a data warehouse. Technologies like
+        <strong>Delta Lake</strong> add ACID transactions, schema enforcement, and time travel
+        on top of raw file storage. <strong>Unity Catalog</strong> adds centralized governance
+        and discovery.</p>
+
+    <p>This is the architecture you work with in Databricks — and the reason your tables have
+        schema enforcement, time travel, and a three-level namespace even though they are
+        stored as Parquet files underneath.</p>
+
+    <div class="callout spark">
+        <div class="callout-label">The One-Sentence Version</div>
+        <p>A data lake stores everything cheaply. A lakehouse makes that storage reliable.
+            Delta Lake is the technology that bridges the gap.</p>
+    </div>
+
+    <h3 class="section">Watch: Data Lakes Explained</h3>
+
+    <div class="video-wrap">
+        <iframe
+            src="https://www.youtube.com/embed/CqJcZIl8Nj8"
+            title="What is a Data Lake?"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+        </iframe>
+    </div>
+    <p class="video-caption">Quick overview of data lakes, data warehouses, and how they compare.</p>
+
+
+    <footer class="doc-footer">
+        <p>Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida &nbsp;·&nbsp; Spring 2026</p>
+    </footer>
+
+</body>
+
+</html>
