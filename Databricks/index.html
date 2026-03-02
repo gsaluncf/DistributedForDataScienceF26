@@ -1,381 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Databricks Module — Distributed Systems for Data Science</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    /* ── IBM Carbon-Inspired Design System ─────────────────────────── */
-    :root {
-      --cds-blue-60: #0f62fe;
-      --cds-blue-70: #0043ce;
-      --cds-blue-80: #002d9c;
-      --cds-blue-10: #edf5ff;
-      --cds-gray-100: #161616;
-      --cds-gray-90: #262626;
-      --cds-gray-80: #393939;
-      --cds-gray-70: #525252;
-      --cds-gray-50: #8d8d8d;
-      --cds-gray-30: #c6c6c6;
-      --cds-gray-20: #e0e0e0;
-      --cds-gray-10: #f4f4f4;
-      --cds-white: #ffffff;
-      --cds-purple-60: #8a3ffc;
-      --cds-teal-50: #009d9a;
-      --cds-green-50: #24a148;
-      --cds-spacing-05: 0.5rem;
-      --cds-spacing-06: 1rem;
-      --cds-spacing-07: 1.5rem;
-      --cds-spacing-08: 2rem;
-      --cds-spacing-09: 2.5rem;
-      --cds-spacing-10: 3rem;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Databricks Module — Distributed Systems for Data Science</title>
+    <meta name="description" content="Landing page for the Databricks week. Links to the lecture guide and hands-on notebooks covering Spark, file formats, SQL, DBSQL, and the Lakehouse.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --code-bg: #f0f0f8;
+            --spark-orange: #e25a1c;
+            --spark-orange-lt: #fef0e8;
+        }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--cds-gray-10);
-      color: var(--cds-gray-100);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
 
-    /* ── Header / Hero ────────────────────────────────────────────── */
-    .header {
-      background: var(--cds-gray-100);
-      color: var(--cds-white);
-      padding: var(--cds-spacing-05) var(--cds-spacing-08);
-      font-size: 0.875rem;
-      font-weight: 400;
-      letter-spacing: 0.16px;
-      display: flex;
-      align-items: center;
-      gap: var(--cds-spacing-05);
-    }
-    .header__tag {
-      background: var(--cds-blue-60);
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.32px;
-      text-transform: uppercase;
-    }
+        /* ── Header (matches guide.html) ──────────────────────────── */
+        .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 52px; }
+        .doc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+        h1.doc-title { font-family: 'IBM Plex Serif', serif; font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--ink); margin-bottom: 10px; }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
 
-    .hero {
-      background: linear-gradient(135deg, var(--cds-gray-100) 0%, var(--cds-gray-90) 50%, var(--cds-blue-80) 100%);
-      color: var(--cds-white);
-      padding: var(--cds-spacing-10) var(--cds-spacing-08);
-    }
-    .hero__inner {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .hero h1 {
-      font-size: 2.625rem;
-      font-weight: 300;
-      line-height: 1.2;
-      margin-bottom: var(--cds-spacing-06);
-      letter-spacing: 0;
-    }
-    .hero h1 strong {
-      font-weight: 600;
-    }
-    .hero p {
-      font-size: 1.125rem;
-      font-weight: 300;
-      color: var(--cds-gray-30);
-      max-width: 640px;
-      line-height: 1.7;
-    }
+        /* ── Sections ─────────────────────────────────────────────── */
+        h2.part { font-family: 'IBM Plex Serif', serif; font-size: 22px; font-weight: 600; color: var(--ink); margin: 56px 0 20px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); display: flex; align-items: baseline; gap: 12px; }
+        h2.part .part-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 400; }
 
-    /* ── Main Content ─────────────────────────────────────────────── */
-    .main {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: var(--cds-spacing-10) var(--cds-spacing-08);
-    }
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
 
-    /* ── Section Labels ───────────────────────────────────────────── */
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.32px;
-      color: var(--cds-gray-70);
-      margin-bottom: var(--cds-spacing-06);
-      padding-bottom: var(--cds-spacing-05);
-      border-bottom: 1px solid var(--cds-gray-20);
-    }
+        a { color: var(--accent); }
+        a:hover { text-decoration: none; }
 
-    /* ── Guide Card ───────────────────────────────────────────────── */
-    .guide-card {
-      background: var(--cds-white);
-      border-left: 4px solid var(--cds-blue-60);
-      padding: var(--cds-spacing-08);
-      margin-bottom: var(--cds-spacing-10);
-      box-shadow: var(--shadow-sm);
-      transition: box-shadow 0.15s ease, transform 0.15s ease;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .guide-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-    .guide-card__eyebrow {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.32px;
-      color: var(--cds-blue-60);
-      margin-bottom: var(--cds-spacing-05);
-    }
-    .guide-card__title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--cds-gray-100);
-    }
-    .guide-card__desc {
-      font-size: 0.9375rem;
-      color: var(--cds-gray-70);
-      line-height: 1.6;
-    }
-    .guide-card__arrow {
-      display: inline-block;
-      margin-top: var(--cds-spacing-06);
-      color: var(--cds-blue-60);
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-    .guide-card__arrow svg {
-      vertical-align: middle;
-      margin-left: 4px;
-      transition: transform 0.15s ease;
-    }
-    .guide-card:hover .guide-card__arrow svg {
-      transform: translateX(4px);
-    }
+        /* ── Callouts ─────────────────────────────────────────────── */
+        .callout { border-left: 4px solid var(--accent); background: var(--accent-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout.gold { border-color: var(--gold); background: var(--gold-lt); }
+        .callout.green { border-color: var(--green); background: var(--green-lt); }
+        .callout.spark { border-color: var(--spark-orange); background: var(--spark-orange-lt); }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; }
 
-    /* ── Notebook Grid ─────────────────────────────────────────────── */
-    .nb-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1px;
-      background: var(--cds-gray-20);
-      margin-bottom: var(--cds-spacing-10);
-    }
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
 
-    .nb-card {
-      background: var(--cds-white);
-      padding: var(--cds-spacing-07) var(--cds-spacing-08);
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: var(--cds-spacing-07);
-      text-decoration: none;
-      color: inherit;
-      transition: background 0.15s ease;
-    }
-    .nb-card:hover {
-      background: var(--cds-blue-10);
-    }
-    .nb-card__number {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 1.5rem;
-      font-weight: 500;
-      color: var(--cds-gray-30);
-      min-width: 3ch;
-    }
-    .nb-card:hover .nb-card__number {
-      color: var(--cds-blue-60);
-    }
-    .nb-card__content {
-      flex: 1;
-    }
-    .nb-card__title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--cds-gray-100);
-      margin-bottom: 0.25rem;
-    }
-    .nb-card__desc {
-      font-size: 0.8125rem;
-      color: var(--cds-gray-50);
-      line-height: 1.5;
-    }
-    .nb-card__badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--cds-gray-70);
-      padding: 4px 12px;
-      border: 1px solid var(--cds-gray-20);
-      border-radius: 16px;
-      white-space: nowrap;
-      transition: border-color 0.15s ease, color 0.15s ease;
-    }
-    .nb-card:hover .nb-card__badge {
-      border-color: var(--cds-blue-60);
-      color: var(--cds-blue-60);
-    }
-    .nb-card__badge svg {
-      flex-shrink: 0;
-    }
+        /* ── Guide Card (clickable link to guide.html) ────────────── */
+        .guide-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            border: 1.5px solid var(--rule);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 22px 24px;
+            margin: 24px 0;
+            transition: box-shadow .15s, border-color .15s;
+        }
+        .guide-card:hover {
+            box-shadow: 0 4px 16px rgba(26, 79, 160, .12);
+            border-color: var(--accent);
+        }
+        .guide-card-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+        .guide-card-title { font-family: 'IBM Plex Serif', serif; font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .guide-card-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.65; }
+        .guide-card-arrow { display: inline-block; margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: .02em; }
+        .guide-card:hover .guide-card-arrow { text-decoration: underline; }
 
-    /* ── Info Bar ──────────────────────────────────────────────────── */
-    .info-bar {
-      background: var(--cds-white);
-      border-left: 4px solid var(--cds-teal-50);
-      padding: var(--cds-spacing-07) var(--cds-spacing-08);
-      font-size: 0.875rem;
-      color: var(--cds-gray-70);
-      line-height: 1.7;
-      margin-bottom: var(--cds-spacing-10);
-    }
-    .info-bar strong {
-      color: var(--cds-gray-100);
-    }
-    .info-bar code {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.8125rem;
-      background: var(--cds-gray-10);
-      padding: 2px 6px;
-      border-radius: 3px;
-    }
+        /* ── Notebook Cards ───────────────────────────────────────── */
+        .nb-card { border: 1.5px solid var(--rule); border-radius: 8px; margin: 16px 0; overflow: hidden; }
+        .nb-card-header { background: var(--ink); color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 14px; }
+        .nb-card-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+        .nb-card-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+        .nb-card-body { padding: 16px 18px; font-size: 14px; }
 
-    /* ── Footer ────────────────────────────────────────────────────── */
-    .footer {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: var(--cds-spacing-08);
-      border-top: 1px solid var(--cds-gray-20);
-      font-size: 0.75rem;
-      color: var(--cds-gray-50);
-      display: flex;
-      justify-content: space-between;
-    }
+        /* ── Footer ───────────────────────────────────────────────── */
+        .doc-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
 
-    /* ── Responsive ────────────────────────────────────────────────── */
-    @media (max-width: 640px) {
-      .hero h1 { font-size: 1.75rem; }
-      .hero { padding: var(--cds-spacing-08) var(--cds-spacing-06); }
-      .main { padding: var(--cds-spacing-08) var(--cds-spacing-06); }
-      .nb-card { grid-template-columns: auto 1fr; }
-      .nb-card__badge { grid-column: 1 / -1; justify-self: start; }
-    }
-  </style>
+        @media print {
+            body { padding: 40px; font-size: 13px; }
+        }
+    </style>
 </head>
+
 <body>
 
-  <!-- Header Bar -->
-  <div class="header">
-    <span>Distributed Systems for Data Science</span>
-    <span class="header__tag">Fall 2026</span>
-  </div>
+    <!-- HEADER -->
+    <header class="doc-header">
+        <div class="doc-meta">Week 7 &nbsp;·&nbsp; Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida</div>
+        <h1 class="doc-title">Spark, the Lakehouse, and Databricks</h1>
+        <div class="doc-sub">From single-server databases to distributed analytics.
+            This module covers Apache Spark, file formats, SQL at scale, DBSQL,
+            and the Databricks Lakehouse platform.</div>
+    </header>
 
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero__inner">
-      <h1>Week 7: <strong>Spark &amp; the Lakehouse</strong></h1>
-      <p>
-        Apache Spark, Databricks, and the modern data lakehouse.
-        Work through the lecture guide and hands-on notebooks below.
-      </p>
-    </div>
-  </div>
 
-  <!-- Main -->
-  <div class="main">
+    <!-- ══════════════════════════════════════════════════════════════════
+     LECTURE GUIDE
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Guide</span> Lecture Reference</h2>
 
-    <!-- Lecture Guide -->
-    <div class="section-label">Lecture Guide</div>
+    <p>The guide is your primary reading for this week. It covers every concept you need
+        and walks you through setting up your Databricks workspace.</p>
+
     <a href="guide.html" class="guide-card">
-      <div class="guide-card__eyebrow">Reference</div>
-      <div class="guide-card__title">Spark &amp; the Lakehouse — Lecture Guide</div>
-      <div class="guide-card__desc">
-        Comprehensive reference covering Spark architecture, DataFrames, lazy evaluation,
-        distributed joins, file formats, Delta Lake, and Unity Catalog.
-      </div>
-      <span class="guide-card__arrow">
-        Open guide
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M9.3 3.7l3.8 3.8H1v1h12.1l-3.8 3.8.7.7 5-5-5-5z"/></svg>
-      </span>
+        <div class="guide-card-eyebrow">Reference · 7 Parts</div>
+        <div class="guide-card-title">Spark &amp; the Lakehouse — Lecture Guide →</div>
+        <div class="guide-card-desc">
+            Spark architecture and DataFrames · File formats and Delta Lake ·
+            Unity Catalog · SQL on Spark · API reference ·
+            Getting started with Databricks Free Edition and GitHub repo setup ·
+            Databricks history and context
+        </div>
+        <span class="guide-card-arrow">Open guide →</span>
     </a>
 
-    <!-- Notebooks -->
-    <div class="section-label">Hands-On Notebooks</div>
-    <div class="nb-grid">
 
-      <a class="nb-card"
-         href="https://raw.githubusercontent.com/gsaluncf/DistributedForDataScienceF26/main/Databricks/student_notebooks/nb1_spark_intro.py"
-         target="_blank" rel="noopener">
-        <span class="nb-card__number">01</span>
-        <div class="nb-card__content">
-          <div class="nb-card__title">Introduction to Apache Spark &amp; DataFrames</div>
-          <div class="nb-card__desc">Loading data, lazy evaluation, aggregations, joins, and execution plans.</div>
+    <!-- ══════════════════════════════════════════════════════════════════
+     NOTEBOOKS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Labs</span> Hands-On Notebooks</h2>
+
+    <p>After setting up your workspace and cloning the course repo
+        (see <a href="guide.html">guide Section 6.2</a>), you will find
+        these notebooks at <code>Databricks/student_notebooks/</code>. Work through them in order.</p>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 1</span>
+            <span class="nb-card-name">nb1_spark_intro.py</span>
         </div>
-        <span class="nb-card__badge">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 0a7 7 0 100 14A7 7 0 007 0zm0 12.6A5.6 5.6 0 1112.6 7 5.6 5.6 0 017 12.6z" fill="#FF3621"/><path d="M9.1 4.9H6.3v4.2h2.8a2.1 2.1 0 000-4.2z" fill="#FF3621"/></svg>
-          Import to Databricks
-        </span>
-      </a>
-
-      <a class="nb-card"
-         href="https://raw.githubusercontent.com/gsaluncf/DistributedForDataScienceF26/main/Databricks/student_notebooks/nb2_file_formats.py"
-         target="_blank" rel="noopener">
-        <span class="nb-card__number">02</span>
-        <div class="nb-card__content">
-          <div class="nb-card__title">File Formats &amp; Table Formats</div>
-          <div class="nb-card__desc">CSV, Parquet, Avro, and Delta Lake — row vs columnar, schema enforcement, time travel.</div>
+        <div class="nb-card-body">
+            <p><strong>Spark Intro &amp; DataFrames.</strong> Load tables, apply transformations, trigger actions,
+                and see the execution plan (DAG). Covers lazy evaluation, column pruning, shuffles, and broadcast joins.</p>
         </div>
-        <span class="nb-card__badge">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 0a7 7 0 100 14A7 7 0 007 0zm0 12.6A5.6 5.6 0 1112.6 7 5.6 5.6 0 017 12.6z" fill="#FF3621"/><path d="M9.1 4.9H6.3v4.2h2.8a2.1 2.1 0 000-4.2z" fill="#FF3621"/></svg>
-          Import to Databricks
-        </span>
-      </a>
-
-      <a class="nb-card"
-         href="https://raw.githubusercontent.com/gsaluncf/DistributedForDataScienceF26/main/Databricks/student_notebooks/nb3_sql.py"
-         target="_blank" rel="noopener">
-        <span class="nb-card__number">03</span>
-        <div class="nb-card__content">
-          <div class="nb-card__title">SQL on Spark</div>
-          <div class="nb-card__desc">%sql magic, spark.sql(), temp views, CTEs, window functions, and CTAS.</div>
-        </div>
-        <span class="nb-card__badge">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 0a7 7 0 100 14A7 7 0 007 0zm0 12.6A5.6 5.6 0 1112.6 7 5.6 5.6 0 017 12.6z" fill="#FF3621"/><path d="M9.1 4.9H6.3v4.2h2.8a2.1 2.1 0 000-4.2z" fill="#FF3621"/></svg>
-          Import to Databricks
-        </span>
-      </a>
-
     </div>
 
-    <!-- Info Note -->
-    <div class="info-bar">
-      <strong>How to import:</strong> Click a notebook link above to open the raw file, then copy the URL.
-      In Databricks, go to <code>Workspace → Import → URL</code> and paste it.
-      These are Databricks-native <code>.py</code> notebooks and will import directly.
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 2</span>
+            <span class="nb-card-name">nb2_file_formats.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>File Formats &amp; Table Formats.</strong> Write the same dataset in five formats
+                (CSV, Parquet, Avro, Delta Lake, Iceberg) and compare schema safety, compression, and query speed.
+                Explore Delta Lake time travel, schema enforcement, and Unity Catalog Volumes.</p>
+        </div>
     </div>
 
-  </div>
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 3</span>
+            <span class="nb-card-name">nb3_sql.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>SQL on Spark.</strong> Everything you know from SQL, but distributed.
+                Use <code>%sql</code> magic cells, <code>spark.sql()</code> for Python integration,
+                temp views, CTEs, window functions (RANK, running totals), and CREATE TABLE AS SELECT.</p>
+        </div>
+    </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    <span>Distributed Systems for Data Science — NCF</span>
-    <span>Week 7 · Spark &amp; the Lakehouse</span>
-  </div>
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 4</span>
+            <span class="nb-card-name">nb4_dbsql.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>DBSQL &amp; the Modern Stack.</strong> Move beyond PySpark to SQL-first workflows.
+                Covers MPP architecture, side-by-side DBSQL vs PySpark comparisons,
+                serverless compute, partitioning, Query Profile analysis, and the evolving ecosystem
+                (Lakeflow, Genie, Databricks Apps, AI Agents).</p>
+        </div>
+    </div>
+
+    <div class="callout green">
+        <div class="callout-label">Getting the notebooks</div>
+        <p><strong>Recommended:</strong> Clone the course repository directly into Databricks using Git integration
+            (see <a href="guide.html">guide Section 6.2</a> for step-by-step instructions with screenshots).
+            This gives you all notebooks and makes it easy to pull updates.<br>
+            <strong>Alternatively:</strong> Download individual notebook files from the
+            <a href="https://github.com/gsaluncf/DistributedForDataScienceF26/tree/main/Databricks/student_notebooks" target="_blank">GitHub repo</a>
+            and import them via <code>Workspace → Import → URL</code>.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     SUMMARY
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Overview</span> What You Will Learn</h2>
+
+    <p>This module bridges your existing database knowledge with distributed analytics at scale:</p>
+
+    <ul style="margin: 10px 0 16px 24px;">
+        <li><strong>Distributed query execution</strong> — how Spark breaks queries into tasks and runs
+            them across workers in parallel (DAG, shuffles, stages)</li>
+        <li><strong>DataFrames and lazy evaluation</strong> — Spark's API for transformations on distributed data</li>
+        <li><strong>File and table formats</strong> — CSV, Parquet, Delta Lake, and why format choice
+            matters for performance and reliability</li>
+        <li><strong>Unity Catalog</strong> — centralized governance with a three-level namespace
+            (<code>catalog.schema.table</code>)</li>
+        <li><strong>SQL at scale</strong> — everything you know from databases, now distributed</li>
+        <li><strong>DBSQL and the modern stack</strong> — the industry shift from PySpark to SQL-first workflows,
+            serverless compute, and platform-managed infrastructure</li>
+        <li><strong>MPP architecture</strong> — coordinator + workers: the same distributed pattern
+            you see in every system this semester</li>
+    </ul>
+
+    <div class="callout spark">
+        <div class="callout-label">The Big Idea</div>
+        <p>Databricks shows where the industry is headed: you write SQL, and the platform handles parallelism,
+            fault tolerance, and optimization. But understanding the distributed system underneath —
+            partitions, shuffles, execution plans — is what separates someone who can use these tools
+            from someone who can debug and optimize them.</p>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        <p>Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida &nbsp;·&nbsp; Spring 2026</p>
+    </footer>
 
 </body>
+
 </html>
