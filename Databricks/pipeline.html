@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Pipelines &amp; the Medallion Architecture</title>
+    <meta name="description" content="Guide to data ingestion into Unity Catalog and the Medallion Architecture (Bronze, Silver, Gold) pattern on Databricks.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --red: #9b1c1c;
+            --red-lt: #fef2f2;
+            --purple: #553c9a;
+            --purple-lt: #f3eeff;
+            --code-bg: #f0f0f8;
+            --spark-orange: #e25a1c;
+            --spark-orange-lt: #fef0e8;
+            --bronze: #8B5E3C;
+            --bronze-lt: #fdf4eb;
+            --silver: #6b7b8d;
+            --silver-lt: #f0f3f6;
+            --gold-medal: #b8860b;
+            --gold-medal-lt: #fdf6e3;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
+
+        .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 52px; }
+        .doc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+        h1.doc-title { font-family: 'IBM Plex Serif', serif; font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--ink); margin-bottom: 10px; }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
+
+        h2.part { font-family: 'IBM Plex Serif', serif; font-size: 22px; font-weight: 600; color: var(--ink); margin: 56px 0 20px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); display: flex; align-items: baseline; gap: 12px; }
+        h2.part .part-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 400; }
+
+        h3.section { font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; font-weight: 600; color: var(--accent); margin: 32px 0 10px; }
+        h4.subsection { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); margin: 24px 0 8px; letter-spacing: .02em; }
+
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+
+        a { color: var(--accent); }
+        a:hover { text-decoration: none; }
+
+        .callout { border-left: 4px solid var(--accent); background: var(--accent-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout.gold { border-color: var(--gold); background: var(--gold-lt); }
+        .callout.green { border-color: var(--green); background: var(--green-lt); }
+        .callout.red { border-color: var(--red); background: var(--red-lt); }
+        .callout.purple { border-color: var(--purple); background: var(--purple-lt); }
+        .callout.spark { border-color: var(--spark-orange); background: var(--spark-orange-lt); }
+        .callout.bronze { border-color: var(--bronze); background: var(--bronze-lt); }
+        .callout.silver-c { border-color: var(--silver); background: var(--silver-lt); }
+        .callout.gold-medal { border-color: var(--gold-medal); background: var(--gold-medal-lt); }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; }
+
+        ul, ol { margin: 10px 0 16px 24px; }
+        li { margin-bottom: 6px; }
+        li strong { color: var(--ink); }
+
+        pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin: 16px 0; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.65; color: var(--ink); }
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+        .table-wrap { overflow-x: auto; margin: 18px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        thead th { background: var(--ink); color: #fff; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; text-align: left; padding: 10px 14px; letter-spacing: .01em; }
+        tbody tr:nth-child(even) { background: #f4f4f8; }
+        tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+        tbody td:first-child { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); }
+
+        .diagram { margin: 28px 0; text-align: center; }
+        .diagram svg { max-width: 100%; height: auto; }
+        .diagram-caption { font-size: 12px; color: var(--ink-faint); font-style: italic; margin-top: 8px; }
+
+        .screenshot { margin: 20px 0; text-align: center; }
+        .screenshot img {
+            max-width: 180px;
+            border: 1px solid var(--rule);
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .screenshot img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .screenshot-caption { font-size: 12px; color: var(--ink-faint); font-style: italic; margin-top: 6px; }
+
+        /* Lightbox overlay */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            cursor: pointer;
+            justify-content: center;
+            align-items: center;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-overlay img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+        }
+
+        .doc-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
+
+        @media print {
+            body { padding: 40px; font-size: 13px; }
+            h2.part { page-break-before: always; }
+            pre { font-size: 11px; }
+            .screenshot img { max-width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="doc-header">
+        <div class="doc-meta">Week 8 &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+        <h1 class="doc-title">Data Pipelines &amp; the Medallion Architecture</h1>
+        <div class="doc-sub">How data gets into the Lakehouse and flows through layers of
+            increasing quality. From a raw custodian Excel file to a production-ready portfolio
+            valuation, using Unity Catalog, Delta Lake, and Databricks Workflows.</div>
+    </header>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 1 — DATA INGESTION
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 1</span> Data Ingestion: Getting Data Into the Lakehouse</h2>
+
+    <h3 class="section">1.1 The Ingestion Problem</h3>
+
+    <p>In a traditional database, ingestion is simple: you run <code>INSERT INTO</code> or use
+        <code>COPY</code> to load a CSV. The database owns both the storage and the compute.</p>
+
+    <p>In a Lakehouse, the picture is different. Data arrives from many sources (application logs,
+        third-party file exports, API dumps, IoT sensors) and needs to land in a <strong>governed</strong>
+        location where any notebook, job, or dashboard can discover and access it. This is the role
+        of <strong>Unity Catalog</strong> and <strong>Volumes</strong>.</p>
+
+    <div class="callout">
+        <div class="callout-label">The Core Idea</div>
+        <p>Ingestion in a Lakehouse is a two-step process: <strong>(1) land the raw file</strong> in a
+            Unity Catalog Volume, then <strong>(2) read it into a Delta table</strong> with schema and
+            governance. The file becomes discoverable, versioned, and queryable the moment it arrives.</p>
+    </div>
+
+    <h3 class="section">1.2 Unity Catalog Volumes</h3>
+
+    <p>A <strong>Volume</strong> is a Unity Catalog object that references a directory of files.
+        It follows the same three-level namespace as tables:</p>
+
+    <pre>
+catalog.schema.volume
+└─ workspace.pipeline.raw_files
+   ├── custodian_report.xlsx
+   ├── holdings_v20240315.csv
+   └── prices_v20240315.csv</pre>
+
+    <p>Volumes give you the flexibility of file storage (any format, any structure) with the
+        governance of Unity Catalog (permissions, lineage, discoverability). Think of a Volume as a
+        governed folder: every file you upload is tracked and can be discovered by any
+        authorized notebook or job.</p>
+
+
+    <h3 class="section">1.3 Three Ways to Ingest Data</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>How It Works</th>
+                    <th>Best For</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>UI Upload</td>
+                    <td>Drag and drop files into a Volume via the Databricks workspace UI</td>
+                    <td>Small files, ad-hoc exploration, getting started</td>
+                </tr>
+                <tr>
+                    <td>COPY INTO</td>
+                    <td>SQL command that loads files from a Volume into a Delta table. Idempotent (skips already-loaded files).</td>
+                    <td>Batch loads, repeatable ingestion</td>
+                </tr>
+                <tr>
+                    <td>Auto Loader</td>
+                    <td>Streaming ingestion that watches a directory and processes new files as they arrive</td>
+                    <td>Continuous ingestion, production pipelines</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout gold">
+        <div class="callout-label">This Week's Approach</div>
+        <p>We will use <strong>UI Upload</strong> to manually place a file in a Volume, then write
+            notebooks that process it through the Medallion pipeline. This is the most hands-on way
+            to understand the ingestion flow before learning the automated tools.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 2 — MEDALLION ARCHITECTURE
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 2</span> The Medallion Architecture: Bronze, Silver, Gold</h2>
+
+    <h3 class="section">2.1 The Problem: Raw Data Is Messy</h3>
+
+    <p>Data arriving from external systems is rarely clean. It has missing values, inconsistent types,
+        duplicate records, and schema drift. If you build dashboards directly on raw data, you get
+        unreliable results. If analysts have to clean data every time they query it, you waste
+        compute and risk inconsistency.</p>
+
+    <p>The <strong>Medallion Architecture</strong> (also called multi-hop architecture) solves this
+        by organizing data into <strong>three layers</strong>, each with increasing quality and structure.</p>
+
+    <div class="diagram">
+        <svg width="780" height="380" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="780" height="380" fill="#fafafa" rx="8" />
+            <text x="390" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">The Medallion Architecture: Data Quality Layers</text>
+
+            <!-- BRONZE -->
+            <rect x="30" y="50" width="220" height="160" rx="10" fill="#fdf4eb" stroke="#8B5E3C" stroke-width="2" />
+            <rect x="30" y="50" width="220" height="32" rx="10" fill="#8B5E3C" />
+            <rect x="30" y="70" width="220" height="12" fill="#8B5E3C" />
+            <text x="140" y="71" text-anchor="middle" font-size="13" font-weight="bold" fill="white">BRONZE</text>
+            <text x="140" y="100" text-anchor="middle" font-size="10" font-weight="bold" fill="#8B5E3C">Raw Ingestion</text>
+            <text x="50" y="120" font-size="9" fill="#4a4a6a">- Append-only, no transformations</text>
+            <text x="50" y="136" font-size="9" fill="#4a4a6a">- Preserve original data as-is</text>
+            <text x="50" y="152" font-size="9" fill="#4a4a6a">- Add metadata: source, timestamp</text>
+            <text x="50" y="168" font-size="9" fill="#4a4a6a">- Schema: inferred or string-typed</text>
+            <text x="50" y="188" font-size="9" fill="#8888aa" font-style="italic">Think: "landing zone"</text>
+
+            <line x1="252" y1="130" x2="278" y2="130" stroke="#6b7b8d" stroke-width="2" marker-end="url(#arrMedal)" />
+            <text x="265" y="120" text-anchor="middle" font-size="7" fill="#6b7b8d" font-weight="bold">CLEAN</text>
+
+            <!-- SILVER -->
+            <rect x="280" y="50" width="220" height="160" rx="10" fill="#f0f3f6" stroke="#6b7b8d" stroke-width="2" />
+            <rect x="280" y="50" width="220" height="32" rx="10" fill="#6b7b8d" />
+            <rect x="280" y="70" width="220" height="12" fill="#6b7b8d" />
+            <text x="390" y="71" text-anchor="middle" font-size="13" font-weight="bold" fill="white">SILVER</text>
+            <text x="390" y="100" text-anchor="middle" font-size="10" font-weight="bold" fill="#6b7b8d">Cleaned &amp; Conformed</text>
+            <text x="300" y="120" font-size="9" fill="#4a4a6a">- Deduplicate records</text>
+            <text x="300" y="136" font-size="9" fill="#4a4a6a">- Cast types (string → date, int)</text>
+            <text x="300" y="152" font-size="9" fill="#4a4a6a">- Filter bad / null records</text>
+            <text x="300" y="168" font-size="9" fill="#4a4a6a">- Standardize column names</text>
+            <text x="300" y="188" font-size="9" fill="#8888aa" font-style="italic">Think: "single source of truth"</text>
+
+            <line x1="502" y1="130" x2="528" y2="130" stroke="#b8860b" stroke-width="2" marker-end="url(#arrGold)" />
+            <text x="515" y="120" text-anchor="middle" font-size="7" fill="#b8860b" font-weight="bold">AGGREGATE</text>
+
+            <!-- GOLD -->
+            <rect x="530" y="50" width="220" height="160" rx="10" fill="#fdf6e3" stroke="#b8860b" stroke-width="2" />
+            <rect x="530" y="50" width="220" height="32" rx="10" fill="#b8860b" />
+            <rect x="530" y="70" width="220" height="12" fill="#b8860b" />
+            <text x="640" y="71" text-anchor="middle" font-size="13" font-weight="bold" fill="white">GOLD</text>
+            <text x="640" y="100" text-anchor="middle" font-size="10" font-weight="bold" fill="#b8860b">Business-Level Aggregates</text>
+            <text x="550" y="120" font-size="9" fill="#4a4a6a">- Denormalized, pre-aggregated</text>
+            <text x="550" y="136" font-size="9" fill="#4a4a6a">- Domain-specific tables</text>
+            <text x="550" y="152" font-size="9" fill="#4a4a6a">- Ready for dashboards and ML</text>
+            <text x="550" y="168" font-size="9" fill="#4a4a6a">- Optimized for query speed</text>
+            <text x="550" y="188" font-size="9" fill="#8888aa" font-style="italic">Think: "reporting layer"</text>
+
+            <!-- Data sources -->
+            <text x="140" y="240" text-anchor="middle" font-size="10" fill="#8B5E3C" font-weight="bold">Sources feed Bronze</text>
+            <rect x="30" y="250" width="90" height="28" rx="4" fill="#fef2f2" stroke="#9b1c1c" stroke-width="1" />
+            <text x="75" y="269" text-anchor="middle" font-size="9" fill="#9b1c1c">CSV uploads</text>
+            <rect x="125" y="250" width="90" height="28" rx="4" fill="#fef2f2" stroke="#9b1c1c" stroke-width="1" />
+            <text x="170" y="269" text-anchor="middle" font-size="9" fill="#9b1c1c">Excel files</text>
+            <rect x="30" y="284" width="90" height="28" rx="4" fill="#fef2f2" stroke="#9b1c1c" stroke-width="1" />
+            <text x="75" y="303" text-anchor="middle" font-size="9" fill="#9b1c1c">API responses</text>
+            <rect x="125" y="284" width="90" height="28" rx="4" fill="#fef2f2" stroke="#9b1c1c" stroke-width="1" />
+            <text x="170" y="303" text-anchor="middle" font-size="9" fill="#9b1c1c">app logs</text>
+
+            <!-- Consumers -->
+            <text x="640" y="240" text-anchor="middle" font-size="10" fill="#b8860b" font-weight="bold">Gold serves consumers</text>
+            <rect x="530" y="250" width="100" height="28" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="580" y="269" text-anchor="middle" font-size="9" fill="#1a6b3a">dashboards</text>
+            <rect x="635" y="250" width="100" height="28" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="685" y="269" text-anchor="middle" font-size="9" fill="#1a6b3a">ML models</text>
+            <rect x="530" y="284" width="100" height="28" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="580" y="303" text-anchor="middle" font-size="9" fill="#1a6b3a">SQL analysts</text>
+            <rect x="635" y="284" width="100" height="28" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="685" y="303" text-anchor="middle" font-size="9" fill="#1a6b3a">data apps</text>
+
+            <rect x="140" y="332" width="500" height="32" rx="4" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1" />
+            <text x="390" y="353" text-anchor="middle" font-size="11" fill="#1a4fa0" font-weight="bold">Each layer is a separate Delta table, versioned, governed, queryable independently</text>
+
+            <defs>
+                <marker id="arrMedal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#6b7b8d" />
+                </marker>
+                <marker id="arrGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#b8860b" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">The Medallion Architecture: data flows left-to-right through layers of increasing quality.</div>
+    </div>
+
+    <div class="callout bronze">
+        <div class="callout-label">Bronze Layer: Raw Ingestion</div>
+        <p><strong>Capture exactly what arrived and persist it.</strong> No cleaning, no type casting,
+            no assumptions. Add metadata (source file, timestamp) so you know when and where the data
+            came from. If Silver logic has a bug, you can always reprocess from Bronze without
+            re-uploading the original file.<br>
+            <strong>Analogy:</strong> The inbox of an email system. Everything arrives here, unsorted.</p>
+    </div>
+
+    <div class="callout silver-c">
+        <div class="callout-label">Silver Layer: Cleaned and Conformed</div>
+        <p><strong>Transform messy Bronze data into a single source of truth.</strong>
+            Deduplicate records, cast types (strings become dates and integers), filter out
+            corrupt or null rows, and standardize column names. After Silver,
+            the data is reliable enough to build on.<br>
+            <strong>Analogy:</strong> A sorted, labeled filing cabinet. Everything is organized and trustworthy.</p>
+    </div>
+
+    <div class="callout gold-medal">
+        <div class="callout-label">Gold Layer: Business-Level Aggregates</div>
+        <p><strong>Pre-aggregated, denormalized tables for specific business use cases.</strong>
+            A Gold table might be a portfolio valuation, a daily revenue summary, or a feature table
+            for ML. These tables are optimized for fast queries and direct consumption by dashboards
+            and reports.<br>
+            <strong>Analogy:</strong> The executive summary. Distilled, actionable, ready to present.</p>
+    </div>
+
+
+    <h3 class="section">2.2 Why Separate Layers?</h3>
+
+    <ul>
+        <li><strong>Decoupled processing stages.</strong> Each layer is an independent Delta table. If
+            Silver logic has a bug, you fix it and reprocess from Bronze without re-ingesting
+            from the source. This is the same principle as idempotent processing in message queues.</li>
+        <li><strong>Incremental processing.</strong> In production, only <em>new</em> data flows through
+            the pipeline. Bronze appends new files, Silver processes only unprocessed records,
+            and Gold re-aggregates incrementally.</li>
+        <li><strong>Independent scaling.</strong> Bronze ingestion can run on a high-throughput
+            cluster. Silver cleaning can run on a schedule. Gold aggregation can be triggered
+            by a downstream dashboard. Each stage scales independently.</li>
+        <li><strong>Fault isolation.</strong> If Gold tables are corrupted by a bad aggregation, Silver
+            is unaffected. If Silver logic breaks, Bronze preserves the raw data. Each layer acts as a
+            checkpoint.</li>
+    </ul>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 3 — THE SCENARIO
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 3</span> The Scenario: Daily Custodian Report</h2>
+
+    <p>You are an analyst at a small investment fund. Every day, your custodian (think State Street
+        or BNY Mellon) sends you an Excel file with your portfolio snapshot. The file has two tabs:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Sheet</th>
+                    <th>What It Contains</th>
+                    <th>What's Messy About It</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Holdings</td>
+                    <td>Your 50 stock positions: ticker, company name, shares, cost basis, sector</td>
+                    <td>Title block in rows 1-4, tickers with trailing spaces or exchange prefixes (<code>"NYSE:MSFT"</code>),
+                        cost values with embedded dollar signs (<code>"$142.50"</code>), blank rows, 3 duplicate positions</td>
+                </tr>
+                <tr>
+                    <td>Prices</td>
+                    <td>End-of-day closing prices: symbol, date, close, volume, daily change</td>
+                    <td>Mixed date formats (<code>"2024-03-15"</code> vs <code>"03/15/2024"</code>),
+                        prices with dollar signs and commas, missing values marked as <code>"N/A"</code>,
+                        4 duplicate rows</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>Your job: build a pipeline that turns this messy Excel file into a clean, queryable
+        <strong>portfolio valuation table</strong> showing what you own, what it's worth, and how
+        your exposure is distributed across sectors.</p>
+
+    <div class="callout spark">
+        <div class="callout-label">Real World Context</div>
+        <p>This is a genuine scenario. Custodian reports at investment firms are notoriously
+            messy: title blocks, inconsistent formatting, duplicate entries, and mixed date formats
+            are the norm, not the exception. The Medallion Architecture exists precisely because of
+            data like this.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 4 — MANUAL UPLOAD (PRE-STEP)
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 4</span> Hands-On: Upload the File</h2>
+
+    <p>Before running any notebooks, you need to manually upload the custodian report into
+        Databricks. This simulates the real-world step where data arrives from an external system.</p>
+
+    <h3 class="section">4.1 Create a Schema and Volume</h3>
+
+    <ol>
+        <li>In the Databricks sidebar, click <strong>Catalog</strong></li>
+        <li>Under the <code>workspace</code> catalog, click <strong>Create schema</strong></li>
+        <li>Name it <code>pipeline</code> and click <strong>Create</strong></li>
+        <li>Inside the new <code>pipeline</code> schema, click <strong>Create volume</strong></li>
+        <li>Name it <code>raw_files</code> and click <strong>Create</strong></li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="CreateaSchemaandVolume-4.1.png" alt="Catalog sidebar showing the Create schema option">
+        <div class="screenshot-caption">Open the Catalog browser and find the workspace catalog.</div>
+    </div>
+
+    <div class="screenshot">
+        <img src="CreateSchema413.png" alt="Creating the pipeline schema">
+        <div class="screenshot-caption">Create a new schema named <code>pipeline</code>.</div>
+    </div>
+
+    <div class="screenshot">
+        <img src="CreateSchemaVolume4.1.4.png" alt="Creating a volume inside the pipeline schema">
+        <div class="screenshot-caption">Inside the pipeline schema, create a new volume.</div>
+    </div>
+
+    <div class="screenshot">
+        <img src="CreateASchema-4.1.5.png" alt="Volume raw_files created successfully">
+        <div class="screenshot-caption">Name the volume <code>raw_files</code> and click Create.</div>
+    </div>
+
+    <p>You now have a governed file storage location at
+        <code>workspace.pipeline.raw_files</code>. This is tracked in Unity Catalog,
+        meaning any notebook or job in your workspace can discover and access it by name.</p>
+
+    <h3 class="section">4.2 Upload the Excel File</h3>
+
+    <ol>
+        <li>Download <code>custodian_report.xlsx</code> from the
+            <a href="https://github.com/gsaluncf/DistributedForDataScienceF26/tree/main/Databricks" target="_blank">course repository on GitHub</a></li>
+        <li>In the Catalog browser, navigate to
+            <code>workspace</code> &#x2192; <code>pipeline</code> &#x2192; <code>raw_files</code></li>
+        <li>Click <strong>Upload to this volume</strong></li>
+        <li>Drag and drop <code>custodian_report.xlsx</code> into the upload area</li>
+        <li>Verify the file appears in the Volume listing</li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="UploadExcel!.png" alt="Upload to this volume button">
+        <div class="screenshot-caption">Click Upload to this volume on the raw_files Volume page.</div>
+    </div>
+
+    <div class="screenshot">
+        <img src="UploadExcel2.png" alt="Drag and drop the Excel file">
+        <div class="screenshot-caption">Drag and drop <code>custodian_report.xlsx</code> into the upload area.</div>
+    </div>
+
+    <div class="callout green">
+        <div class="callout-label">Checkpoint</div>
+        <p>After uploading, you should see <code>custodian_report.xlsx</code> listed in the Volume.
+            The file is now on cloud storage, tracked by Unity Catalog, and accessible to any notebook
+            at the path <code>/Volumes/workspace/pipeline/raw_files/custodian_report.xlsx</code>.</p>
+    </div>
+
+    <div class="screenshot">
+        <img src="UploadExcel3_checkpoint.png" alt="File visible in Volume listing">
+        <div class="screenshot-caption">Verify the file appears in the Volume listing.</div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 5 — THE PIPELINE (NOTEBOOKS)
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 5</span> Run the Pipeline</h2>
+
+    <h3 class="section">5.0 Upload the Notebooks to Your Workspace</h3>
+
+    <p>Before running the pipeline, you need to get the three notebooks into your Databricks workspace:</p>
+
+    <ol>
+        <li>Download the three notebook files from the
+            <a href="https://github.com/gsaluncf/DistributedForDataScienceF26/tree/main/Databricks/student_notebooks" target="_blank">course repository on GitHub</a>:
+            <code>nb5_bronze.py</code>, <code>nb5_silver.py</code>, and <code>nb5_gold.py</code></li>
+        <li>In the Databricks sidebar, click <strong>Workspace</strong></li>
+        <li>Navigate to your user folder (or create a new folder called <code>pipeline</code> to keep things organized)</li>
+        <li>Click the <strong>&#x22EE;</strong> menu (three dots) and select <strong>Import</strong></li>
+        <li>Choose <strong>File</strong> and upload all three notebook files from your desktop</li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="upload_pipeline_workspaces1.png" alt="Workspace view showing uploaded notebooks">
+        <div class="screenshot-caption">Upload the three pipeline notebooks to your Workspace.</div>
+    </div>
+
+    <p>With the notebooks in your workspace, run them in order. Each notebook reads
+        from the previous layer's output and writes the next layer.</p>
+
+    <h3 class="section">5.1 nb5_bronze.py</h3>
+    <p>Reads the raw Excel file from the Volume with <code>pandas</code> (since Spark cannot read
+        <code>.xlsx</code> natively), converts both tabs to Spark DataFrames with all-string types,
+        adds ingestion metadata (<code>_source_file</code>, <code>_source_sheet</code>,
+        <code>_ingested_at</code>), and writes two Delta tables:
+        <code>workspace.pipeline.bronze_holdings</code> and
+        <code>workspace.pipeline.bronze_prices</code>.</p>
+
+    <h3 class="section">5.2 nb5_silver.py</h3>
+    <p>Reads from Bronze and cleans both tables:</p>
+    <ul>
+        <li><strong>Holdings:</strong> strips whitespace from tickers, removes exchange prefixes
+            (<code>"NYSE:MSFT"</code> becomes <code>"MSFT"</code>), removes dollar signs and commas
+            from cost values, casts types, drops blank rows, deduplicates</li>
+        <li><strong>Prices:</strong> normalizes mixed date formats, cleans dollar signs from
+            prices, replaces <code>"N/A"</code> with null, casts types, deduplicates on
+            (symbol, date)</li>
+    </ul>
+    <p>Silver also writes <strong>versioned CSVs</strong> back to the Volume with a timestamp in
+        the filename (e.g., <code>holdings_v20240315_143022.csv</code>). Navigate to the Volume
+        in the Catalog browser to see the files accumulate across runs.</p>
+
+    <h3 class="section">5.3 nb5_gold.py</h3>
+    <p>Joins Silver holdings with Silver prices to compute a <strong>portfolio valuation table</strong>:
+        market value per position, unrealized P&amp;L, and portfolio weight. Also builds a
+        <strong>sector allocation table</strong> showing exposure by sector. This is what a portfolio
+        manager would look at every morning.</p>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 6 — DATABRICKS WORKFLOWS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 6</span> Wiring It Together: Databricks Workflows</h2>
+
+    <h3 class="section">6.1 Why Workflows?</h3>
+
+    <p>Running notebooks manually in order works for development, but in production you need
+        <strong>orchestration</strong>: automatic execution, dependency management, retry on failure,
+        and monitoring. Databricks <strong>Workflows</strong> (the Jobs UI) lets you wire your
+        notebooks into a <strong>visual DAG</strong> that runs automatically.</p>
+
+    <div class="callout">
+        <div class="callout-label">The Distributed Systems Pattern</div>
+        <p>A Databricks Workflow is a DAG (Directed Acyclic Graph), the same abstraction Spark uses
+            for query execution. Each task in the workflow is a node, and dependencies between tasks
+            are edges. The orchestrator ensures tasks run in the correct order and handles retries
+            on failure. This is the same pattern as AWS Step Functions, Apache Airflow, and
+            Kubernetes Job controllers.</p>
+    </div>
+
+    <h3 class="section">6.2 Create Your Pipeline Workflow</h3>
+
+    <p>Follow these steps to wire your three notebooks into a Workflow:</p>
+
+    <h4 class="subsection">Step 1: Open Jobs &amp; Pipelines</h4>
+    <p>In the Databricks sidebar, click <strong>Jobs &amp; Pipelines</strong>.</p>
+
+    <div class="screenshot">
+        <img src="JobsAndPipline1.png" alt="Jobs and Pipelines sidebar option">
+        <div class="screenshot-caption">Click Jobs &amp; Pipelines in the sidebar.</div>
+    </div>
+
+    <h4 class="subsection">Step 2: Create a new Job</h4>
+    <ol>
+        <li>Click <strong>Create Job</strong></li>
+        <li>Name it <code>Custodian Pipeline</code></li>
+    </ol>
+
+    <h4 class="subsection">Step 3: Add the Bronze task</h4>
+    <ol>
+        <li>Click <strong>Add task</strong>, then select <strong>Notebook</strong> as the task type</li>
+        <li>Name the task <code>bronze</code></li>
+        <li>For <strong>Source</strong>, browse to your <code>nb5_bronze</code> notebook</li>
+        <li>For <strong>Compute</strong>, select <strong>Serverless</strong></li>
+        <li>Click <strong>Create task</strong></li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="addbronetask1.png" alt="Adding the bronze notebook task">
+        <div class="screenshot-caption">Add the Bronze task pointing to your nb5_bronze notebook.</div>
+    </div>
+
+    <h4 class="subsection">Step 4: Add the Silver task</h4>
+    <ol>
+        <li>Click <strong>Add task</strong>, then select <strong>Notebook</strong></li>
+        <li>Name the task <code>silver</code></li>
+        <li>Set <strong>Depends on</strong> to <code>bronze</code></li>
+        <li>Point it to your <code>nb5_silver</code> notebook</li>
+        <li>Select <strong>Serverless</strong> compute</li>
+        <li>Click <strong>Create task</strong></li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="addingsilverjob-6.2.4.png" alt="Adding the silver notebook task with dependency on bronze">
+        <div class="screenshot-caption">Add the Silver task with a dependency on Bronze.</div>
+    </div>
+
+    <h4 class="subsection">Step 5: Add the Gold task</h4>
+    <ol>
+        <li>Click <strong>Add task</strong>, then select <strong>Notebook</strong></li>
+        <li>Name the task <code>gold</code></li>
+        <li>Set <strong>Depends on</strong> to <code>silver</code></li>
+        <li>Point it to your <code>nb5_gold</code> notebook</li>
+        <li>Select <strong>Serverless</strong> compute</li>
+        <li>Click <strong>Create task</strong></li>
+    </ol>
+
+    <h4 class="subsection">Step 6: Run the Workflow</h4>
+    <ol>
+        <li>Click <strong>Run now</strong> in the top right</li>
+        <li>Watch the visual DAG as each task turns from pending to running to completed</li>
+        <li>Click on any task to see its notebook output, logs, and execution time</li>
+    </ol>
+
+    <div class="screenshot">
+        <img src="runnowworkflow6.6.png" alt="Workflow DAG with all three tasks">
+        <div class="screenshot-caption">Click Run now and watch the Bronze, Silver, Gold DAG execute.</div>
+    </div>
+
+    <div class="callout green">
+        <div class="callout-label">What You Should See</div>
+        <p>The Workflow UI shows your pipeline as a three-node graph:
+            <code>bronze</code> &#x2192; <code>silver</code> &#x2192; <code>gold</code>.
+            Each node turns green as it completes. This is the same DAG visualization that
+            production data teams use to monitor pipelines processing billions of rows daily.</p>
+    </div>
+
+    <div class="callout spark">
+        <div class="callout-label">The Big Idea</div>
+        <p>Every distributed data system is a pipeline. The Medallion Architecture is the Lakehouse
+            version of a pattern you have seen all semester: raw input, processing stages, refined output.
+            Understanding this pattern means you can design, debug, and optimize data pipelines
+            on any platform.</p>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        <p>Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida &nbsp;&middot;&nbsp; Spring 2026</p>
+    </footer>
+
+    <!-- Lightbox overlay -->
+    <div class="lightbox-overlay" id="lightbox">
+        <img id="lightbox-img" src="" alt="">
+    </div>
+
+    <script>
+        // Click-to-expand lightbox for screenshot thumbnails
+        document.querySelectorAll('.screenshot img').forEach(function(img) {
+            img.addEventListener('click', function() {
+                var overlay = document.getElementById('lightbox');
+                document.getElementById('lightbox-img').src = this.src;
+                overlay.classList.add('active');
+            });
+        });
+        document.getElementById('lightbox').addEventListener('click', function() {
+            this.classList.remove('active');
+        });
+    </script>
+
+</body>
+
+</html>
