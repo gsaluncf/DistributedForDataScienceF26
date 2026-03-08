@@ -136,6 +136,28 @@
         <span class="guide-card-arrow">Open guide →</span>
     </a>
 
+    <a href="pipeline.html" class="guide-card" style="border-left-color: var(--spark-orange);">
+        <div class="guide-card-eyebrow" style="color: var(--spark-orange);">Reference · 6 Parts</div>
+        <div class="guide-card-title">Data Pipelines &amp; the Medallion Architecture &rarr;</div>
+        <div class="guide-card-desc">
+            Data ingestion into Unity Catalog Volumes · The Medallion Architecture
+            (Bronze, Silver, Gold) · Custodian report scenario · Pipeline orchestration
+            with Databricks Workflows
+        </div>
+        <span class="guide-card-arrow" style="color: var(--spark-orange);">Open guide &rarr;</span>
+    </a>
+
+    <a href="declarative.html" class="guide-card" style="border-left-color: var(--purple);">
+        <div class="guide-card-eyebrow" style="color: var(--purple);">Reference · 6 Parts</div>
+        <div class="guide-card-title">Declarative Pipelines: The Modern Approach &rarr;</div>
+        <div class="guide-card-desc">
+            The decorator as a contract · Data quality expectations as guarantees ·
+            Two-phase pipeline execution (loading vs. execution) ·
+            Auto-resolved dependency graphs · API reference · Hands-on DLT pipeline
+        </div>
+        <span class="guide-card-arrow" style="color: var(--purple);">Open guide &rarr;</span>
+    </a>
+
 
     <!-- ══════════════════════════════════════════════════════════════════
      NOTEBOOKS
@@ -191,6 +213,55 @@
                 Covers MPP architecture, side-by-side DBSQL vs PySpark comparisons,
                 serverless compute, partitioning, Query Profile analysis, and the evolving ecosystem
                 (Lakeflow, Genie, Databricks Apps, AI Agents).</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 5a</span>
+            <span class="nb-card-name">nb5_bronze.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>Bronze Layer: Raw Ingestion.</strong> Read a custodian's messy Excel report from a Unity Catalog
+                Volume, convert both tabs to Spark DataFrames, and persist them as raw Delta tables with
+                ingestion metadata. No cleaning, just capture.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 5b</span>
+            <span class="nb-card-name">nb5_silver.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>Silver Layer: Clean and Conform.</strong> Normalize tickers, strip dollar signs,
+                parse mixed date formats, deduplicate, and cast types. Write clean Delta tables and
+                versioned CSVs back to the Volume.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 5c</span>
+            <span class="nb-card-name">nb5_gold.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>Gold Layer: Portfolio Valuation.</strong> Join cleaned holdings with cleaned prices
+                to compute market value, unrealized P&amp;L, and portfolio weight per position. Build a
+                sector allocation summary. Wire all three notebooks into a Databricks Workflow.</p>
+        </div>
+    </div>
+
+    <div class="nb-card">
+        <div class="nb-card-header">
+            <span class="nb-card-num">Notebook 6</span>
+            <span class="nb-card-name">nb6_declarative.py</span>
+        </div>
+        <div class="nb-card-body">
+            <p><strong>Declarative Pipeline (Lakeflow DLT).</strong> A self-contained notebook that
+                declares tables as contracts using <code>@dlt.table()</code> decorators with inline sample data.
+                Data quality rules via <code>@dlt.expect_or_drop()</code> are part of the contract.
+                Databricks resolves the DAG during code loading. Run as a Pipeline (not a regular notebook).</p>
         </div>
     </div>
 
