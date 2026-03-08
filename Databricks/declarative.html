@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Declarative Pipelines: The Modern Approach</title>
+    <meta name="description" content="Guide to Lakeflow Declarative Pipelines (DLT) on Databricks, the modern alternative to imperative notebook chaining.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --red: #9b1c1c;
+            --red-lt: #fef2f2;
+            --purple: #553c9a;
+            --purple-lt: #f3eeff;
+            --code-bg: #f0f0f8;
+            --spark-orange: #e25a1c;
+            --spark-orange-lt: #fef0e8;
+            --bronze: #8B5E3C;
+            --bronze-lt: #fdf4eb;
+            --silver: #6b7b8d;
+            --silver-lt: #f0f3f6;
+            --gold-medal: #b8860b;
+            --gold-medal-lt: #fdf6e3;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
+
+        .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 52px; }
+        .doc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+        h1.doc-title { font-family: 'IBM Plex Serif', serif; font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--ink); margin-bottom: 10px; }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
+
+        h2.part { font-family: 'IBM Plex Serif', serif; font-size: 22px; font-weight: 600; color: var(--ink); margin: 56px 0 20px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); display: flex; align-items: baseline; gap: 12px; }
+        h2.part .part-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 400; }
+
+        h3.section { font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; font-weight: 600; color: var(--accent); margin: 32px 0 10px; }
+        h4.subsection { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); margin: 24px 0 8px; letter-spacing: .02em; }
+
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+
+        a { color: var(--accent); }
+        a:hover { text-decoration: none; }
+
+        .callout { border-left: 4px solid var(--accent); background: var(--accent-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout.gold { border-color: var(--gold); background: var(--gold-lt); }
+        .callout.green { border-color: var(--green); background: var(--green-lt); }
+        .callout.red { border-color: var(--red); background: var(--red-lt); }
+        .callout.purple { border-color: var(--purple); background: var(--purple-lt); }
+        .callout.spark { border-color: var(--spark-orange); background: var(--spark-orange-lt); }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; }
+        .callout ul { font-size: 14px; }
+
+        ul, ol { margin: 10px 0 16px 24px; }
+        li { margin-bottom: 6px; }
+        li strong { color: var(--ink); }
+
+        pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin: 16px 0; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.65; color: var(--ink); }
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+        .table-wrap { overflow-x: auto; margin: 18px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        thead th { background: var(--ink); color: #fff; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; text-align: left; padding: 10px 14px; letter-spacing: .01em; }
+        tbody tr:nth-child(even) { background: #f4f4f8; }
+        tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+        tbody td:first-child { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); }
+
+        .diagram { margin: 28px 0; text-align: center; }
+        .diagram svg { max-width: 100%; height: auto; }
+        .diagram-caption { font-size: 12px; color: var(--ink-faint); font-style: italic; margin-top: 8px; }
+
+        .doc-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
+
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .compare-card { border: 1px solid var(--rule); border-radius: 8px; padding: 20px; background: #fff; }
+        .compare-card h4 { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+        .compare-card.old { border-top: 3px solid var(--red); }
+        .compare-card.old h4 { color: var(--red); }
+        .compare-card.new { border-top: 3px solid var(--green); }
+        .compare-card.new h4 { color: var(--green); }
+        .compare-card pre { font-size: 11.5px; margin: 10px 0 0; padding: 12px 16px; }
+
+        .contract-block { background: #fff; border: 2px solid var(--purple); border-radius: 8px; padding: 24px; margin: 20px 0; }
+        .contract-block h4 { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); margin-bottom: 12px; }
+        .contract-block pre { font-size: 12px; margin: 0; border: none; background: var(--purple-lt); }
+
+        @media print {
+            body { padding: 40px; font-size: 13px; }
+            h2.part { page-break-before: always; }
+            pre { font-size: 11px; }
+            .compare-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="doc-header">
+        <div class="doc-meta">Week 8 &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+        <h1 class="doc-title">Declarative Pipelines: The Modern Approach</h1>
+        <div class="doc-sub">Instead of writing execution steps, you describe the desired state of each table.
+            The platform handles the rest.</div>
+    </header>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 1: THE DECORATOR AS CONTRACT
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 1</span> The Decorator Is the Contract</h2>
+
+    <h3 class="section">1.1 What <code>@dlt.table()</code> Advertises</h3>
+
+    <p>In a Declarative Pipeline, every table starts with a <strong>decorator</strong>.
+        Think of it as the table's <strong>public interface</strong> &mdash; an advertisement
+        of what this table is, what it promises, and what it contains. Before anyone reads a
+        single line of your transformation logic, the decorator tells them everything they
+        need to know:</p>
+
+    <div class="contract-block">
+        <h4>The Contract</h4>
+        <pre>
+@dlt.table(                                       # "I am a table."
+    name       = "gold_portfolio",                # "This is my name."
+    comment    = "Portfolio valuation with P&amp;L",   # "This is what I contain."
+    table_properties = {"quality": "gold"},        # "This is my quality tier."
+)
+@dlt.expect("has_value", "Market_Value > 0")      # "I guarantee this about my data."
+@dlt.expect_or_drop("valid_ticker",               # "Bad rows are removed, and I
+    "Ticker IS NOT NULL")                         #  track how many were dropped."
+def gold_portfolio():                             # (function name = table name)
+    ...</pre>
+    </div>
+
+    <p>Before you even see the transformation logic, you already know:</p>
+
+    <ul>
+        <li><strong>What it is</strong> &mdash; A table (not a view, not a temp scratch pad)</li>
+        <li><strong>What it's called</strong> &mdash; <code>gold_portfolio</code></li>
+        <li><strong>What it's for</strong> &mdash; "Portfolio valuation with P&L"</li>
+        <li><strong>What quality tier it belongs to</strong> &mdash; Gold</li>
+        <li><strong>What data guarantees it makes</strong> &mdash; Every row has a positive Market_Value,
+            and every row has a non-null Ticker (bad rows are dropped and counted)</li>
+    </ul>
+
+    <div class="callout purple">
+        <div class="callout-label">The Key Idea</div>
+        <p>The decorator is like a class interface or an API specification. It declares the
+            <em>contract</em> &mdash; what this table promises to the rest of the pipeline and to
+            downstream consumers. The function body is the <em>implementation</em> &mdash; how that
+            contract is fulfilled. This separation is what makes DLT <strong>declarative</strong>.</p>
+    </div>
+
+
+    <h3 class="section">1.2 The Function Body: How the Contract Is Fulfilled</h3>
+
+    <p>Inside the function, you write regular Spark code. The function must return a DataFrame
+        that matches the contract declared above. Here is the complete picture:</p>
+
+    <pre>
+@dlt.table(
+    comment = "Portfolio valuation with P&amp;L",
+    table_properties = {"quality": "gold"},
+)
+@dlt.expect("has_value", "Market_Value > 0")
+@dlt.expect_or_drop("valid_ticker", "Ticker IS NOT NULL")
+def gold_portfolio():
+    """Join holdings with prices to compute market values."""
+    holdings = dlt.read("silver_holdings")       # ← "I need this table"
+    prices   = dlt.read("silver_prices")         # ← "I need this table too"
+    return (holdings
+        .join(prices, holdings["Ticker"] == prices["Symbol"])
+        .withColumn("Market_Value", col("Shares_Held") * col("Close"))
+        .withColumn("Unrealized_PnL",
+            col("Market_Value") - (col("Shares_Held") * col("Cost_Basis")))
+    )</pre>
+
+    <p>The <code>dlt.read()</code> calls inside the function serve two purposes simultaneously:</p>
+
+    <ol>
+        <li><strong>They return data</strong> &mdash; You get a Spark DataFrame from that table.</li>
+        <li><strong>They declare a dependency</strong> &mdash; They tell Databricks: "this table
+            needs those tables to exist first." Databricks uses these to build the execution
+            order automatically.</li>
+    </ol>
+
+    <p>You never write <code>.write.saveAsTable()</code>. You never say "run this after Silver."
+        You just describe what the table should contain, and return a DataFrame. The platform
+        handles persistence, ordering, retries, and tracking.</p>
+
+
+    <h3 class="section">1.3 The Three Types of Declarations</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Decorator</th>
+                    <th>What It Declares</th>
+                    <th>Best For</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@dlt.table()</td>
+                    <td>"I am a <strong>streaming table</strong>." New data is appended on each run; old data is preserved. Databricks auto-determines if this is a materialized view when you return a non-streaming DataFrame.</td>
+                    <td>Most tables. Bronze ingestion, Silver cleaning, Gold aggregation.</td>
+                </tr>
+                <tr>
+                    <td>@dlt.view()</td>
+                    <td>"I am a <strong>temporary view</strong>." I exist only during the pipeline run. I am not persisted to the catalog.</td>
+                    <td>Wrapping external tables, intermediate computations you don't want published.</td>
+                </tr>
+                <tr>
+                    <td>@dlt.materialized_view()</td>
+                    <td>"I am a <strong>materialized view</strong>." I am fully recomputed from scratch on each run.</td>
+                    <td>Silver/Gold tables where you explicitly want complete-refresh semantics.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Note</div>
+        <p>In our notebook (<code>nb6_declarative.py</code>), we use <code>@dlt.table()</code> for
+            everything. Databricks automatically determines the right semantics based on your
+            function's return type.
+            <a href="https://docs.databricks.com/aws/en/dlt/python-ref" target="_blank">Full Python API reference &rarr;</a></p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 2: DATA QUALITY EXPECTATIONS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 2</span> Data Quality as Part of the Contract</h2>
+
+    <h3 class="section">2.1 Expectations: Data Guarantees</h3>
+
+    <p>In the imperative pipeline, you wrote <code>.filter()</code> calls to remove bad data.
+        This works, but you have no visibility into <em>what</em> was filtered or <em>how many</em>
+        records failed. If your filter accidentally drops valid data, you would not notice.</p>
+
+    <p>In a declarative pipeline, data quality rules are part of the table's <strong>contract</strong>.
+        They are declared with <code>@dlt.expect</code> decorators, and Databricks tracks them
+        in a live dashboard:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Decorator</th>
+                    <th>What It Declares</th>
+                    <th>Use When</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@dlt.expect()</td>
+                    <td>"I <strong>want</strong> this to be true." Log violations but keep the rows. You can review them in the pipeline's data quality dashboard.</td>
+                    <td>Monitoring: you want to see bad data but not block the pipeline.</td>
+                </tr>
+                <tr>
+                    <td>@dlt.expect_or_drop()</td>
+                    <td>"I <strong>require</strong> this." Silently drop rows that violate the rule. The dropped count is tracked.</td>
+                    <td>Cleaning: you know some rows will be bad and want them removed automatically.</td>
+                </tr>
+                <tr>
+                    <td>@dlt.expect_or_fail()</td>
+                    <td>"I <strong>guarantee</strong> this." Stop the entire pipeline if any row violates the rule.</td>
+                    <td>Critical rules: data integrity must be preserved (e.g., no negative prices).</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <pre>
+# Example: stacking multiple expectations on one table
+@dlt.table(comment="Validated holdings")
+@dlt.expect("has_company", "Company_Name IS NOT NULL")           # log only
+@dlt.expect_or_drop("valid_ticker", "Ticker IS NOT NULL")        # drop bad rows
+@dlt.expect_or_fail("positive_cost", "Cost_Basis > 0")           # fail if violated
+def silver_holdings():
+    return dlt.read("bronze_holdings").filter(...)</pre>
+
+    <div class="callout spark">
+        <div class="callout-label">Distributed Systems Connection</div>
+        <p>Expectations implement a pattern called <strong>circuit breaking</strong>. In microservices,
+            a circuit breaker stops sending requests to a failing service to prevent cascading failures.
+            <code>@dlt.expect_or_fail()</code> does the same thing for data: if critical data quality
+            rules are violated, the pipeline stops before bad data pollutes downstream tables.
+            <a href="https://docs.databricks.com/aws/en/dlt/expectations" target="_blank">Full expectations reference &rarr;</a></p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 3: THE DEPENDENCY GRAPH
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 3</span> The Dependency Graph</h2>
+
+    <h3 class="section">3.1 Two Phases: Loading and Execution</h3>
+
+    <p>When you click <strong>Start</strong> on a DLT pipeline, Databricks does not run your code
+        top-to-bottom like a regular notebook. Instead, it operates in two distinct phases:</p>
+
+    <div class="callout purple">
+        <div class="callout-label">Phase 1 &mdash; Code Loading (No Data Moves Yet)</div>
+        <p>Databricks <strong>loads</strong> your notebook like a Python module. The <code>@dlt.table()</code>
+            decorators fire during this phase, and each one <strong>registers</strong> its function with
+            an internal pipeline catalog: "There is a table called <code>bronze_holdings</code>, and here
+            is the function that produces it." At this point, Databricks reads the <code>dlt.read()</code>
+            calls inside each function to discover the dependencies: "the function <code>silver_holdings</code>
+            calls <code>dlt.read("bronze_holdings")</code>, so <code>silver_holdings</code> depends on
+            <code>bronze_holdings</code>." From these dependency declarations, it builds the full DAG.
+            <strong>No data has been read or written yet.</strong></p>
+    </div>
+
+    <div class="callout green">
+        <div class="callout-label">Phase 2 &mdash; Execution (Data Flows)</div>
+        <p>Now Databricks knows the graph. It executes the functions in <strong>topological order</strong>
+            &mdash; Bronze first (no upstream dependencies), then Silver (dependencies satisfied), then
+            Gold. Each function is called, produces a DataFrame, and the platform persists the result
+            as a Delta table. Expectations are evaluated row-by-row during this phase, and violation
+            counts are tracked in the pipeline dashboard.</p>
+    </div>
+
+    <pre>
+# During Phase 1 (loading), Databricks discovers these edges:
+#
+#   bronze_holdings  ->  silver_holdings ---+
+#                                          +--->  gold_portfolio  ->  gold_sector_allocation
+#   bronze_prices    ->  silver_prices  ---+
+#
+# During Phase 2 (execution), it runs them in this order.</pre>
+
+    <div class="diagram">
+        <svg width="780" height="240" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="780" height="240" fill="#fafafa" rx="8" />
+            <text x="390" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Databricks Resolves This 4-Level DAG Automatically From Your Function Definitions</text>
+
+            <!-- Bronze layer -->
+            <rect x="20" y="50" width="145" height="36" rx="6" fill="#fdf4eb" stroke="#8B5E3C" stroke-width="1.5" />
+            <text x="93" y="73" text-anchor="middle" font-size="9.5" fill="#8B5E3C" font-weight="bold">bronze_holdings</text>
+
+            <rect x="20" y="106" width="145" height="36" rx="6" fill="#fdf4eb" stroke="#8B5E3C" stroke-width="1.5" />
+            <text x="93" y="129" text-anchor="middle" font-size="9.5" fill="#8B5E3C" font-weight="bold">bronze_prices</text>
+
+            <!-- Arrows to silver -->
+            <line x1="167" y1="68" x2="208" y2="68" stroke="#6b7b8d" stroke-width="1.5" marker-end="url(#arrDecl)" />
+            <line x1="167" y1="124" x2="208" y2="124" stroke="#6b7b8d" stroke-width="1.5" marker-end="url(#arrDecl)" />
+
+            <!-- Silver layer -->
+            <rect x="210" y="50" width="145" height="36" rx="6" fill="#f0f3f6" stroke="#6b7b8d" stroke-width="1.5" />
+            <text x="283" y="73" text-anchor="middle" font-size="9.5" fill="#6b7b8d" font-weight="bold">silver_holdings</text>
+
+            <rect x="210" y="106" width="145" height="36" rx="6" fill="#f0f3f6" stroke="#6b7b8d" stroke-width="1.5" />
+            <text x="283" y="129" text-anchor="middle" font-size="9.5" fill="#6b7b8d" font-weight="bold">silver_prices</text>
+
+            <!-- Arrows to gold_portfolio -->
+            <line x1="357" y1="68" x2="410" y2="82" stroke="#b8860b" stroke-width="1.5" marker-end="url(#arrDeclGold)" />
+            <line x1="357" y1="124" x2="410" y2="108" stroke="#b8860b" stroke-width="1.5" marker-end="url(#arrDeclGold)" />
+
+            <!-- Gold layer (portfolio) -->
+            <rect x="412" y="72" width="145" height="36" rx="6" fill="#fdf6e3" stroke="#b8860b" stroke-width="1.5" />
+            <text x="485" y="95" text-anchor="middle" font-size="9.5" fill="#b8860b" font-weight="bold">gold_portfolio</text>
+
+            <!-- Arrow to sector allocation -->
+            <line x1="559" y1="90" x2="612" y2="90" stroke="#b8860b" stroke-width="1.5" marker-end="url(#arrDeclGold)" />
+
+            <!-- Gold layer (sector allocation) -->
+            <rect x="614" y="72" width="145" height="36" rx="6" fill="#fdf6e3" stroke="#b8860b" stroke-width="1.5" />
+            <text x="687" y="87" text-anchor="middle" font-size="8.5" fill="#b8860b" font-weight="bold">gold_sector_</text>
+            <text x="687" y="100" text-anchor="middle" font-size="8.5" fill="#b8860b" font-weight="bold">allocation</text>
+
+            <!-- Labels -->
+            <text x="93" y="168" text-anchor="middle" font-size="9" fill="#8B5E3C" font-weight="bold">BRONZE</text>
+            <text x="283" y="168" text-anchor="middle" font-size="9" fill="#6b7b8d" font-weight="bold">SILVER</text>
+            <text x="560" y="132" text-anchor="middle" font-size="9" fill="#b8860b" font-weight="bold">GOLD</text>
+
+            <!-- Auto-resolved note -->
+            <rect x="500" y="170" width="260" height="28" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1" />
+            <text x="630" y="189" text-anchor="middle" font-size="10" fill="#1a6b3a" font-weight="bold">4-level DAG from dlt.read() calls</text>
+
+            <defs>
+                <marker id="arrDecl" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#6b7b8d" />
+                </marker>
+                <marker id="arrDeclGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#b8860b" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">You defined six functions. Databricks inferred this graph from the dlt.read() calls inside them.</div>
+    </div>
+
+    <div class="callout spark">
+        <div class="callout-label">Important Rule</div>
+        <p>Inside DLT functions, always use <code>dlt.read("table_name")</code> to reference
+            other pipeline tables. Do <strong>not</strong> use <code>spark.read.table()</code> or
+            <code>spark.table()</code> for tables defined in the same pipeline.
+            If you do, Databricks will not see the dependency and may run tables in the wrong order.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 4: WHAT THE PLATFORM HANDLES
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 4</span> What the Platform Handles for You</h2>
+
+    <h3 class="section">4.1 The Gold Table, Two Ways</h3>
+
+    <p>To see why this approach matters, look at the exact same Gold table
+        written both ways. The transformation logic (<code>join</code>, <code>withColumn</code>)
+        is the same. What changes is everything <em>around</em> it:</p>
+
+    <div class="compare-grid">
+        <div class="compare-card old">
+            <h4>Imperative (nb5_gold.py)</h4>
+            <pre>
+# You write ALL of this:
+holdings = spark.read.table(
+    "pipeline.silver_holdings")
+prices = spark.read.table(
+    "pipeline.silver_prices")
+portfolio = holdings.join(prices, ...)
+    .withColumn("Market_Value", ...)
+portfolio.write
+    .mode("overwrite")
+    .saveAsTable(
+        "pipeline.gold_portfolio")
+
+# And you ALSO must:
+# - Run this AFTER Silver finishes
+# - Wire the order in a Workflow
+# - Handle errors yourself
+# - Write .filter() for bad data</pre>
+        </div>
+        <div class="compare-card new">
+            <h4>Declarative (nb6)</h4>
+            <pre>
+@dlt.table(
+    comment="Portfolio valuation",
+    table_properties={"quality":"gold"}
+)
+@dlt.expect("has_value",
+    "Market_Value > 0")
+def gold_portfolio():
+    h = dlt.read("silver_holdings")
+    p = dlt.read("silver_prices")
+    return h.join(p, ...)
+        .withColumn("Market_Value",...)
+
+# You did NOT write:
+# ✗ No .write.saveAsTable()
+# ✗ No execution order
+# ✗ No Workflow wiring
+# ✗ No manual error handling</pre>
+        </div>
+    </div>
+
+    <h3 class="section">4.2 Full Comparison</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Imperative (Notebooks + Workflow)</th>
+                    <th>Declarative (DLT Pipeline)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>DAG</td>
+                    <td>You wire tasks manually in the Workflow UI</td>
+                    <td>Auto-resolved from <code>dlt.read()</code> calls</td>
+                </tr>
+                <tr>
+                    <td>Files</td>
+                    <td>One notebook per layer (3+ files)</td>
+                    <td>One file with all table definitions</td>
+                </tr>
+                <tr>
+                    <td>Error handling</td>
+                    <td>Manual try/except or notebook failure</td>
+                    <td>Expectations with log/drop/fail semantics</td>
+                </tr>
+                <tr>
+                    <td>Data quality</td>
+                    <td>You write filters, no visibility into drops</td>
+                    <td>Built-in dashboard showing pass/fail counts</td>
+                </tr>
+                <tr>
+                    <td>Persistence</td>
+                    <td>You write <code>.saveAsTable()</code></td>
+                    <td>Handled by the platform</td>
+                </tr>
+                <tr>
+                    <td>Best for</td>
+                    <td>Learning, prototyping, custom logic</td>
+                    <td>Production pipelines, team collaboration</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout gold">
+        <div class="callout-label">Both Approaches Are Valid</div>
+        <p>The imperative approach is not wrong. It gives you fine-grained control and is easier
+            to debug step-by-step. Many teams start with imperative notebooks and migrate to
+            declarative pipelines as their pipelines mature. Understanding both approaches is
+            essential.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 5: THE API REFERENCE
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 5</span> <code>@dlt.table()</code> Parameter Reference</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>What It Declares</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td><code>str</code></td>
+                    <td>"My name is X." If omitted, uses the function name.</td>
+                </tr>
+                <tr>
+                    <td>comment</td>
+                    <td><code>str</code></td>
+                    <td>"I contain X." A human-readable description, visible in the Catalog UI.</td>
+                </tr>
+                <tr>
+                    <td>table_properties</td>
+                    <td><code>dict</code></td>
+                    <td>"These are my properties." E.g., <code>{"quality": "silver"}</code> for tagging, or <code>{"delta.autoOptimize.optimizeWrite": "true"}</code>.</td>
+                </tr>
+                <tr>
+                    <td>schema</td>
+                    <td><code>StructType</code> / <code>str</code></td>
+                    <td>"My columns look like this." An explicit schema (PySpark StructType or SQL DDL string).</td>
+                </tr>
+                <tr>
+                    <td>partition_cols</td>
+                    <td><code>list</code></td>
+                    <td>"Partition me by these columns." Useful for large tables queried by date or region.</td>
+                </tr>
+                <tr>
+                    <td>cluster_by</td>
+                    <td><code>list</code></td>
+                    <td>"Cluster me by these columns." Uses <a href="https://docs.databricks.com/aws/en/delta/clustering" target="_blank">liquid clustering</a>, the modern alternative to partitioning.</td>
+                </tr>
+                <tr>
+                    <td>spark_conf</td>
+                    <td><code>dict</code></td>
+                    <td>"Use these Spark settings for my query only." Scoped to this table's execution.</td>
+                </tr>
+                <tr>
+                    <td>private</td>
+                    <td><code>bool</code></td>
+                    <td>"I am internal." If <code>True</code>, the table is not published to the metastore.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">5.1 Official Documentation</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Python API Reference</td>
+                    <td><a href="https://docs.databricks.com/aws/en/dlt/python-ref" target="_blank">docs.databricks.com/&hellip;/dlt/python-ref</a></td>
+                </tr>
+                <tr>
+                    <td>@dlt.table() Parameters</td>
+                    <td><a href="https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-table" target="_blank">docs.databricks.com/&hellip;/ldp-python-ref-table</a></td>
+                </tr>
+                <tr>
+                    <td>Materialized Views</td>
+                    <td><a href="https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-materialized-view" target="_blank">docs.databricks.com/&hellip;/ldp-python-ref-materialized-view</a></td>
+                </tr>
+                <tr>
+                    <td>Expectations (Data Quality)</td>
+                    <td><a href="https://docs.databricks.com/aws/en/dlt/expectations" target="_blank">docs.databricks.com/&hellip;/dlt/expectations</a></td>
+                </tr>
+                <tr>
+                    <td>Temporary Views</td>
+                    <td><a href="https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-view" target="_blank">docs.databricks.com/&hellip;/ldp-python-ref-view</a></td>
+                </tr>
+                <tr>
+                    <td>Streaming Tables</td>
+                    <td><a href="https://docs.databricks.com/aws/en/ldp/developer/ldp-python-ref-streaming-table" target="_blank">docs.databricks.com/&hellip;/ldp-python-ref-streaming-table</a></td>
+                </tr>
+                <tr>
+                    <td>Pipeline Properties</td>
+                    <td><a href="https://docs.databricks.com/aws/en/ldp/properties" target="_blank">docs.databricks.com/&hellip;/ldp/properties</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 6: HANDS-ON
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 6</span> Hands-On: Create a DLT Pipeline</h2>
+
+    <h3 class="section">6.1 Upload the Notebook</h3>
+
+    <ol>
+        <li>Download <code>nb6_declarative.py</code> from the
+            <a href="https://github.com/gsaluncf/DistributedForDataScienceF26/tree/main/Databricks/student_notebooks" target="_blank">course repository</a></li>
+        <li>Import it into your Databricks Workspace (same as you did for the nb5 notebooks)</li>
+    </ol>
+
+    <div class="callout green">
+        <div class="callout-label">No File Uploads Needed</div>
+        <p>Unlike the imperative pipeline, this notebook is <strong>fully self-contained</strong>.
+            The sample data is embedded directly in the code. You do not need to upload the
+            custodian Excel file or run the Bronze notebook first.</p>
+    </div>
+
+    <h3 class="section">6.2 Create a Pipeline</h3>
+
+    <ol>
+        <li>In the Databricks sidebar, click <strong>Jobs &amp; Pipelines</strong></li>
+        <li>Switch to the <strong>Pipelines</strong> tab</li>
+        <li>Click <strong>Create pipeline</strong></li>
+        <li>Name it <code>Custodian DLT Demo</code></li>
+        <li>Under <strong>Source code</strong>, click <strong>Add source code</strong> and browse to your <code>nb6_declarative</code> notebook</li>
+        <li>Under <strong>Destination</strong>, set the catalog to <code>workspace</code> and schema to <code>dlt_demo</code></li>
+        <li>Click <strong>Create</strong></li>
+    </ol>
+
+    <h3 class="section">6.3 Run the Pipeline</h3>
+
+    <ol>
+        <li>Click <strong>Start</strong> on the pipeline page</li>
+        <li>Watch the visual DAG appear automatically (you did not have to wire anything)</li>
+        <li>As each table completes, you will see row counts and data quality metrics</li>
+        <li>Click on any table node to see its schema, sample data, and expectation results</li>
+    </ol>
+
+    <div class="callout green">
+        <div class="callout-label">What You Should See</div>
+        <p>The pipeline UI shows a <strong>4-level DAG</strong> with 6 tables, automatically
+            built from your code. Bronze (2 tables) feeds Silver (2 tables), which feeds
+            <code>gold_portfolio</code>, which feeds <code>gold_sector_allocation</code>.
+            Expectations show green checkmarks for passing rules. Check the Bronze vs Silver
+            row counts: the blank row and the N/A price row were dropped automatically by the
+            <code>@dlt.expect_or_drop</code> rules.</p>
+    </div>
+
+    <h3 class="section">6.4 Design Pattern: How to Think Declaratively</h3>
+
+    <p>When building a new pipeline, follow this process:</p>
+
+    <ol>
+        <li><strong>Start with the end.</strong> What Gold tables do you need? Define those functions first.</li>
+        <li><strong>Identify dependencies.</strong> What does each Gold table need? Those are your Silver tables.</li>
+        <li><strong>Trace to sources.</strong> What raw data feeds Silver? Those are your Bronze tables.</li>
+        <li><strong>Add quality rules.</strong> At each layer, what must be true? Add expectations.</li>
+    </ol>
+
+    <p>Each function only references its closest upstream step. You never skip layers.
+        If you add a new table later, you just define a new function that reads from an
+        existing table, and the DAG updates automatically.</p>
+
+    <div class="callout spark">
+        <div class="callout-label">The Big Idea</div>
+        <p>Declarative pipelines are the data engineering equivalent of <strong>Infrastructure as
+            Code</strong>. Terraform declares "I want this server," not "SSH in, install packages,
+            configure the firewall." DLT declares "I want this table, with these contents and
+            these quality rules." The platform handles the how.</p>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        <p>Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida &nbsp;&middot;&nbsp; Spring 2026</p>
+    </footer>
+
+</body>
+
+</html>
