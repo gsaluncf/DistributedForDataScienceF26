@@ -155,6 +155,21 @@
 
 
     <!-- ══════════════════════════════════════════════════════════════════
+     DOWNLOADS
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="callout green">
+        <div class="callout-label">Files You Will Need</div>
+        <p>Download these files before you begin. You will upload them into your Databricks workspace.</p>
+        <ul>
+            <li><a href="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/student_notebooks/custodian_report.xlsx" target="_blank">custodian_report.xlsx</a> — the raw Excel file for ingestion</li>
+            <li><a href="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/student_notebooks/nb5_bronze.py" target="_blank">nb5_bronze.py</a> — Bronze layer notebook</li>
+            <li><a href="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/student_notebooks/nb5_silver.py" target="_blank">nb5_silver.py</a> — Silver layer notebook</li>
+            <li><a href="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/student_notebooks/nb5_gold.py" target="_blank">nb5_gold.py</a> — Gold layer notebook</li>
+        </ul>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
      PART 1 — DATA INGESTION
     ══════════════════════════════════════════════════════════════════ -->
     <h2 class="part"><span class="part-num">Part 1</span> Data Ingestion: Getting Data Into the Lakehouse</h2>
@@ -445,22 +460,22 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="CreateaSchemaandVolume-4.1.png" alt="Catalog sidebar showing the Create schema option">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/CreateaSchemaandVolume-4.1.png" alt="Catalog sidebar showing the Create schema option">
         <div class="screenshot-caption">Open the Catalog browser and find the workspace catalog.</div>
     </div>
 
     <div class="screenshot">
-        <img src="CreateSchema413.png" alt="Creating the pipeline schema">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/CreateSchema413.png" alt="Creating the pipeline schema">
         <div class="screenshot-caption">Create a new schema named <code>pipeline</code>.</div>
     </div>
 
     <div class="screenshot">
-        <img src="CreateSchemaVolume4.1.4.png" alt="Creating a volume inside the pipeline schema">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/CreateSchemaVolume4.1.4.png" alt="Creating a volume inside the pipeline schema">
         <div class="screenshot-caption">Inside the pipeline schema, create a new volume.</div>
     </div>
 
     <div class="screenshot">
-        <img src="CreateASchema-4.1.5.png" alt="Volume raw_files created successfully">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/CreateASchema-4.1.5.png" alt="Volume raw_files created successfully">
         <div class="screenshot-caption">Name the volume <code>raw_files</code> and click Create.</div>
     </div>
 
@@ -481,12 +496,12 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="UploadExcel!.png" alt="Upload to this volume button">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/UploadExcel!.png" alt="Upload to this volume button">
         <div class="screenshot-caption">Click Upload to this volume on the raw_files Volume page.</div>
     </div>
 
     <div class="screenshot">
-        <img src="UploadExcel2.png" alt="Drag and drop the Excel file">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/UploadExcel2.png" alt="Drag and drop the Excel file">
         <div class="screenshot-caption">Drag and drop <code>custodian_report.xlsx</code> into the upload area.</div>
     </div>
 
@@ -498,7 +513,7 @@ catalog.schema.volume
     </div>
 
     <div class="screenshot">
-        <img src="UploadExcel3_checkpoint.png" alt="File visible in Volume listing">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/UploadExcel3_checkpoint.png" alt="File visible in Volume listing">
         <div class="screenshot-caption">Verify the file appears in the Volume listing.</div>
     </div>
 
@@ -523,7 +538,7 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="upload_pipeline_workspaces1.png" alt="Workspace view showing uploaded notebooks">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/upload_pipeline_workspaces1.png" alt="Workspace view showing uploaded notebooks">
         <div class="screenshot-caption">Upload the three pipeline notebooks to your Workspace.</div>
     </div>
 
@@ -588,7 +603,7 @@ catalog.schema.volume
     <p>In the Databricks sidebar, click <strong>Jobs &amp; Pipelines</strong>.</p>
 
     <div class="screenshot">
-        <img src="JobsAndPipline1.png" alt="Jobs and Pipelines sidebar option">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/JobsAndPipline1.png" alt="Jobs and Pipelines sidebar option">
         <div class="screenshot-caption">Click Jobs &amp; Pipelines in the sidebar.</div>
     </div>
 
@@ -608,7 +623,7 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="addbronetask1.png" alt="Adding the bronze notebook task">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/addbronetask1.png" alt="Adding the bronze notebook task">
         <div class="screenshot-caption">Add the Bronze task pointing to your nb5_bronze notebook.</div>
     </div>
 
@@ -623,7 +638,7 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="addingsilverjob-6.2.4.png" alt="Adding the silver notebook task with dependency on bronze">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/addingsilverjob-6.2.4.png" alt="Adding the silver notebook task with dependency on bronze">
         <div class="screenshot-caption">Add the Silver task with a dependency on Bronze.</div>
     </div>
 
@@ -645,7 +660,7 @@ catalog.schema.volume
     </ol>
 
     <div class="screenshot">
-        <img src="runnowworkflow6.6.png" alt="Workflow DAG with all three tasks">
+        <img src="https://gsaluncf.github.io/DistributedForDataScienceF26/Databricks/runnowworkflow6.6.png" alt="Workflow DAG with all three tasks">
         <div class="screenshot-caption">Click Run now and watch the Bronze, Silver, Gold DAG execute.</div>
     </div>
 
@@ -663,6 +678,21 @@ catalog.schema.volume
             version of a pattern you have seen all semester: raw input, processing stages, refined output.
             Understanding this pattern means you can design, debug, and optimize data pipelines
             on any platform.</p>
+    </div>
+
+
+    <!-- NEXT UP -->
+    <h2 class="part"><span class="part-num">Next</span> The Declarative Approach</h2>
+
+    <p>You just built a pipeline the <strong>imperative</strong> way: three notebooks, manually wired
+        in a Workflow. In the next guide, you will see how to declare the same pipeline in a single
+        file and let Databricks handle the execution order, persistence, and data quality tracking.</p>
+
+    <div class="callout" style="border-left-color: #553c9a; background: #f3eeff;">
+        <div class="callout-label" style="color: #553c9a;">Continue Reading</div>
+        <p><a href="declarative.html"><strong>Declarative Pipelines: The Modern Approach &rarr;</strong></a><br>
+            The decorator as a contract, data quality expectations as guarantees,
+            auto-resolved dependency graphs, and a hands-on DLT pipeline exercise.</p>
     </div>
 
 
