@@ -17,7 +17,7 @@
                 "sqs:ListQueues"
             ],
             "Resource": [
-                "arn:aws:sqs:us-east-1:YOUR-ACCOUNT-ID:adflow-YOURID-*"
+                "arn:aws:sqs:us-east-1:194908889164:adflow-fchiesa-*"
             ]
         },
         {
@@ -42,7 +42,7 @@
                 "dynamodb:ListTables"
             ],
             "Resource": [
-                "arn:aws:dynamodb:us-east-1:YOUR-ACCOUNT-ID:table/adflow-YOURID-*"
+                "arn:aws:dynamodb:us-east-1:194908889164:table/adflow-fchiesa-*"
             ]
         },
         {
