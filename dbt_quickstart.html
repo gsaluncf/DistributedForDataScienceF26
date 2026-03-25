@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbt Quickstart: PyCharm & Databricks</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --dbt-orange: #ff694b;
+            --dbt-orange-lt: #fff1ed;
+            --code-bg: #f0f0f8;
+            --purple: #553c9a;
+            --purple-lt: #f3eeff;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; line-height: 1.75; color: var(--ink); background: var(--bg); max-width: 800px; margin: 0 auto; padding: 60px 48px; }
+        h1 { font-family: 'IBM Plex Serif', serif; font-size: 32px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+        .doc-sub { font-size: 15px; color: var(--ink-soft); margin-bottom: 40px; border-bottom: 2px solid var(--rule); padding-bottom: 24px;}
+        h2.step { font-family: 'IBM Plex Serif', serif; font-size: 20px; font-weight: 600; border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin: 48px 0 16px; display: flex; align-items: baseline; gap: 12px; }
+        h2.step .step-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; color: var(--ink-faint); }
+        h3 { font-size: 16px; color: var(--accent); margin: 24px 0 8px; }
+        p, ul { margin-bottom: 16px; }
+        ul { margin-left: 24px; }
+        li { margin-bottom: 6px; }
+        pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin: 16px 0; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.65; color: var(--ink); }
+        code { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+        pre code { background: inherit; padding: 0; }
+        
+        .callout { border-left: 4px solid var(--dbt-orange); background: var(--dbt-orange-lt); padding: 16px 20px; margin: 24px 0; border-radius: 0 6px 6px 0; }
+        .callout-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; color: var(--ink-soft); }
+        .callout p { font-size: 14px; margin-bottom: 0;}
+    </style>
+</head>
+
+<body>
+
+    <h1>dbt Quickstart: PyCharm & Databricks</h1>
+    <div class="doc-sub">A fast, command-line focused workflow for configuring dbt locally with PyCharm and connecting it to a Databricks environment using the built-in <code>samples.tpch</code> dataset.</div>
+
+
+    <h2 class="step"><span class="step-num">Step 1</span> Project Setup & Virtual Environment</h2>
+    <p>We are going to build a clean directory and an isolated Python environment entirely from scratch so that there are no missing steps. Open your terminal (or PyCharm's built-in Terminal tab) and run the following exact sequence of commands:</p>
+
+    <h3>1. Create and enter the project folder</h3>
+    <pre><code>mkdir dbt_lab
+cd dbt_lab</code></pre>
+
+    <h3>2. Create the virtual environment</h3>
+    <p><strong>Windows:</strong></p>
+    <pre><code>py -3.12 -m venv .venv</code></pre>
+    <p><strong>Mac / Linux:</strong></p>
+    <pre><code>python3 -m venv .venv</code></pre>
+
+    <h3>3. Activate the virtual environment</h3>
+    <p><strong>Windows:</strong></p>
+    <pre><code>.venv\Scripts\activate</code></pre>
+    <p><strong>Mac / Linux:</strong></p>
+    <pre><code>source .venv/bin/activate</code></pre>
+    <p style="margin-top: 10px; color: var(--ink-faint); font-style: italic;">Before proceeding, ensure you see <code>(.venv)</code> prepended to your terminal prompt!</p>
+
+    <h3>4. Install the dbt adapter</h3>
+    <p>This single pip command will install both the Databricks adapter and the core dbt engine as a dependency.</p>
+    <pre><code>pip install dbt-databricks</code></pre>
+
+
+    <h2 class="step"><span class="step-num">Step 2</span> Connecting to Databricks (dbt init)</h2>
+    
+    <div class="callout" style="margin-bottom: 30px;">
+        <div class="callout-label">Preparation: Gather your Databricks Credentials</div>
+        <ol style="margin-bottom: 0;">
+            <li>In Databricks, click the <strong>Compute</strong> icon in the sidebar, then navigate to the <strong>SQL warehouses</strong> tab.</li>
+            <li>Start your <strong>Serverless Starter Warehouse</strong>.</li>
+            <li>Navigate to the <strong>Connection details</strong> tab.</li>
+            <li>Click the orange <strong>*dbt</strong> logo button to pop open the dbt configuration side-panel.</li>
+            <li>Click <strong>Generate new token</strong>. Databricks will generate a block of YAML code that looks exactly like this:</li>
+        </ol>
+        <pre style="margin-top: 10px; margin-bottom: 0; border: 1px solid var(--dbt-orange); background: white;">default:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      schema: default
+      host: dbc-797e799a-af03.cloud.databricks.com
+      http_path: /sql/1.0/warehouses/79d7e46984c59aa2
+      token: xxxxx</pre>
+        <p style="margin-top: 10px;">Copy this block of YAML code and save it somewhere handy (like a temporary Notepad file). You will need these three specific values: <code>host</code>, <code>http_path</code>, and <code>token</code>.</p>
+    </div>
+
+    <p>Return to your PyCharm Terminal and run the initialization command to set up the dbt folder structure:</p>
+    <pre><code>dbt init my_project</code></pre>
+    
+    <p>It will prompt you for several inputs. Read the terminal carefully. Here is exactly how to answer them:</p>
+    <ul>
+        <li><strong>Enter a number (database option)</strong>: <code>1</code> <em style="color:var(--dbt-orange);">(Important: Select databricks, do NOT select spark!)</em></li>
+        <li><strong>host (yourorg.databricks.com)</strong>: Paste the <code>host</code> value you saved earlier</li>
+        <li><strong>http_path (HTTP Path)</strong>: Paste the <code>http_path</code> value you saved earlier</li>
+        <li><strong>Desired access token option (enter a number)</strong>: <code>1</code> (to correctly select "use access token")</li>
+        <li><strong>token (dapiXXX...)</strong>: Paste the actual <code>token</code> value you saved earlier</li>
+        <li><strong>Desired unity catalog option (enter a number)</strong>: <code>1</code> (to use Unity Catalog)</li>
+        <li><strong>catalog (initial catalog)</strong>: <code>workspace</code> (or whatever your default catalog is named)</li>
+        <li><strong>schema (default schema)</strong>: <code>dbt_USERNAME</code> (Use your own name/IDs so you don't overwrite other students!)</li>
+        <li><strong>threads (1 or more)</strong>: <code>1</code></li>
+    </ul>
+
+    <p>Move your terminal into the new project directory:</p>
+    <pre><code>cd my_project</code></pre>
+
+
+    <h2 class="step"><span class="step-num">Step 3</span> The 'dbt run' Command</h2>
+    <p>Your initialized project comes with two test models inside the <code>models/example/</code> directory. Run them right now from your terminal to verify your connection to Databricks is working:</p>
+    <pre><code>dbt run</code></pre>
+    <p>If you get <span style="color:var(--dbt-orange); font-weight:600;">Completed successfully</span>, dbt has automatically compiled SQL and built two tables over in Databricks! You can now delete the <code>models/example</code> directory. We are going to build our own models.</p>
+
+
+    <h2 class="step"><span class="step-num">Step 4</span> Adding Sources</h2>
+    
+    <p>By default, if you want your SQL to read data from a data warehouse, you have to hardcode the full path to the table (e.g. <code>FROM samples.tpch.orders</code>). In dbt, we centralize these raw, upstream tables into <strong>Sources</strong> instead.</p>
+    <p>Declaring a Source does not create any data. It simply tells dbt that external data already exists, allowing dbt to:</p>
+    <ul>
+        <li>Let you reference the table dynamically using the <code>{{ source() }}</code> macro instead of brittle hardcoded paths.</li>
+        <li>Place the raw data onto your automatically generated Data Lineage graphs.</li>
+        <li>Run data quality tests against the raw data before running your pipeline.</li>
+        <li>Automate "freshness" checks to ensure the data is up-to-date.</li>
+    </ul>
+
+    <p>Databricks comes with a built-in retail dataset stored in the <code>samples.tpch</code> catalog schema. To declare this existing raw data in dbt, create a file named <code>models/sources.yml</code>:</p>
+    <pre><code>version: 2
+
+sources:
+  - name: tpch
+    catalog: samples
+    schema: tpch
+    tables:
+      - name: orders
+      - name: customer</code></pre>
+
+    <p style="margin-top: 20px;">To verify that dbt has successfully registered these new external sources, you can ask dbt to list all known sources in your project by running the following command in your terminal:</p>
+    <pre><code>dbt ls --resource-type source</code></pre>
+    <p>You should see something exactly like this print to your terminal, proving dbt is now fully aware of the Databricks data:</p>
+    <pre style="background: #1e1e1e; color: #d4d4d4;"><code>source:ds326project.tpch.customer
+source:ds326project.tpch.orders</code></pre>
+
+
+    <h2 class="step"><span class="step-num">Step 5</span> Practical Analytical Queries</h2>
+    
+    <h3>1. Staging Model (Silver)</h3>
+    <p>Create a file at <code>models/staging_orders.sql</code>. We use the <code>{{ source() }}</code> macro to reference the raw table defined in our YAML file above.</p>
+    <pre><code>WITH raw_orders AS (
+    SELECT * FROM {{ source('tpch', 'orders') }}
+)
+
+SELECT
+    o_orderkey AS order_id,
+    o_custkey AS customer_id,
+    o_orderstatus AS status,
+    o_orderdate AS order_date,
+    o_totalprice AS total_price
+FROM raw_orders</code></pre>
+
+    <h3>2. Analytical Model (Gold)</h3>
+    <p>Create a file at <code>models/monthly_orders.sql</code>. We use the <code>{{ ref() }}</code> macro to build downstream from our staging table, forcing a dependency.</p>
+    <pre><code>{{ config(materialized='table') }}
+
+WITH transformed_orders AS (
+    SELECT 
+        DATE_TRUNC('month', order_date) AS order_month,
+        status,
+        order_id
+    FROM {{ ref('staging_orders') }}
+)
+
+SELECT 
+    order_month,
+    COUNT(order_id) AS total_orders
+FROM transformed_orders
+GROUP BY order_month
+ORDER BY order_month DESC</code></pre>
+    
+    <p>Execute the pipeline from terminal. dbt resolves the DAG of dependencies, executing the staging view first and the analytical table second:</p>
+    <pre><code>dbt run</code></pre>
+    <p>You should see something like this in your terminal output after the run completes successfully:</p>
+    <pre style="background: #1e1e1e; color: #d4d4d4; font-size: 11.5px;"><code>You may opt into the new behavior sooner by setting `flags.use_materialization_v2` to `True` in `dbt_project.yml`.
+Visit https://docs.getdbt.com/reference/global-configs/behavior-changes for more information.
+18:14:30  1 of 4 OK created sql table model dbt.my_first_dbt_model ....................... [OK in 3.80s]
+18:14:30  2 of 4 START sql view model dbt.staging_orders ................................. [RUN]
+18:14:32  2 of 4 OK created sql view model dbt.staging_orders ............................ [OK in 2.40s]
+18:14:32  3 of 4 START sql view model dbt.my_second_dbt_model ............................ [RUN]
+18:14:34  3 of 4 OK created sql view model dbt.my_second_dbt_model ....................... [OK in 1.55s]
+18:14:34  4 of 4 START sql table model dbt.monthly_orders ................................ [RUN]
+18:14:41  4 of 4 OK created sql table model dbt.monthly_orders ........................... [OK in 7.69s]
+18:14:41
+18:14:41  Finished running 2 table models, 2 view models in 0 hours 0 minutes and 17.81 seconds (17.81s).
+18:14:41
+18:14:41  Completed successfully
+18:14:41
+18:14:41  Done. PASS=4 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=4</code></pre>
+
+    <div class="callout" style="margin-top: 30px;">
+        <div class="callout-label">Viewing the Compiled SQL</div>
+        <p>Curious what dbt actually sent to Databricks? Look inside your PyCharm file tree at a newly created directory similar to <code>ds326project\target\compiled</code>. dbt saves the final "pure SQL" version of every model here.</p><p style="margin-top: 8px;">If you open one of those files, you will discover exactly how those templates got compiled prior to sending the query up to the Databricks warehouse!</p>
+    </div>
+
+    <h2 class="step"><span class="step-num">Step 6</span> Generate Lineage & Documentation</h2>
+    <p>Because you've parameterized your logic using <code>{{ source() }}</code> and <code>{{ ref() }}</code>, dbt can trace the flow of data end-to-end and natively build a documentation website exploring your schema graph.</p>
+    <pre><code>dbt docs generate
+dbt docs serve</code></pre>
+    <p>A browser window will open. Click the green <strong>"View Lineage Graph"</strong> icon in the bottom right corner to visually observe the automated data flow. You will clearly see the original raw source table securely linked into your staging view, which in turn flows right into the final analytical dataset. This interactive DAG of your compiled code is a primary reason Data Engineers love dbt.</p>
+
+
+    <h2 class="step"><span class="step-num">Step 7</span> Jinja Expressions</h2>
+    <p>What if we want monthly totals broken down by the specific status flags ('O' for Open, 'F' for Final, 'P' for Pending)? We can use a Python-style Jinja loop to dynamically compile repetitive SQL logic.</p>
+    <p>Update your <code>models/monthly_orders.sql</code> file to this version:</p>
+    
+    <pre><code>{{ config(materialized='table') }}
+
+{% set statuses = ['O', 'F', 'P'] %}
+
+WITH transformed_orders AS (
+    SELECT 
+        DATE_TRUNC('month', order_date) AS order_month,
+        status,
+        order_id
+    FROM {{ ref('staging_orders') }}
+)
+
+SELECT 
+    order_month,
+    COUNT(order_id) AS total_orders,
+    
+    {% for status in statuses %}
+    COUNT(CASE WHEN status = '{{ status }}' THEN order_id END) AS status_{{ status }}_count
+    {% if not loop.last %},{% endif %}
+    {% endfor %}
+
+FROM transformed_orders
+GROUP BY order_month
+ORDER BY order_month DESC</code></pre>
+    <p>Notice the special <code>{% if not loop.last %},{% endif %}</code> statement inside the loop. When dbt essentially writes out <code>COUNT(CASE...)</code> over and over, we need commas to separate the columns. This special Jinja logic tells dbt: <em>"Add a comma here, unless it's the final iteration of the loop."</em> This prevents a trailing comma syntax error in the compiled SQL.</p>
+    <p>Run <code>dbt run</code> again to execute this macro.</p>
+
+    <p style="margin-top: 20px;">For a deeper dive into macros, variables, and dicts, check out the <a href="https://docs.getdbt.com/docs/build/jinja-macros" style="color:var(--accent); font-weight: 500;">official dbt Jinja Documentation</a>.</p>
+
+    <!-- NEW SECTION: EXPLANATIONS -->
+    <h2 class="step"><span class="step-num">Appendix</span> Core Commands & Config Explained</h2>
+    
+    <h3>What the Commands Do</h3>
+    <ul>
+        <li><code>dbt init</code>: Bootstraps a new project. It creates the required folder structure (models, target, macros) and prompts you for credentials to generate a <code>profiles.yml</code> file connecting dbt to your data warehouse.</li>
+        <li><code>dbt run</code>: The workhorse command. It parses your SQL models, builds a dependency graph (DAG) based on your <code>{{ ref() }}</code> calls, compiles the Jinja loops into pure SQL, and executes the queries against Databricks to construct your tables/views.</li>
+        <li><code>dbt test</code> (Not used above): Runs data quality tests. If you define tests (like <code>unique</code> or <code>not_null</code>) in a YAML file, dbt compiles them into <code>SELECT</code> queries. If any query returns rows, the test fails.</li>
+        <li><code>dbt docs generate</code>: Parses your models, descriptions, and tests into a JSON manifest file (saving it in the <code>target/</code> directory).</li>
+        <li><code>dbt docs serve</code>: Spins up a local web server to display the JSON manifest generated in the previous step as an interactive HTML website.</li>
+    </ul>
+
+    <h3>Understanding <code>{{ config() }}</code> Options</h3>
+    <p>By default, dbt wraps all your <code>SELECT</code> statements in a <code>CREATE VIEW AS ...</code>. When you add the <code>{{ config() }}</code> block at the top of a file, you can override how Databricks physically materializes the data.</p>
+    <ul>
+        <li><code>{{ config(materialized='view') }}</code> <strong>(Default)</strong>: Creates a logical view. The query runs every time a user selects from it. Slower to query downstream, but takes no storage and is always perfectly up to date. Excellent for Staging models.</li>
+        <li><code>{{ config(materialized='table') }}</code>: Wraps your query in <code>CREATE TABLE AS ...</code>. Drops the old table and rebuilds it entirely from scratch. Fast to query downstream, but costs storage and compute to rebuild. Ideal for Analytical (Gold) models.</li>
+        <li><code>{{ config(materialized='incremental') }}</code>: Advanced mode. Instead of dropping the table, dbt injects an <code>INSERT INTO</code> or <code>MERGE</code> statement, only processing new records that arrived since the last run. Used for massive event-stream tables.</li>
+        <li><code>{{ config(materialized='ephemeral') }}</code>: Doesn't create an object in the database at all. Instead, it injects the model's SQL as a Common Table Expression (CTE) into whatever downstream models reference it.</li>
+    </ul>
+
+    <div class="callout" style="margin-top: 50px;">
+        <div class="callout-label">Summary</div>
+        <p>In this quick lab, you connected your local PyCharm environment to Databricks using <code>dbt-databricks</code>. You defined raw sources from the Databricks catalog using <code>sources.yml</code> and built structured staging and analytical models using SQL and <code>ref()</code> macros. Finally, you utilized <strong>Jinja templating</strong> dynamically generating complex SQL logic and viewed an interactive DAG. </p>
+    </div>
+
+</body>
+</html>
