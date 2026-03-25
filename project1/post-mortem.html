@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 1 Post-Mortem &mdash; AdFlow Pipeline</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #fafafa;
+            --bg-warm: #fffdf7;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --red: #9b1c1c;
+            --red-lt: #fef2f2;
+            --code-bg: #f0f0f8;
+            --you: #b07d20;
+            --provided: #1a6b3a;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 60px 48px 120px;
+        }
+
+        /* HEADER */
+        .doc-header {
+            border-bottom: 3px solid var(--ink);
+            padding-bottom: 28px;
+            margin-bottom: 52px;
+        }
+
+        .doc-meta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 12px;
+        }
+
+        h1.doc-title {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: 34px;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+
+        .doc-sub {
+            font-size: 14px;
+            color: var(--ink-soft);
+        }
+
+        /* PART HEADINGS */
+        h2.part {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 56px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--ink);
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        h2.part .part-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            font-weight: 400;
+        }
+
+        /* SECTION HEADINGS */
+        h3.section {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 32px 0 10px;
+        }
+
+        h4.subsection {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 24px 0 8px;
+            letter-spacing: .02em;
+        }
+
+        /* BODY TEXT */
+        p {
+            margin-bottom: 14px;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* CALLOUT BOXES */
+        .callout {
+            border-left: 4px solid var(--accent);
+            background: var(--accent-lt);
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .callout.gold {
+            border-color: var(--gold);
+            background: var(--gold-lt);
+        }
+
+        .callout.green {
+            border-color: var(--green);
+            background: var(--green-lt);
+        }
+
+        .callout.red {
+            border-color: var(--red);
+            background: var(--red-lt);
+        }
+
+        .callout-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--ink-soft);
+        }
+
+        .callout p {
+            font-size: 14px;
+        }
+
+        /* LISTS */
+        ul,
+        ol {
+            margin: 10px 0 16px 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        li strong {
+            color: var(--ink);
+        }
+
+        /* CODE */
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--rule);
+            border-radius: 6px;
+            padding: 18px 22px;
+            margin: 16px 0;
+            overflow-x: auto;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            line-height: 1.65;
+            color: var(--ink);
+        }
+
+        code {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            background: var(--code-bg);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* TABLES */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 18px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        thead th {
+            background: var(--ink);
+            color: #fff;
+            font-weight: 600;
+            font-family: 'IBM Plex Sans', sans-serif;
+            text-align: left;
+            padding: 10px 14px;
+            letter-spacing: .01em;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f4f4f8;
+        }
+
+        tbody td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--rule);
+            vertical-align: top;
+        }
+
+        tbody td:first-child {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        /* SVG DIAGRAMS */
+        .diagram {
+            margin: 28px 0;
+            text-align: center;
+        }
+
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .diagram-caption {
+            font-size: 12px;
+            color: var(--ink-faint);
+            font-style: italic;
+            margin-top: 8px;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        /* STUDENT QUOTE BLOCKS */
+        .student-quote {
+            border-left: 4px solid var(--accent);
+            background: var(--accent-lt);
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .student-quote .student-name {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+
+        .student-quote p {
+            font-size: 14px;
+        }
+
+        /* VERSUS COMPARISON */
+        .comparison {
+            display: grid;
+            gap: 0;
+            margin: 4px 0;
+            border: 1.5px solid var(--rule);
+            border-radius: 8px;
+            overflow: hidden;
+            /*make this two columns*/
+
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .comparison-item {
+            flex: 1;
+            padding: 16px 18px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .comparison-item .comparison-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .comparison-item.bad-example {
+            background: var(--red-lt);
+        }
+
+        .comparison-item.bad-example .comparison-label {
+            color: var(--red);
+        }
+
+        .comparison-item.good-example {
+            background: var(--green-lt);
+            border-left: 3px solid var(--green);
+        }
+
+        .comparison-item.good-example .comparison-label {
+            color: var(--green);
+        }
+
+        /* KEY LESSON BLOCKS */
+        .key-lesson {
+            border: 2px solid var(--gold);
+            background: var(--gold-lt);
+            padding: 20px 24px;
+            margin: 28px 0;
+            border-radius: 8px;
+        }
+
+        .key-lesson .lesson-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+
+        .key-lesson p {
+            font-size: 14px;
+        }
+
+        /* FOOTER */
+        .doc-footer {
+            margin-top: 72px;
+            padding-top: 20px;
+            border-top: 1px solid var(--rule);
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+
+        /* PRINT */
+        @media print {
+            body {
+                padding: 40px;
+                font-size: 13px;
+            }
+
+            h2.part {
+                page-break-before: always;
+            }
+
+            pre {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="doc-header">
+        <div class="doc-meta">Project 1 Post-Mortem &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp;
+            New College of Florida</div>
+        <h1 class="doc-title">AdFlow Pipeline &mdash; Post-Mortem</h1>
+        <div class="doc-sub">Architecture tradeoffs, debugging lessons, scaling analysis, and directions for a production system.</div>
+    </header>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 1 — ARCHITECTURE TRADEOFFS
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 1</span> Architecture Tradeoffs</h2>
+
+    <h3 class="section">1.1 DynamoDB Write on the Hot Path</h3>
+
+    <p>In the project, your Lambda did two things on every invocation: it posted a result message to the SQS results queue <em>and</em> wrote the same record to DynamoDB. Both operations happened synchronously, in the same execution path, before the Lambda returned.</p>
+
+    <div class="callout">
+        <div class="callout-label">Design Question</div>
+        <p>If you were deploying this for real, would you put the DynamoDB write on the same path as the SQS post, or move it to a separate consumer? What are the tradeoffs?</p>
+    </div>
+
+    <h4 class="subsection">The Case for Keeping Them Together</h4>
+    <ul>
+        <li><strong>Simplicity.</strong> One Lambda, one code path, one deployment unit. Debugging is straightforward &mdash; if the result appears in the queue, you know the DDB write also happened.</li>
+        <li><strong>Consistency.</strong> If the DynamoDB write fails, the Lambda can fail the entire batch item, causing SQS to re-deliver the message. You get effectively-once semantics for free.</li>
+        <li><strong>Lower latency for reads.</strong> The record is queryable in DynamoDB the moment the SQS message appears in the results queue &mdash; no lag between the two.</li>
+    </ul>
+
+    <h4 class="subsection">The Case for Splitting Them</h4>
+    <ul>
+        <li><strong>Decoupled failure domains.</strong> A DynamoDB throttle or outage does not block the SQS results path. The queue acts as a buffer &mdash; a second consumer can drain it at its own pace and retry DynamoDB writes independently.</li>
+        <li><strong>Independent scaling.</strong> The scoring Lambda scales based on SQS message volume. DynamoDB write throughput scales independently. Coupling them means a burst of SQS messages creates a corresponding burst of DDB writes, which can trigger on-demand throttling (see Part 3).</li>
+        <li><strong>Simpler Lambda.</strong> The scoring function has one concern: score bids, pick a winner, post a result. Inserting database logic introduces a dependency on the <code>boto3</code> DynamoDB client, error handling for conditional writes, and retry configuration &mdash; none of which has anything to do with bid scoring.</li>
+    </ul>
+
+    <!-- Architecture Comparison SVG -->
+    <div class="diagram">
+        <svg width="760" height="300" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="760" height="300" fill="#fafafa" rx="8" />
+            <text x="380" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Coupled vs. Decoupled DynamoDB Write</text>
+
+            <!-- Left: Coupled -->
+            <text x="190" y="50" text-anchor="middle" font-size="10" fill="#8888aa" font-weight="600" letter-spacing="1">COUPLED (YOUR PROJECT)</text>
+            <rect x="40" y="70" width="100" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="90" y="95" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">Input SQS</text>
+            <line x1="142" y1="92" x2="172" y2="92" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="174" y="65" width="130" height="85" rx="6" fill="#fdf6e3" stroke="#b07d20" stroke-width="2" />
+            <text x="239" y="86" text-anchor="middle" font-size="10" font-weight="bold" fill="#b07d20">Lambda</text>
+            <text x="239" y="103" text-anchor="middle" font-size="9" fill="#4a4a6a">Score + SQS post</text>
+            <text x="239" y="118" text-anchor="middle" font-size="9" fill="#4a4a6a">+ DDB write</text>
+            <text x="239" y="140" text-anchor="middle" font-size="8" fill="#b07d20" font-weight="bold">ALL IN ONE</text>
+            <line x1="306" y1="86" x2="336" y2="86" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="338" y="70" width="80" height="44" rx="6" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="378" y="95" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a6b3a">Result SQS</text>
+            <line x1="239" y1="152" x2="239" y2="182" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="189" y="184" width="100" height="40" rx="6" fill="#f3eeff" stroke="#553c9a" stroke-width="1.5" />
+            <text x="239" y="208" text-anchor="middle" font-size="10" font-weight="bold" fill="#553c9a">DynamoDB</text>
+
+            <!-- Divider -->
+            <line x1="440" y1="50" x2="440" y2="250" stroke="#e0e0ee" stroke-width="1" stroke-dasharray="5,3" />
+
+            <!-- Right: Decoupled -->
+            <text x="600" y="50" text-anchor="middle" font-size="10" fill="#8888aa" font-weight="600" letter-spacing="1">DECOUPLED (PRODUCTION)</text>
+            <rect x="470" y="70" width="80" height="44" rx="6" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="510" y="95" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">Input SQS</text>
+            <line x1="552" y1="92" x2="574" y2="92" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="576" y="70" width="100" height="52" rx="6" fill="#fdf6e3" stroke="#b07d20" stroke-width="2" />
+            <text x="626" y="91" text-anchor="middle" font-size="10" font-weight="bold" fill="#b07d20">Lambda</text>
+            <text x="626" y="108" text-anchor="middle" font-size="9" fill="#4a4a6a">Score only</text>
+            <line x1="678" y1="92" x2="708" y2="92" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="710" y="70" width="36" height="44" rx="4" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.2" />
+            <text x="728" y="95" text-anchor="middle" font-size="8" fill="#1a6b3a">SQS</text>
+            <!-- second consumer -->
+            <line x1="728" y1="116" x2="728" y2="148" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="658" y="150" width="140" height="52" rx="6" fill="#eaf5ee" stroke="#1a6b3a" stroke-width="1.5" />
+            <text x="728" y="172" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a6b3a">DDB Writer</text>
+            <text x="728" y="189" text-anchor="middle" font-size="9" fill="#4a4a6a">Separate Lambda</text>
+            <line x1="728" y1="204" x2="728" y2="230" stroke="#8888aa" stroke-width="1.5" marker-end="url(#pm1)" />
+            <rect x="678" y="232" width="100" height="40" rx="6" fill="#f3eeff" stroke="#553c9a" stroke-width="1.5" />
+            <text x="728" y="256" text-anchor="middle" font-size="10" font-weight="bold" fill="#553c9a">DynamoDB</text>
+
+            <defs>
+                <marker id="pm1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">Left: your project architecture. Right: the production pattern with an independent DDB writer consuming the results queue.</div>
+    </div>
+
+    <div class="key-lesson">
+        <div class="lesson-label">Production Rule of Thumb</div>
+        <p>If a side-effect (database write, notification, analytics push) is not required for the caller to get its answer, move it off the hot path. The caller gets faster. The side-effect gets independent retry logic. Both scale independently.</p>
+    </div>
+
+
+    <h3 class="section">1.2 Deterministic Scoring vs. External ML Models</h3>
+
+    <p>The scoring formula in this project is deterministic: <code>score = bid_amount &times; relevance_multiplier &times; time_bonus &times; device_bonus</code>. Given the same input, it always produces the same output. The entire computation happens in-memory in your Lambda, with zero network calls.</p>
+
+    <div class="callout">
+        <div class="callout-label">Design Question</div>
+        <p>What would change if the scoring needed to call an external ML model for each bid?</p>
+    </div>
+
+    <p>The answer is: almost everything.</p>
+    <ul>
+        <li><strong>Latency.</strong> A deterministic lookup takes microseconds. An ML inference call takes 20&ndash;200 ms depending on model complexity and endpoint warm state. With 3&ndash;8 bids per opportunity, sequential ML calls could push your Lambda from 10 ms to over a second. You would need to parallelize calls using <code>asyncio</code> or <code>concurrent.futures</code>.</li>
+        <li><strong>Error handling.</strong> The current formula cannot fail &mdash; it is arithmetic. An ML endpoint can time out, return malformed responses, or rate-limit you. Every call needs a timeout, a fallback score, and retry logic. Partial failures (3 of 5 bids scored successfully) create a new class of decision: do you pick the winner from the bids you scored, or retry the whole batch?</li>
+        <li><strong>Cost.</strong> Lambda compute is cheap. SageMaker or external API inference is expensive. At 500 opportunities with 5 bids each, you make 2,500 inference calls per test run. At production scale (millions per hour), inference costs dominate your budget.</li>
+        <li><strong>Cold starts compound.</strong> If the ML endpoint is also serverless (like a SageMaker Serverless Inference endpoint), you now have <em>two</em> cold start problems stacked on top of each other: your Lambda's cold start plus the model endpoint's cold start.</li>
+        <li><strong>Idempotency becomes harder.</strong> A deterministic formula naturally gives the same answer on retry. ML models may be non-deterministic (random sampling, model updates between invocations), so you would need to cache scores or store the model version with each result to ensure reproducibility.</li>
+    </ul>
+
+    <div class="key-lesson">
+        <div class="lesson-label">Distributed Systems Lesson</div>
+        <p>Every network call you add to a pipeline multiplies the failure modes. A deterministic, in-process computation is the simplest primitive in distributed systems. The moment you replace it with a remote call, you inherit latency variance, partial failure, rate limiting, and versioning concerns.</p>
+    </div>
+
+
+    <h3 class="section">1.3 Idempotency &mdash; Processing the Same Message Twice</h3>
+
+    <p>The test apparatus sends the same 500 messages to every student. SQS Standard queues guarantee <em>at-least-once</em> delivery, which means a message can be delivered more than once. In practice, duplicates are rare during normal operation, but under high load (burst mode), the SQS poller may deliver the same message to multiple Lambda invocations before the visibility timeout expires.</p>
+
+    <div class="callout">
+        <div class="callout-label">Design Question</div>
+        <p>In production, would you want your pipeline to be idempotent (processing the same message twice produces the same result)? How would you design for that?</p>
+    </div>
+
+    <p>Yes. In any production system consuming from SQS Standard queues, idempotency is a requirement, not a nice-to-have.</p>
+
+    <h4 class="subsection">What Idempotent Means Here</h4>
+    <p>If your Lambda receives <code>opportunity_id = abc-123</code> twice, the second processing should produce the exact same result and the DynamoDB table should contain exactly one record for that opportunity, not two.</p>
+
+    <h4 class="subsection">Strategies for Achieving Idempotency</h4>
+    <ol>
+        <li><strong>Use the natural key as the DynamoDB partition key.</strong> If <code>opportunity_id</code> is the primary key, a second <code>PutItem</code> with the same key overwrites the first &mdash; producing the same result. This is what your project did, and it is idempotent by construction.</li>
+        <li><strong>Conditional writes.</strong> Use a DynamoDB condition expression: <code>attribute_not_exists(opportunity_id)</code>. The second write fails with a <code>ConditionalCheckFailedException</code>, which your Lambda catches and skips. This prevents overwrites entirely.</li>
+        <li><strong>SQS FIFO queues with deduplication.</strong> FIFO queues reject duplicate messages within a 5-minute deduplication window based on a <code>MessageDeduplicationId</code>. The duplicate never reaches your Lambda at all. The tradeoff: FIFO queues have a throughput ceiling of 3,000 messages per second with batching, compared to near-unlimited throughput on Standard queues.</li>
+        <li><strong>Idempotency middleware.</strong> Libraries like <code>aws-lambda-powertools</code> provide an <code>@idempotent</code> decorator that stores a hash of each processed event in DynamoDB. A duplicate event short-circuits the Lambda and returns the cached response.</li>
+    </ol>
+
+    <div class="key-lesson">
+        <div class="lesson-label">Production Rule of Thumb</div>
+        <p>Design every message consumer to be idempotent. "At-least-once" delivery is the default in every major queue system (SQS, Kafka, RabbitMQ). If your consumer is not idempotent, you will eventually get duplicate records, double charges, or corrupted aggregations.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 2 — DEBUGGING STORIES
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 2</span> Debugging in Distributed Systems </h2>
+
+    <p>The best exam answers came from students who described specific bugs they encountered and the diagnostic process they followed. Three examples stood out for the clarity and typicality of the problems they surfaced.</p>
+
+    <div class="student-quote">
+        <div class="student-name"> The Deployment Environment Mismatch</div>
+        <p>Pydantic's compiled binaries from local Linux were incompatible with AWS Lambda's Fedora-based runtime due to <code>glibc</code> version differences. The fix: <code>sam build --use-container</code>, which compiles dependencies inside a Docker container matching the Lambda runtime. The lesson: your laptop is not your deployment target.</p>
+    </div>
+
+    <div class="student-quote">
+        <div class="student-name"> Looking for the Bug in the Wrong Place</div>
+        <p>Observed high latency and initially assumed inefficient code. After investigating CloudWatch metrics, realized the latency came from SQS polling delays and Lambda cold starts &mdash; not from her scoring logic. The bottleneck was in the communication between services, not in the computation inside them.</p>
+    </div>
+
+    <div class="student-quote">
+        <div class="student-name">  The Silently Failing Component</div>
+        <p>Results appeared in the results SQS queue, but DynamoDB was empty. The SQS post succeeded while the DDB write silently failed due to a permissions issue. One component appeared healthy while another part of the pipeline was silently broken.</p>
+    </div>
+
+    <div class="key-lesson">
+        <div class="lesson-label">Common Lesson Across All Three</div>
+        <p>Distributed systems require checking each service independently. The error is rarely where you first look for it. A monolithic application fails loudly in one place. A distributed pipeline can have one healthy component hiding a broken neighbor &mdash; and the symptoms appear somewhere else entirely.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 3 — SCALING AND LATENCY
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 3</span> Scaling and Debugging Distributed Systems</h2>
+
+    <h3 class="section">3.1 Where the Bottlenecks Are</h3>
+
+    <h4 class="subsection">Lambda</h4>
+    <p>Default limit: 1,000 concurrent executions per region. At 10 messages per invocation and 100&ndash;200 ms per batch, the theoretical ceiling is 50,000&ndash;100,000 messages per second. But the SQS event-source poller scales gradually &mdash; it starts with 5 concurrent batches and doubles every minute. A sudden spike of 10,000 messages does not produce 1,000 concurrent Lambdas instantly. It ramps up over minutes.</p>
+
+    <h4 class="subsection">DynamoDB</h4>
+    <p>On-demand mode auto-scales based on a "previous peak" heuristic. If your table has been near-idle and you suddenly send 10,000 writes per second, DynamoDB will throttle for several minutes while it adapts. This is why the burst test profile sometimes produced DynamoDB errors that the steady test did not &mdash; the table had no prior traffic to establish a baseline.</p>
+
+    <h4 class="subsection">SQS</h4>
+    <p>Standard queues handle near-unlimited throughput. SQS is almost never the bottleneck in a pipeline. Its role is to absorb spikes and decouple producers from consumers &mdash; and it does this well.</p>
+
+    <div class="callout green">
+        <div class="callout-label">Concrete Mitigations</div>
+        <p>Request Lambda concurrency limit increases via AWS Support. Pre-warm DynamoDB by gradually ramping traffic before a burst. Use provisioned capacity with auto-scaling instead of on-demand for predictable workloads. Increase the SQS batch size to reduce per-invocation overhead. Move DynamoDB writes off the hot path into a separate consumer (see Part 1).</p>
+    </div>
+
+
+    <h3 class="section">3.2 The Four Segments of Latency</h3>
+
+    <p>End-to-end latency through the pipeline is not one number &mdash; it is the sum of four distinct segments, each with its own cost drivers.</p>
+
+    <!-- Latency Segments Table -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Segment</th>
+                    <th>What Happens</th>
+                    <th>Typical Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>A &mdash; SQS ingest</td>
+                    <td>Browser sends message to SQS</td>
+                    <td>40&ndash;100 ms</td>
+                </tr>
+                <tr>
+                    <td>B &mdash; SQS to Lambda</td>
+                    <td>Event source mapping polls and invokes Lambda</td>
+                    <td>50&ndash;500 ms warm, +200&ndash;800 ms cold</td>
+                </tr>
+                <tr>
+                    <td>C &mdash; Lambda compute</td>
+                    <td>Score bids, select winner, post to SQS</td>
+                    <td>10&ndash;50 ms</td>
+                </tr>
+                <tr>
+                    <td>D &mdash; DynamoDB write</td>
+                    <td>Persist record to results table</td>
+                    <td>30&ndash;80 ms</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>Your code controls segment C. The rest is infrastructure. Optimizing your Python from 30 ms to 15 ms saves you 15 ms on a 683 ms pipeline &mdash; roughly 2%. The SQS-to-Lambda trigger (segment B) contributes 10&ndash;50&times; more latency than your code does.</p>
+
+    <!-- Latency Pipeline SVG -->
+    <div class="diagram">
+        <svg width="760" height="160" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+            <rect width="760" height="160" fill="#fafafa" rx="8" />
+            <text x="380" y="22" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">Where Time Goes &mdash; You Control a Sliver</text>
+
+            <!-- Timeline bar background -->
+            <rect x="40" y="50" width="680" height="40" rx="4" fill="#e0e0ee" />
+
+            <!-- Segment A -->
+            <rect x="40" y="50" width="100" height="40" rx="4" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="90" y="73" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">A</text>
+            <text x="90" y="110" text-anchor="middle" font-size="9" fill="#4a4a6a">SQS Ingest</text>
+            <text x="90" y="123" text-anchor="middle" font-size="8" fill="#8888aa">40&ndash;100 ms</text>
+
+            <!-- Segment B -->
+            <rect x="140" y="50" width="340" height="40" rx="0" fill="#e8eef9" stroke="#1a4fa0" stroke-width="1.5" />
+            <text x="310" y="73" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a4fa0">B</text>
+            <text x="310" y="110" text-anchor="middle" font-size="9" fill="#4a4a6a">SQS &rarr; Lambda Trigger</text>
+            <text x="310" y="123" text-anchor="middle" font-size="8" fill="#8888aa">50&ndash;500 ms + cold start</text>
+
+            <!-- Segment C -->
+            <rect x="480" y="50" width="60" height="40" rx="0" fill="#fdf6e3" stroke="#b07d20" stroke-width="2" />
+            <text x="510" y="73" text-anchor="middle" font-size="10" font-weight="bold" fill="#b07d20">C</text>
+            <text x="510" y="110" text-anchor="middle" font-size="9" fill="#b07d20">Your Code</text>
+            <text x="510" y="123" text-anchor="middle" font-size="8" fill="#8888aa">10&ndash;50 ms</text>
+
+            <!-- Segment D -->
+            <rect x="540" y="50" width="180" height="40" rx="4" fill="#f3eeff" stroke="#553c9a" stroke-width="1.5" />
+            <text x="630" y="73" text-anchor="middle" font-size="10" font-weight="bold" fill="#553c9a">D</text>
+            <text x="630" y="110" text-anchor="middle" font-size="9" fill="#4a4a6a">DynamoDB Write</text>
+            <text x="630" y="123" text-anchor="middle" font-size="8" fill="#8888aa">30&ndash;80 ms</text>
+
+            <defs>
+                <marker id="pm2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#8888aa" />
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">Proportional latency breakdown. Segment C &mdash; the only part you control &mdash; is a thin sliver of the total.</div>
+    </div>
+
+
+    <h3 class="section">3.3 Steady vs. Burst &mdash; What the Comparison Teaches</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Profile</th>
+                    <th>Messages</th>
+                    <th>Pacing</th>
+                    <th>Avg Latency</th>
+                    <th>Min Latency</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Steady</td>
+                    <td>100</td>
+                    <td>100 ms delay between sends</td>
+                    <td>683 ms</td>
+                    <td>270 ms</td>
+                </tr>
+                <tr>
+                    <td>Burst</td>
+                    <td>500</td>
+                    <td>All at once</td>
+                    <td>4,149 ms</td>
+                    <td>429 ms</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>The 270 ms minimum on steady shows what the pipeline looks like when everything is warm: the Lambda container is already running, the SQS poller pulls the message on its next poll cycle, and the DDB write completes quickly. This is the <em>best case</em>.</p>
+
+    <p>The 4,149 ms average on burst shows what happens when you overwhelm the system's warm capacity. The SQS poller starts at 5 concurrent batches and doubles every minute. Sending 500 messages instantly forces Lambda to spin up dozens of new containers simultaneously. Each new container pays a cold-start penalty of 200&ndash;800 ms. The messages that arrive after the warm capacity is exhausted queue up and wait for new containers &mdash; driving up the average latency dramatically.</p>
+
+    <div class="key-lesson">
+        <div class="lesson-label">The Lesson</div>
+        <p>"Bursting" is a property of the system. The exact same Lambda code produced a 270 ms best case and a 5,000+ ms average, depending purely on how traffic arrived. In distributed systems, performance is a function of <em>traffic shape</em>, not solely of algorithm efficiency.</p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 4 — CODE QUALITY NIT
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 4</span> Using the Data Structures You Are Given</h2>
+
+    <p>The <code>RELEVANCE_MAP</code> dictionary was provided at the top of <code>lambda_handler.py</code> for a reason. It encodes the full relevance matrix in a single declarative structure. A single <code>.get()</code> call replaces 10+ lines of <code>if/elif</code> chains and guarantees you never accidentally miss an entry.</p>
+
+    <div class="comparison">
+        <div class="comparison-item bad-example">
+            <div class="comparison-label">Fragile: Imperative Chain</div>
+            <pre>if content_category == "sports" and category == "sportswear":
+    relevance = 1.4
+elif content_category == "sports" and category == "energy_drink":
+    relevance = 1.3
+elif content_category == "finance" and category == "fintech":
+    relevance = 1.5
+elif content_category == "finance" and category == "insurance":
+    relevance = 1.3
+# ... did you remember lifestyle/travel?
+# ... did you remember entertainment/streaming?
+else:
+    relevance = 1.0</pre>
+        </div>
+        <div class="comparison-item good-example">
+            <div class="comparison-label">Robust: Declarative Lookup</div>
+            <pre># One line. Covers all cases.
+# Impossible to miss an entry.
+relevance = RELEVANCE_MAP.get(
+    (content_category, advertiser_category),
+    1.0
+)</pre>
+        </div>
+    </div>
+
+    <p> ith 10 content&ndash;category pairs in the map, an <code>if/elif</code> chain has 10 places to introduce a typo, forget a branch, or accidentally reorder a condition. The dictionary has one place: the data definition at the top of the file. If you add a new category pairing, you add one line to the dictionary. You do not touch the scoring function at all.</p>
+
+    <div class="callout gold">
+        <div class="callout-label">General Principle</div>
+        <p>When the problem is a lookup, use a lookup table. When the problem is a computation, write a function. Keep the two separate. Data structures encode <em>what</em>; functions encode <em>how</em>.</p>
+    </div>
+
+    <p>The same principle applies beyond Python. SQL <code>CASE</code> expressions, configuration files, feature flags &mdash; anywhere you find yourself writing a long conditional chain where each branch maps one input to one output, you are encoding a lookup table in control flow. Extract it.</p>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════
+     PART 5 — BEYOND THE ASSIGNMENT
+    ══════════════════════════════════════════════════════════════════ -->
+    <h2 class="part"><span class="part-num">Part 5</span> Beyond the Assignment </h2>
+
+
+    <h3 class="section">5.1 Real-Time Feature Enrichment</h3>
+
+    <p>Your Lambda scored bids using only the fields present in the SQS message. Production systems enrich each opportunity with real-time signals before scoring:</p>
+
+    <ul>
+        <li><strong>User profile lookups.</strong> Pull the user's interest graph, browsing history, and demographic segment from a low-latency store (ElastiCache, DynamoDB DAX, or a purpose-built feature store like Feast or Tecton). This adds 5&ndash;20 ms per call but dramatically improves relevance.</li>
+        <li><strong>Frequency capping.</strong> Check how many times this user has already seen each advertiser's ad today. A user who has seen the same insurance ad 8 times stops clicking. Frequency cap data sits in a shared counter store (Redis, DynamoDB Atomic Counters).</li>
+        <li><strong>Budget checks.</strong> Advertisers have daily and monthly budgets. Before scoring a bid, verify that the advertiser has not exhausted their spend. This requires a distributed counter or a budget service that can respond in under 10 ms.</li>
+        <li><strong>Geo-enrichment.</strong> Map an IP address or GPS coordinate to a metro area, time zone, and weather condition. A raincoat ad scores higher during a rainstorm.</li>
+    </ul>
+
+    <p>Each enrichment adds a network call, which adds latency variance and a failure mode. The system design challenge is to make <em>all</em> of these calls without blowing the 100 ms latency budget.</p>
+
+
+    <h3 class="section">5.2 Multi-Stage Auction Architecture</h3>
+
+    <p>Your project ran a single-stage auction: score every bid, pick the highest score. Production systems use a funnel:</p>
+
+    <ol>
+        <li><strong>First pass (retrieval).</strong> From a pool of 100,000 active campaigns, retrieve the 500 that could plausibly match this user and context. This is a fast filter using pre-computed eligibility indexes.</li>
+        <li><strong>Second pass (light scoring).</strong> Run a cheap model on the 500 candidates to produce a shortlist of 50.</li>
+        <li><strong>Third pass (full scoring).</strong> Run the expensive ML model (click-through-rate prediction, conversion probability) on the 50 finalists. This is where the heavy compute lives.</li>
+        <li><strong>Post-auction processing.</strong> Apply pacing (spread the winner's budget evenly across the day), second-price adjustments (the winner pays $0.01 more than the second-highest bid, not their full bid), and fraud filtering.</li>
+    </ol>
+
+    <p>Each stage reduces the candidate set by an order of magnitude, keeping the expensive stages fast by limiting their input volume.</p>
+
+
+    <h3 class="section">5.3 Observability at Scale</h3>
+
+    <p>Your project used CloudWatch logs and DynamoDB scans. A production pipeline instruments every layer:</p>
+
+    <ul>
+        <li><strong>Distributed tracing.</strong> AWS X-Ray or OpenTelemetry traces a single opportunity from SQS ingestion through Lambda processing to DynamoDB write, showing exactly where time was spent. This is how some found latency investigation would work in production &mdash; the trace shows that 400 ms of 683 ms was SQS polling, not code.</li>
+        <li><strong>Business metrics dashboards.</strong> Revenue per second, win-rate by advertiser, average score margin, CPM distribution by content category. These feed real-time dashboards in Grafana or CloudWatch Dashboards.</li>
+        <li><strong>Anomaly detection.</strong> Automated alerts when win-rate for a category drops below its 7-day rolling average, or when DynamoDB write latency exceeds p99 thresholds. CloudWatch Anomaly Detection or Datadog Watchdog handle this.</li>
+        <li><strong>Dead letter queue monitoring.</strong> Messages that fail processing after all retries land in a DLQ. In production, a DLQ with more than 0 messages triggers an alarm. Every message in a DLQ represents lost revenue.</li>
+    </ul>
+
+
+    <h3 class="section">5.4 Stream Processing Alternatives</h3>
+
+    <p>The SQS-to-Lambda pattern you used is effective for event-driven processing, but other architectures exist for different requirements:</p>
+
+    <ul>
+        <li><strong>Kinesis Data Streams.</strong> Unlike SQS (which deletes messages after consumption), Kinesis retains messages for 24 hours to 365 days. Multiple consumers can independently read the same stream at different speeds. This enables replay &mdash; if your scoring logic had a bug, you can fix it and re-process yesterday's opportunities.</li>
+        <li><strong>Apache Kafka (Amazon MSK).</strong> Similar to Kinesis but with stronger ordering guarantees, consumer groups, and a richer ecosystem. The industry standard for high-throughput event streaming.</li>
+        <li><strong>Step Functions for orchestration.</strong> If processing an opportunity requires multiple sequential steps (enrich, score, post-auction, notify), Step Functions model the workflow as a state machine with built-in error handling, retry, and visualization.</li>
+        <li><strong>EventBridge for fan-out.</strong> If the result of an auction needs to go to multiple consumers (DynamoDB, analytics, advertiser notification, billing), EventBridge routes a single event to many targets based on pattern-matching rules.</li>
+    </ul>
+
+
+    <h3 class="section">5.5 Testing Distributed Pipelines</h3>
+
+    <p>The test apparatus sent 500 fixed messages and compared results. Production testing is harder:</p>
+
+    <ul>
+        <li><strong>Shadow mode.</strong> Run a new version of the scoring Lambda in parallel with the current one. Both receive the same messages, but only the current version's results are used. Compare the shadow's outputs offline to validate correctness before switching over.</li>
+        <li><strong>Canary deployments.</strong> Route 5% of traffic to the new version and 95% to the old one. Monitor error rates and latency for the canary. If the canary is healthy after 30 minutes, gradually shift more traffic. Lambda aliases and weighted routing make this native to AWS.</li>
+        <li><strong>Chaos engineering.</strong> Intentionally introduce failures &mdash; throttle DynamoDB, kill Lambda containers, inject latency into SQS &mdash; and verify the pipeline degrades gracefully. AWS Fault Injection Simulator (FIS) automates this.</li>
+        <li><strong>Contract testing.</strong> Validate that the message format between producer and consumer stays stable across deployments. If the test apparatus changes the schema of the opportunity message, your Lambda should fail fast with a clear error, not silently produce garbage scores.</li>
+    </ul>
+
+
+    <h3 class="section">5.6 Cost Optimization</h3>
+
+    <p>At scale, every architectural decision has a dollar sign attached:</p>
+
+    <ul>
+        <li><strong>Lambda memory tuning.</strong> Lambda bills by GB-second. A 128 MB Lambda running for 200 ms costs half as much as a 256 MB Lambda for the same duration &mdash; but the 256 MB version gets twice the CPU, so it may finish in 100 ms and cost the same. Use <a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html">AWS Lambda Power Tuning</a> to find the cost-optimal memory setting.</li>
+        <li><strong>DynamoDB capacity modes.</strong> On-demand is simple but expensive at steady-state high throughput. Provisioned capacity with auto-scaling is 5&ndash;7&times; cheaper for predictable workloads. The tradeoff: you need to estimate your baseline and set scaling policies.</li>
+        <li><strong>Batching.</strong> Sending SQS messages one at a time costs 10&times; more than batching 10 messages per <code>SendMessageBatch</code> call. The same applies to DynamoDB <code>BatchWriteItem</code>: 25 writes per call instead of 25 individual <code>PutItem</code> calls.</li>
+        <li><strong>Reserved concurrency.</strong> If you know your Lambda needs at most 100 concurrent instances, setting reserved concurrency to 100 prevents runaway scaling (and runaway costs) during traffic spikes.</li>
+    </ul>
+
+
+    <footer class="doc-footer">
+        Project 1 Post-Mortem &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida &nbsp;&middot;&nbsp; 2026
+    </footer>
+
+</body>
+
+</html>
