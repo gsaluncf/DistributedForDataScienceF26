@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 12 &mdash; Kafka Messaging</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-faint:#8888aa;--rule:#e0e0ee;--bg:#fafafa;--accent:#1a4fa0;--accent-lt:#e8eef9;--gold:#b07d20;--gold-lt:#fdf6e3;--green:#1a6b3a;--green-lt:#eaf5ee;--red:#9b1c1c;--red-lt:#fef2f2;--code-bg:#f0f0f8;--kafka-teal:#1a8a7a;--kafka-teal-lt:#e6f7f5}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);background:var(--bg);max-width:880px;margin:0 auto;padding:60px 48px 120px}
+        .doc-header{border-bottom:3px solid var(--ink);padding-bottom:28px;margin-bottom:52px}
+        .doc-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+        h1.doc-title{font-family:'IBM Plex Serif',serif;font-size:34px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:10px}
+        .doc-sub{font-size:14px;color:var(--ink-soft)}
+        h2.part{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:600;color:var(--ink);margin:56px 0 20px;padding-bottom:8px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;gap:12px}
+        h2.part .part-num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:400}
+        h3.section{font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:var(--accent);margin:32px 0 10px}
+        p{margin-bottom:14px}a{color:var(--accent)}a:hover{text-decoration:none}
+        ul,ol{margin:10px 0 16px 24px}li{margin-bottom:6px}
+        code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+        .callout{border-left:4px solid var(--accent);background:var(--accent-lt);padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
+        .callout.gold{border-color:var(--gold);background:var(--gold-lt)}
+        .callout.green{border-color:var(--green);background:var(--green-lt)}
+        .callout.teal{border-color:var(--kafka-teal);background:var(--kafka-teal-lt)}
+        .callout-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+        .callout p{font-size:14px}
+        .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:28px 0}
+        .card{border:1.5px solid var(--rule);border-radius:8px;padding:24px;background:#fff;text-decoration:none;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+        .card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(26,79,160,.1)}
+        .card-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+        .card-label.lecture{color:var(--accent)}
+        .card-label.lab{color:var(--gold)}
+        .card-label.code{color:var(--green)}
+        .card-title{font-family:'IBM Plex Serif',serif;font-size:18px;font-weight:600;margin-bottom:8px}
+        .card-desc{font-size:13px;color:var(--ink-soft);line-height:1.5}
+        .file-list{list-style:none;margin:0;padding:0}
+        .file-list li{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--rule);font-size:14px}
+        .file-list li:last-child{border-bottom:none}
+        .file-list code{font-size:12px}
+        .file-list a{text-decoration:none;font-weight:500}
+        .doc-footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+        @media(max-width:640px){.card-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+    <header class="doc-header">
+        <div class="doc-meta">Week 12 &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+        <h1 class="doc-title">Kafka Messaging with Confluent Cloud</h1>
+        <div class="doc-sub">Event streaming, message brokers, producer/consumer patterns, and consumer groups &mdash; using a managed Kafka cluster with no local infrastructure.</div>
+    </header>
+
+    <div class="callout teal">
+        <div class="callout-label">This Week</div>
+        <p><strong>Tuesday:</strong> Lecture &mdash; where brokers live in the stack, what Kafka solves, core concepts (topics, partitions, offsets, consumer&nbsp;groups), and the complexities streaming introduces.</p>
+        <p><strong>Thursday:</strong> Lab &mdash; sign up for Confluent Cloud, produce and consume sensor telemetry with Python, observe consumer group rebalancing, and build a two-stage streaming pipeline.</p>
+    </div>
+
+    <h2 class="part"><span class="part-num">Part 1</span> Materials</h2>
+
+    <div class="card-grid">
+        <a href="lecture.html" class="card">
+            <div class="card-label lecture">Lecture</div>
+            <div class="card-title">Event Streaming and Message Brokers</div>
+            <div class="card-desc">Request/response vs event-driven architecture, Kafka use cases, topics and partitions, consumer groups, delivery guarantees, and where Kafka fits in the modern data stack.</div>
+        </a>
+        <a href="lab.html" class="card">
+            <div class="card-label lab">Lab</div>
+            <div class="card-title">Producer/Consumer with Confluent Cloud</div>
+            <div class="card-desc">Set up a managed Kafka cluster, stream greenhouse sensor data with Python, scale consumers horizontally, and build a real-time alert pipeline.</div>
+        </a>
+    </div>
+
+    <h2 class="part"><span class="part-num">Part 2</span> Starter Code</h2>
+
+    <p>Download these files into a local <code>week12/</code> folder. The config template holds your Confluent Cloud credentials (never committed to git).</p>
+
+    <ul class="file-list">
+        <li><a href="producer.py">producer.py</a> <code>Greenhouse sensor producer &mdash; keys on sensor_id for partition ordering</code></li>
+        <li><a href="consumer.py">consumer.py</a> <code>Consumer with running averages, graceful shutdown, session summary</code></li>
+        <li><a href="kafka_config_example.py">kafka_config_example.py</a> <code>Credentials template &mdash; copy to _kafka_config.py and fill in</code></li>
+        <li><a href="requirements.txt">requirements.txt</a> <code>confluent-kafka&gt;=2.6.0</code></li>
+    </ul>
+
+    <h2 class="part"><span class="part-num">Part 3</span> Readings</h2>
+
+    <ul>
+        <li><a href="https://kafka.apache.org/documentation/#gettingStarted" target="_blank">Apache Kafka &mdash; Getting Started</a></li>
+        <li><a href="https://developer.confluent.io/learn/apache-kafka-on-the-go/" target="_blank">Confluent Developer &mdash; Kafka Fundamentals</a></li>
+        <li><a href="https://docs.confluent.io/cloud/current/get-started/index.html" target="_blank">Confluent Cloud &mdash; Quick Start</a></li>
+        <li><a href="https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html" target="_blank">confluent-kafka Python Client Docs</a></li>
+    </ul>
+
+    <div class="callout gold">
+        <div class="callout-label">Deliverables (due Sun Apr 20, 11:59 pm)</div>
+        <p>1. Modified <code>consumer.py</code> with alert threshold and cross-topic alert production (Lab Exercises 6.1 and 6.3).</p>
+        <p>2. Screenshot of alert messages visible in the Confluent Cloud UI on the <code>greenhouse-alerts</code> topic.</p>
+        <p>3. Short answers to the lab questions (Parts 3&ndash;5).</p>
+    </div>
+
+    <footer class="doc-footer">
+        <p>Kafka Messaging &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida &nbsp;&middot;&nbsp; Spring 2026</p>
+    </footer>
+
+</body>
+</html>
