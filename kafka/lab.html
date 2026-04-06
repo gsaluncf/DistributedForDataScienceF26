@@ -52,7 +52,7 @@
     <header class="doc-header">
         <div class="doc-meta">Week 12 Lab &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
         <h1 class="doc-title">Kafka Producer/Consumer with Confluent Cloud</h1>
-        <div class="doc-sub">Sign up for a managed Kafka cluster, stream sensor data from Python, and observe consumer groups rebalancing partitions &mdash; no local infrastructure required.</div>
+        <div class="doc-sub">Connect to a managed Kafka cluster on Confluent Cloud, stream sensor data from Python, and observe consumer groups rebalancing partitions -- no sign-up or local infrastructure required.</div>
     </header>
 
     <div class="responsibility">
@@ -71,72 +71,149 @@
     </div>
 
 
+    <!-- CORE CONCEPTS -->
+    <h2 class="part"><span class="part-num">Background</span> Core Kafka Concepts</h2>
+
+    <p>Apache Kafka is a distributed system that lets programs send and receive streams of messages in real time. Think of it as a durable, high-throughput message board: one program posts a message, and any number of other programs can read it -- seconds later or hours later. Unlike a traditional database, Kafka is optimized for <em>continuous flow</em> of data rather than request/response queries.</p>
+
+    <h3 class="section">Topics, Partitions, and Offsets</h3>
+    <p>A <strong>topic</strong> is a named channel for a category of messages (for example, <code>greenhouse-sensors</code>). Every topic is split into one or more <strong>partitions</strong>. Each partition is an ordered, append-only sequence of messages. When a message is written to a partition, Kafka assigns it a sequential number called an <strong>offset</strong> (0, 1, 2, ...). Offsets never reuse or go backward within a partition, so they act as a permanent "position marker."</p>
+
+    <p>Kafka guarantees ordering <strong>within a single partition</strong>, but not across partitions. If two messages land in partition 0 and partition 1 respectively, Kafka makes no promise about which one is read first. This is the fundamental trade-off: more partitions give you more parallelism, but you lose global ordering.</p>
+
+    <h3 class="section">Producers and Keys</h3>
+    <p>A <strong>producer</strong> is any program that writes messages to a topic. When you produce a message, you can optionally attach a <strong>key</strong>. Kafka hashes the key and uses the result to choose which partition gets the message (specifically: <code>hash(key) mod number_of_partitions</code>). This means messages with the same key always land in the same partition, which guarantees they are read in order. If you produce without a key, Kafka distributes messages across partitions in a round-robin fashion.</p>
+
+    <h3 class="section">Consumers and Consumer Groups</h3>
+    <p>A <strong>consumer</strong> is any program that reads messages from a topic. Consumers do not "pop" messages off a queue -- the messages stay in Kafka. Instead, each consumer tracks its position using offsets: "I have read up to offset 47 in partition 0."</p>
+
+    <p>Consumers are organized into <strong>consumer groups</strong>. Within a group, Kafka divides the partitions among the members so that each partition is read by exactly one consumer. This is how you scale reads: if a topic has 3 partitions and your group has 3 consumers, each consumer handles one partition. If you add a 4th consumer to the same group, it sits idle because there are no spare partitions to assign.</p>
+
+    <p>If a consumer in the group crashes or disconnects, Kafka detects this (via missed heartbeats) and <strong>rebalances</strong>: it redistributes the orphaned partitions among the remaining consumers. This typically takes a few seconds.</p>
+
+    <p>A completely separate consumer group reads the topic independently from the beginning. Groups do not interfere with each other -- each group maintains its own set of offsets.</p>
+
+    <h3 class="section">Brokers</h3>
+    <p>A <strong>broker</strong> is a single Kafka server that stores partitions and serves reads and writes. A production Kafka cluster has many brokers (the class cluster has 30). Each partition is stored on one broker (with replicas on others for durability). When your producer or consumer connects, it first contacts a <strong>bootstrap server</strong> to discover which broker owns which partition, then talks directly to the right broker for each operation.</p>
+
+    <h3 class="section">Authentication</h3>
+    <p>Our cluster uses <strong>SASL_SSL</strong> authentication. This is two things combined: <strong>TLS</strong> (the same encryption your browser uses for HTTPS) to encrypt all traffic, and <strong>SASL/PLAIN</strong> to verify identity using a username and password (called an API Key and API Secret in Confluent Cloud). Every connection is both encrypted and authenticated. The configuration values <code>security.protocol</code>, <code>sasl.mechanisms</code>, <code>sasl.username</code>, and <code>sasl.password</code> in your config file control this.</p>
+
+    <div class="callout teal">
+        <div class="callout-label">Mental Model</div>
+        <p>A useful way to picture this: a <strong>topic</strong> is a book, each <strong>partition</strong> is a chapter, and the <strong>offset</strong> is a page number. <strong>Producers</strong> append pages to chapters. <strong>Consumers</strong> in the same <strong>group</strong> divide up the chapters among themselves so nobody reads the same page twice. A second group can read the entire book independently from the start. <strong>Brokers</strong> are the library shelves that hold the chapters.</p>
+    </div>
+
+
     <!-- PART 1 -->
-    <h2 class="part"><span class="part-num">Part 1</span> Create Your Confluent Cloud Cluster</h2>
-
-    <div class="callout red">
-        <div class="callout-label">Before You Begin</div>
-        <p>You need a <strong>Confluent Cloud</strong> account. The free trial provides <strong>$400 in credits for 30 days</strong> &mdash; more than enough for this lab. No credit card is required to sign up.</p>
-    </div>
-
-    <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-            <h4>Sign up for Confluent Cloud</h4>
-            <p>Go to <a href="https://confluent.cloud/signup" target="_blank">confluent.cloud/signup</a> and create an account with your school email.</p>
-        </div>
-    </div>
-
-    <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-            <h4>Create an Environment</h4>
-            <p>After logging in, click <strong>Environments</strong> in the left sidebar, then <strong>Add cloud environment</strong>. Name it <code>ds-lab</code>. Select the <strong>Essentials</strong> Stream Governance package (free with trial).</p>
-        </div>
-    </div>
-
-    <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-            <h4>Create a Basic Cluster</h4>
-            <p>Inside your environment, click <strong>Add cluster</strong>. Choose the <strong>Basic</strong> type (lowest cost, ideal for learning). Pick the cloud provider and region closest to you (e.g., AWS us-east-2). Name it <code>greenhouse-lab</code> and click <strong>Launch cluster</strong>.</p>
-        </div>
-    </div>
-
-    <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">
-            <h4>Create a Topic</h4>
-            <p>Inside your cluster, click <strong>Topics</strong> in the left sidebar, then <strong>Create topic</strong>. Name it <code>greenhouse-sensors</code> with <strong>3 partitions</strong>. Leave the rest as defaults and click <strong>Create with defaults</strong>.</p>
-        </div>
-    </div>
-
-    <div class="step">
-        <div class="step-num">5</div>
-        <div class="step-body">
-            <h4>Create an API Key</h4>
-            <ol>
-                <li>In the left sidebar, click <strong>API Keys</strong> (under Cluster Overview)</li>
-                <li>Click <strong>Create key</strong></li>
-                <li>Choose <strong>My account</strong> scope (Global access)</li>
-                <li>Click <strong>Next</strong> and then <strong>Download and continue</strong></li>
-                <li>Save the downloaded file &mdash; it contains your <strong>Key</strong> (username) and <strong>Secret</strong> (password)</li>
-            </ol>
-        </div>
-    </div>
-
-    <div class="step">
-        <div class="step-num">6</div>
-        <div class="step-body">
-            <h4>Find Your Bootstrap Server</h4>
-            <p>In the left sidebar, click <strong>Cluster Settings</strong>. Under <strong>Endpoints</strong>, copy the <strong>Bootstrap server</strong> value. It will look like:</p>
-            <pre>pkc-xxxxx.us-east-2.aws.confluent.cloud:9092</pre>
-        </div>
-    </div>
+    <h2 class="part"><span class="part-num">Part 1</span> The Shared Confluent Cloud Cluster</h2>
 
     <div class="callout green">
-        <div class="callout-label">Checkpoint</div>
-        <p>You now have three values: the <strong>Bootstrap server URL</strong>, your <strong>API Key</strong>, and your <strong>API Secret</strong>. You will use these in the next step to configure the Python scripts.</p>
+        <div class="callout-label">No Sign-Up Required</div>
+        <p>I have provisioned a shared Kafka cluster on <strong>Confluent Cloud</strong>. You do not need to create an account, enter a credit card, or set up any infrastructure. The API credentials will be provided during the lab session.</p>
+    </div>
+
+    <h3 class="section">1.1 Cluster Details</h3>
+    <p>The class cluster is a <strong>Standard-tier</strong> Confluent Cloud cluster running on Google Cloud Platform. Here are the details you will need:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Property</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Cluster Name</td><td><code>ncf-cluster_0</code></td></tr>
+                <tr><td>Cluster ID</td><td><code>lkc-z2r253</code></td></tr>
+                <tr><td>Provider / Region</td><td>GCP &nbsp; <code>us-east1</code></td></tr>
+                <tr><td>Bootstrap Server</td><td><code>pkc-619z3.us-east1.gcp.confluent.cloud:9092</code></td></tr>
+                <tr><td>REST Endpoint</td><td><code>https://pkc-619z3.us-east1.gcp.confluent.cloud:443</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="section">1.2 What Each Endpoint Does</h3>
+
+    <p><strong>Bootstrap Server</strong> (port 9092) is the address your Kafka <em>producers</em> and <em>consumers</em> connect to. When a client first connects, it contacts this bootstrap address to discover the full list of brokers in the cluster. After that initial handshake the client talks directly to whichever broker owns the partition it needs. Every <code>Producer()</code> and <code>Consumer()</code> constructor in the code uses this address. The protocol is the native Kafka binary protocol over TLS (<code>SASL_SSL</code>).</p>
+
+    <p><strong>REST Endpoint</strong> (port 443) is an HTTP/JSON gateway to the same cluster. You can use it from any language or tool that speaks HTTP -- for example, <code>curl</code> or a web browser. It is handy for quick inspection or when you cannot install a native Kafka library. In this lab you will use the native Python client, so you will not call the REST endpoint directly, but it is good to know it exists. The Confluent Cloud UI uses it under the hood.</p>
+
+    <p><strong>Cluster ID</strong> (<code>lkc-z2r253</code>) is the unique identifier Confluent Cloud assigns to this cluster. You will see it in the UI URL and in API responses. It is not used in the Python client configuration, but you need it if you ever use the Confluent CLI or REST API to manage the cluster programmatically.</p>
+
+    <h3 class="section">1.3 Exploring the Cluster in the Confluent Cloud Console</h3>
+
+    <p>Your instructor will briefly walk through the Confluent Cloud console during lab. Below is a tour of the key sections with screenshots from the live cluster.</p>
+
+    <h4>Cluster Overview</h4>
+    <p>The overview dashboard shows real-time production and consumption throughput graphs, total storage used, and the number of topics and partitions. This is the first page you see when you open the cluster.</p>
+    <img src="img/cluster-overview.png" alt="Confluent Cloud cluster overview dashboard" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <h4>Topics</h4>
+    <p>The Topics page lists every topic in the cluster. You can see the topic name, number of partitions, and the number of messages. Our two lab topics (<code>greenhouse-sensors</code> and <code>greenhouse-alerts</code>) are listed here alongside the sample data topic that came with the cluster.</p>
+    <img src="img/topics-list.png" alt="Topics list in Confluent Cloud" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <p>Click a topic name to see its detail page with partition counts, throughput, and configuration (retention period, cleanup policy, etc.):</p>
+    <img src="img/topic-detail.png" alt="Topic detail page for greenhouse-sensors" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <p>The <strong>Messages</strong> tab is a live message browser. You can see each message's partition, offset, key, and full JSON value. This is extremely useful for debugging -- you can verify your producer is writing the data you expect:</p>
+    <img src="img/topic-messages.png" alt="Message viewer showing JSON payloads" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <h4>Clients (Consumers and Consumer Lag)</h4>
+    <p>In Confluent Cloud, consumer group information is found under <strong>Clients</strong> in the left sidebar. This section has three tabs: <strong>Producers</strong>, <strong>Consumers</strong>, and <strong>Consumer lag</strong>. The Consumers tab shows which consumer groups have connected, their partition assignments, and member details. The Consumer lag tab shows how far behind each group is -- a lag of zero means the consumer is fully caught up. You will use these views in Exercise 3 to observe rebalancing when consumers join or leave a group.</p>
+    <img src="img/consumer-groups.png" alt="Clients - Consumers view showing consumer groups" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <h4>Cluster Settings</h4>
+    <p>The Settings page (left sidebar &gt; <strong>Cluster Settings</strong>) shows the Bootstrap Server and REST Endpoint values from the table above, along with networking and security configuration. This is where you come to find connection details if you ever need them.</p>
+
+    <h4>API Keys</h4>
+    <p>API Keys are managed under <strong>Cluster Settings</strong> &gt; <strong>API Keys</strong> tab. Your shared key was created here with <strong>Kafka cluster</strong> scope, meaning it can produce, consume, and perform topic operations on this cluster -- but it cannot manage billing, environments, or other Confluent Cloud resources.</p>
+
+    <h4>Connectors</h4>
+    <p><strong>Connectors</strong> are managed integrations that stream data into or out of Kafka without writing custom producer or consumer code. They solve a common problem: most organizations need to move data between Kafka and external systems (databases, cloud storage, search engines, data warehouses). Instead of writing and maintaining a custom Python script for each integration, you configure a connector and it handles serialization, error recovery, offset tracking, and scaling automatically.</p>
+
+    <p>Connectors come in two types:</p>
+    <ul>
+        <li><strong>Source connectors</strong> read data from an external system and write it into a Kafka topic. Think of them as managed producers.</li>
+        <li><strong>Sink connectors</strong> read data from a Kafka topic and write it into an external system. Think of them as managed consumers.</li>
+    </ul>
+
+    <p>Some of the most commonly used connectors in production:</p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Connector</th><th>Type</th><th>What It Does</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Debezium (PostgreSQL, MySQL)</td><td>Source</td><td>Captures every INSERT, UPDATE, and DELETE from a database table and streams them into Kafka as change events. This is called Change Data Capture (CDC) and is how companies keep Kafka in sync with their operational databases in real time.</td></tr>
+                <tr><td>Amazon S3 Sink</td><td>Sink</td><td>Writes Kafka messages to S3 as Parquet, Avro, or JSON files. Used to build data lakes -- Kafka handles the real-time flow, S3 provides cheap long-term storage.</td></tr>
+                <tr><td>Elasticsearch Sink</td><td>Sink</td><td>Indexes Kafka messages into Elasticsearch for full-text search and log analytics dashboards (e.g., Kibana).</td></tr>
+                <tr><td>BigQuery / Snowflake Sink</td><td>Sink</td><td>Loads Kafka messages directly into a cloud data warehouse for analytics and BI reporting.</td></tr>
+                <tr><td>HTTP Source</td><td>Source</td><td>Polls a REST API on a schedule and writes the responses into a Kafka topic. Useful for ingesting data from third-party APIs that do not support streaming natively.</td></tr>
+                <tr><td>JDBC Source</td><td>Source</td><td>Polls a relational database table for new or changed rows and writes them to Kafka. Simpler than CDC but only detects changes at poll intervals, not in real time.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>Why use connectors instead of writing your own code? Three reasons: (1) connectors handle fault tolerance automatically -- if the connector crashes, it restarts from the last committed offset without losing or duplicating data; (2) connectors scale horizontally by running multiple tasks in parallel; and (3) connectors are battle-tested by the community and Confluent, so you avoid reinventing error handling, schema evolution, and backpressure logic that every integration eventually needs.</p>
+
+    <p>We do not use connectors in this lab (you write your own producer and consumer to understand how Kafka works at the code level), but in a production pipeline you would almost always prefer a connector for standard integrations.</p>
+
+    <h3 class="section">1.4 Pre-Created Topics</h3>
+    <p>Two topics have been created for this lab:</p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Topic</th><th>Partitions</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>greenhouse-sensors</td><td>3</td><td>Raw sensor telemetry (temperature, humidity). The producer writes here; the consumer reads here.</td></tr>
+                <tr><td>greenhouse-alerts</td><td>1</td><td>High-temperature alerts generated by your consumer in Exercise 4.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Why 3 Partitions?</div>
+        <p>Three partitions allow up to three consumers in the same consumer group to read in parallel -- one partition per consumer. This is the setup you will use in Exercise 3 to observe partition rebalancing. The <code>greenhouse-alerts</code> topic has only 1 partition because alert volume is low and ordering matters.</p>
     </div>
 
 
@@ -167,39 +244,51 @@ cp kafka_config_example.py _kafka_config.py</pre>
     <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
-            <h4>Fill in your credentials</h4>
-            <p>Open <code>_kafka_config.py</code> in your editor and replace the three placeholder values:</p>
+            <h4>Paste the shared API credentials</h4>
+            <p>Open <code>_kafka_config.py</code> in your editor. The bootstrap server is already filled in. Replace the two placeholder values with the <strong>API Key</strong> and <strong>API Secret</strong> provided by your instructor:</p>
             <pre>KAFKA_CONFIG = {
-    "bootstrap.servers": "pkc-xxxxx.us-east-2.aws.confluent.cloud:9092",
+    "bootstrap.servers": "pkc-619z3.us-east1.gcp.confluent.cloud:9092",
     "security.protocol": "SASL_SSL",
     "sasl.mechanisms":   "PLAIN",
-    "sasl.username":     "YOUR_API_KEY",       # &larr; paste your Key here
-    "sasl.password":     "YOUR_API_SECRET",    # &larr; paste your Secret here
+    "sasl.username":     "PASTE_API_KEY_HERE",       # &larr; paste the shared Key
+    "sasl.password":     "PASTE_API_SECRET_HERE",    # &larr; paste the shared Secret
 }</pre>
+            <p>The bootstrap server address points to the class cluster on GCP <code>us-east1</code>. The <code>security.protocol</code> is set to <code>SASL_SSL</code>, which means every connection is encrypted with TLS and authenticated with the SASL/PLAIN mechanism (username + password over an encrypted channel). This is how all Confluent Cloud clusters authenticate.</p>
         </div>
     </div>
 
     <div class="callout red">
         <div class="callout-label">Security</div>
-        <p>The file <code>_kafka_config.py</code> starts with an underscore, so it is <strong>automatically excluded</strong> from git by this repository's <code>.gitignore</code> rules. Never commit credentials to version control.</p>
+        <p>The file <code>_kafka_config.py</code> starts with an underscore, so it is <strong>automatically excluded</strong> from git by this repository's <code>.gitignore</code> rules. Never commit credentials to version control. These are shared class credentials -- do not distribute them outside this course.</p>
     </div>
 
 
     <!-- PART 3 -->
     <h2 class="part"><span class="part-num">Part 3</span> Exercise 1: Produce Messages</h2>
 
+    <div class="callout">
+        <div class="callout-label">Shared Cluster -- Use Your Name</div>
+        <p>Everyone in the class is producing to and consuming from the <strong>same Kafka topic</strong>. To avoid stepping on each other, every command in this lab requires a <code>--student YOURNAME</code> flag (use your first name, lowercase). This does three things:</p>
+        <ul>
+            <li><strong>Tags your messages</strong> so the consumer can filter to show only your data.</li>
+            <li><strong>Namespaces your consumer group</strong> (e.g., <code>alice-monitors</code>) so your offset tracking is independent of other students.</li>
+            <li><strong>Namespaces your message keys</strong> so partition assignment does not collide with other students.</li>
+        </ul>
+    </div>
+
     <h3 class="section">3.1 Run the producer</h3>
-    <pre>python producer.py --count 20</pre>
-    <p>Watch the delivery reports. Each line shows the topic, partition number, and offset. Messages route to different partitions based on the <code>sensor_id</code> key.</p>
+    <pre>python producer.py --student YOURNAME --count 20</pre>
+    <p>Replace <code>YOURNAME</code> with your first name in lowercase (e.g., <code>--student alice</code>). Use the same name in every command for the rest of the lab. Every message is tagged with your name so you can identify your own data in the shared topic.</p>
+    <p>Watch the delivery reports. Each line shows the topic, partition number, and offset. Messages route to different partitions based on your name and sensor ID key.</p>
 
     <h3 class="section">3.2 Observe in the Confluent Console</h3>
-    <p>Go back to the Confluent Cloud UI. Click <strong>Topics</strong> &rarr; <code>greenhouse-sensors</code> &rarr; <strong>Messages</strong>. You should see your 20 JSON messages spread across the 3 partitions.</p>
+    <p>Your instructor will project the Confluent Cloud UI during the lab. On the <strong>Topics</strong> page, click <code>greenhouse-sensors</code> &rarr; <strong>Messages</strong>. You should see your 20 JSON messages (and messages from other students) spread across the 3 partitions. Each message shows its partition number, offset, key, and full JSON value.</p>
 
     <h3 class="section">3.3 Questions to answer</h3>
     <ol>
-        <li>Do messages from the same <code>sensor_id</code> always land in the same partition? Why?</li>
-        <li>What happens if you run the producer again with <code>--count 10</code>? Do the new messages start at offset 0 or continue from the previous offset?</li>
-        <li>Open <code>producer.py</code> and find the <code>producer.produce()</code> call. What would happen if you removed the <code>key=</code> argument? (Try it.)</li>
+        <li>Do messages from the same sensor always land in the same partition? Why? (Hint: think about what the producer uses as the message key, and how Kafka decides which partition a key goes to.)</li>
+        <li>What happens if you run the producer again with <code>--count 10</code>? Do the new messages start at offset 0 or continue from the previous offset? What does that tell you about how Kafka stores data?</li>
+        <li>Open <code>producer.py</code> and find the <code>producer.produce()</code> call. What would happen if you removed the <code>key=</code> argument? (Try it and compare the partition distribution.)</li>
     </ol>
 
 
@@ -207,53 +296,95 @@ cp kafka_config_example.py _kafka_config.py</pre>
     <h2 class="part"><span class="part-num">Part 4</span> Exercise 2: Consume Messages</h2>
 
     <h3 class="section">4.1 Start a single consumer</h3>
-    <pre>python consumer.py</pre>
-    <p>The consumer reads from <code>auto.offset.reset: earliest</code>, so it replays all existing messages. Each line shows <code>[partition:offset]</code>, sensor ID, temperature, humidity, and a running average.</p>
+    <pre>python consumer.py --student YOURNAME</pre>
+    <p>The consumer reads from <code>auto.offset.reset: earliest</code>, so it replays all existing messages. By default it only shows messages tagged with your student name (other students' messages are silently skipped). Each line shows <code>[partition:offset]</code>, sensor ID, temperature, humidity, and a running average.</p>
+    <p>To see everyone's messages, add the <code>--all</code> flag: <code>python consumer.py --student YOURNAME --all</code></p>
 
     <h3 class="section">4.2 Leave it running and produce more data</h3>
     <p>Open a <strong>second terminal</strong> and run:</p>
-    <pre>python producer.py --count 10</pre>
-    <p>Switch back to the consumer terminal. The new messages appear in near-real-time &mdash; even though the broker is in the cloud.</p>
+    <pre>python producer.py --student YOURNAME --count 10</pre>
+    <p>Switch back to the consumer terminal. Your new messages appear in near-real-time &mdash; even though the broker is in the cloud.</p>
 
     <h3 class="section">4.3 Questions to answer</h3>
     <ol>
-        <li>When the consumer first starts, does it read messages in global order or partition order?</li>
-        <li>Stop the consumer (<code>Ctrl-C</code>) and restart it. Does it re-read all messages? Why or why not? (Hint: check the <code>enable.auto.commit</code> setting.)</li>
+        <li>Look at the <code>[partition:offset]</code> numbers in the output. Are the offsets always increasing across all partitions, or only within each partition? What does this tell you about Kafka's ordering guarantees?</li>
+        <li>Stop the consumer (<code>Ctrl-C</code>) and restart it. Does it re-read all the old messages, or does it pick up where it left off? (Hint: look at <code>enable.auto.commit</code> in the code -- when this is <code>True</code>, the consumer periodically saves its current offset position to Kafka, so on restart it knows where it stopped.)</li>
     </ol>
 
 
     <!-- PART 5 -->
     <h2 class="part"><span class="part-num">Part 5</span> Exercise 3: Consumer Groups</h2>
 
-    <h3 class="section">5.1 Scale out with multiple consumers</h3>
-    <p>Open <strong>three terminal windows</strong>. In each one, start a consumer with the same group:</p>
+    <h3 class="section">5.0 Two ways to use multiple consumers</h3>
+
+    <p>When multiple consumers read the same topic, the result depends entirely on whether they share a <strong>consumer group name</strong> or use <strong>different group names</strong>. These are two fundamentally different patterns, and understanding the difference is the entire point of this exercise.</p>
+
+    <h4>Pattern A: Same group = split the work (parallel processing)</h4>
+    <p>When three consumers join the <em>same</em> group, Kafka divides the partitions among them. Each message is delivered to <strong>exactly one</strong> consumer in the group. This is how you scale processing: if one consumer cannot keep up, you add more consumers to the same group and they share the load.</p>
+    <pre>
+Topic: greenhouse-sensors (3 partitions)
+Group: alice-team
+
+  Partition 0  -->  Consumer A  (Terminal 1)
+  Partition 1  -->  Consumer B  (Terminal 2)
+  Partition 2  -->  Consumer C  (Terminal 3)
+
+Result: Each message is processed exactly once.
+        The work is split three ways.
+        If Consumer B crashes, its partition is reassigned
+        to A or C (this is "rebalancing").</pre>
+
+    <h4>Pattern B: Different groups = independent copies (fan-out)</h4>
+    <p>When two consumers use <em>different</em> group names, each group independently reads <strong>every message</strong> in the topic. The groups do not know about each other. Each maintains its own set of offsets. This is how you let multiple independent applications consume the same data stream without interfering with each other.</p>
+    <pre>
+Topic: greenhouse-sensors (3 partitions)
+Group: alice-monitors     Group: alice-analytics
+
+  Partition 0  --> Consumer X    Partition 0  --> Consumer Y
+  Partition 1  --> Consumer X    Partition 1  --> Consumer Y
+  Partition 2  --> Consumer X    Partition 2  --> Consumer Y
+
+Result: Consumer X sees ALL messages.
+        Consumer Y also sees ALL messages (independently).
+        They track offsets separately.
+        Stopping one has no effect on the other.</pre>
+
+    <div class="callout teal">
+        <div class="callout-label">Why This Matters</div>
+        <p>In production, Pattern A is how you build scalable data processing pipelines (e.g., three workers ingesting sensor data into a database). Pattern B is how you let multiple systems consume the same event stream independently (e.g., one group writes to a database, another triggers real-time alerts, a third feeds a dashboard -- all reading the same Kafka topic without interfering with each other).</p>
+    </div>
+
+    <p>You will now try both patterns yourself.</p>
+
+    <h3 class="section">5.1 Scale out with multiple consumers (Pattern A)</h3>
+    <p>Open <strong>three terminal windows</strong>. In each one, start a consumer with the same <code>--group</code> suffix. The group name becomes <code>YOURNAME-team</code>, so your three consumers share partitions without interfering with other students:</p>
     <pre># Terminal 1
-python consumer.py --group greenhouse-team
+python consumer.py --student YOURNAME --group team --all
 
 # Terminal 2
-python consumer.py --group greenhouse-team
+python consumer.py --student YOURNAME --group team --all
 
 # Terminal 3
-python consumer.py --group greenhouse-team</pre>
-    <p>Now produce a burst of messages from a fourth terminal:</p>
-    <pre>python producer.py --count 60 --burst</pre>
+python consumer.py --student YOURNAME --group team --all</pre>
+    <p>Use <code>--all</code> here so you can see messages arriving across all partitions regardless of who produced them. Now produce a burst from a fourth terminal:</p>
+    <pre>python producer.py --student YOURNAME --count 60 --burst</pre>
 
     <h3 class="section">5.2 Observe the partition assignment</h3>
-    <p>Each consumer should receive messages from a different subset of partitions. With 3 partitions and 3 consumers, each consumer handles exactly one partition.</p>
+    <p>Each consumer should receive messages from a different subset of partitions. Look at the <code>[partition:offset]</code> numbers at the start of each line. With 3 partitions and 3 consumers, each consumer handles exactly one partition -- you should see Terminal 1 only showing <code>[0:...]</code>, Terminal 2 only showing <code>[1:...]</code>, and Terminal 3 only showing <code>[2:...]</code> (the specific assignment may vary, but each terminal should show only one partition number).</p>
 
     <h3 class="section">5.3 Observe rebalancing</h3>
     <p>Kill one of the three consumers (<code>Ctrl-C</code>). The broker detects the departure and <strong>rebalances</strong>: the remaining two consumers split three partitions between them. Produce another burst and observe the redistribution.</p>
 
     <h3 class="section">5.4 Questions to answer</h3>
     <ol>
-        <li>What happened when you stopped one consumer? How long did it take for the remaining consumers to pick up the orphaned partition?</li>
-        <li>Start a <strong>fourth</strong> consumer in the same group. Does it receive any messages? Why?</li>
-        <li>Start a consumer with a <strong>different</strong> group name (<code>--group analytics-team</code>). Does it receive messages that were already consumed by <code>greenhouse-team</code>? Why?</li>
+        <li>What happened when you stopped one consumer? How long did it take for the remaining two consumers to pick up the orphaned partition? (Kafka detects the departure through missed heartbeats, then reassigns partitions. This process is called a <em>rebalance</em>.)</li>
+        <li>Start a <strong>fourth</strong> consumer in the same group (<code>--group team</code>). Does it receive any messages? Why? (Think about the relationship between the number of partitions and the number of consumers in a group.)</li>
+        <li><strong>(Pattern B)</strong> Stop all the <code>--group team</code> consumers. Now start a consumer with a <strong>different</strong> group suffix (<code>--group solo</code>). Your actual group name becomes <code>YOURNAME-solo</code> instead of <code>YOURNAME-team</code>. Does this new consumer receive messages that were already consumed by the <code>team</code> group? Why? (Refer back to Pattern B in section 5.0 -- does a new group start from scratch or share offsets with existing groups?)</li>
     </ol>
 
     <div class="callout teal">
         <div class="callout-label">Key Takeaway</div>
-        <p>Consumer groups are the mechanism for <strong>horizontal read scaling</strong> in Kafka. Each group independently tracks its own offsets. Adding a new group does not affect existing groups &mdash; both see the full topic. Within a group, partitions are divided so no message is processed twice.</p>
+        <p><strong>Same group</strong> = split the work (Pattern A). <strong>Different groups</strong> = independent copies (Pattern B). Within a group, partitions are divided so no message is processed twice. Across groups, each group independently tracks its own offsets and sees the full topic. This is one of Kafka's most powerful design decisions -- it lets you build both parallel processing and fan-out architectures on the same data stream.</p>
     </div>
 
 
@@ -267,8 +398,8 @@ python consumer.py --group greenhouse-team</pre>
     <h3 class="section">6.2 Add a new sensor type</h3>
     <p>Modify <code>producer.py</code> to include a <code>light_lux</code> field in each reading (a random float between 200 and 8000). Update the consumer to display it. The old consumer code still works even though the message format changed &mdash; this is <strong>forward compatibility</strong> via optional fields.</p>
 
-    <h3 class="section">6.3 Create a second topic and produce alerts</h3>
-    <p>In the Confluent Cloud UI, create a new topic called <code>greenhouse-alerts</code> with <strong>1 partition</strong>. When the consumer detects a high temperature, have it <strong>produce</strong> an alert message to <code>greenhouse-alerts</code>. This creates a two-stage streaming pipeline: raw telemetry &rarr; alert generation.</p>
+    <h3 class="section">6.3 Produce alerts to a second topic</h3>
+    <p>A second topic called <code>greenhouse-alerts</code> (1 partition) has already been created on the cluster. When the consumer detects a high temperature, have it <strong>produce</strong> an alert message to <code>greenhouse-alerts</code>. This creates a two-stage streaming pipeline: raw telemetry &rarr; alert generation.</p>
 
     <div class="callout gold">
         <div class="callout-label">Deliverable</div>
@@ -276,10 +407,35 @@ python consumer.py --group greenhouse-team</pre>
     </div>
 
 
+
+    <!-- SEEING IT ALL -->
+    <h2 class="part"><span class="part-num">Part 6.5</span> Seeing It All in Action</h2>
+
+    <p>Before moving to the stretch goal, take a moment to look at what your pipeline looks like from the Confluent Cloud console. After producing and consuming messages in the exercises above, the dashboard now shows real activity.</p>
+
+    <h3 class="section">Cluster Throughput</h3>
+    <p>The overview dashboard shows spikes in both <strong>Production</strong> (bytes/sec written by your producer) and <strong>Consumption</strong> (bytes/sec read by your consumer). In a production system, these graphs help you spot traffic surges, detect when consumers fall behind, or confirm that a deployment is actually processing data:</p>
+    <img src="img/live-overview.png" alt="Cluster overview showing production and consumption throughput" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <h3 class="section">Messages in the Topic</h3>
+    <p>The message viewer shows every message that landed in <code>greenhouse-sensors</code>. Notice each row shows the <strong>partition</strong>, <strong>offset</strong>, <strong>key</strong> (your student name + sensor ID), and the full <strong>JSON value</strong>. You can see your <code>"student"</code> field in each payload, and how messages from the same key consistently land in the same partition:</p>
+    <img src="img/live-messages.png" alt="Message viewer showing JSON payloads with student tags" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <h3 class="section">Consumer Groups and Lag</h3>
+    <p>Under <strong>Clients</strong> &gt; <strong>Consumer lag</strong>, you can see every consumer group that has connected to the cluster. Each group lists its members, which partitions they are assigned, their current offset, and their <strong>lag</strong> (the difference between the latest offset in the partition and the offset the consumer has read up to). A lag of zero means the consumer is fully caught up. A growing lag means the consumer is falling behind -- either it is too slow, or it has stopped:</p>
+    <img src="img/live-consumer-groups.png" alt="Consumer lag view showing partition assignments and lag" style="max-width:100%;border:1px solid #e0e0ee;border-radius:6px;margin:12px 0;">
+
+    <div class="callout teal">
+        <div class="callout-label">Connecting the Dots</div>
+        <p>Every concept from the lab is visible here: the producer wrote messages with keys, Kafka hashed those keys to assign partitions, the consumer group divided partitions among its members, and each consumer tracked its position using offsets. The Confluent Cloud console is just a window into the same data structures your Python code interacts with.</p>
+    </div>
+
     <!-- PART 7 -->
     <h2 class="part"><span class="part-num">Part 7</span> Stretch: Kafka to Delta Live Tables</h2>
 
-    <p>In a production data platform, you rarely consume Kafka with standalone Python scripts. A streaming engine like Spark Structured Streaming reads the topic and lands the data as a <strong>Delta table</strong>. Databricks DLT makes this declarative:</p>
+    <p>In a production data platform, you rarely consume Kafka with standalone Python scripts. Instead, a streaming engine continuously reads from Kafka and writes the data into durable, queryable tables. <strong>Spark Structured Streaming</strong> is a streaming engine built into Apache Spark that reads from sources like Kafka and writes to sinks like Delta Lake tables. <strong>Delta Live Tables (DLT)</strong> is a Databricks feature that wraps Structured Streaming in a declarative Python API: instead of writing the read/write loop yourself, you define each table as a function and DLT manages the streaming pipeline for you.</p>
+
+    <p>The code below shows how you would connect this lab's Kafka topic to a Delta table using DLT. The <code>readStream</code> call opens a continuous connection to the Kafka cluster. Every new message that arrives is parsed from JSON and appended to a <strong>Bronze</strong> (raw) table. In a Medallion architecture, downstream <strong>Silver</strong> tables apply data quality rules (e.g., reject temperatures below -40 C), and <strong>Gold</strong> tables produce aggregations ready for dashboards and reports.</p>
 
     <pre>
 import dlt
@@ -295,7 +451,7 @@ def bronze_sensors():
     return (
         spark.readStream
             .format("kafka")
-            .option("kafka.bootstrap.servers", "pkc-xxxxx.confluent.cloud:9092")
+            .option("kafka.bootstrap.servers", "pkc-619z3.us-east1.gcp.confluent.cloud:9092")
             .option("kafka.security.protocol", "SASL_SSL")
             .option("kafka.sasl.mechanism", "PLAIN")
             .option("kafka.sasl.jaas.config",
@@ -326,18 +482,15 @@ def bronze_sensors():
     <!-- PART 8 -->
     <h2 class="part"><span class="part-num">Part 8</span> Cleanup</h2>
 
-    <div class="callout red">
-        <div class="callout-label">Do Not Skip This</div>
-        <p>Your Confluent Cloud trial has $400 in credits for 30 days. While a Basic cluster is inexpensive, you should clean up when done to avoid consuming credits unnecessarily.</p>
-    </div>
+    <p>Because this is a shared class cluster, you do not need to delete any infrastructure. Just make sure you:</p>
 
     <ol>
-        <li>In the Confluent Cloud console, go to <strong>Cluster Settings</strong></li>
-        <li>Scroll to the bottom and click <strong>Delete cluster</strong></li>
-        <li>Confirm the deletion by typing the cluster name</li>
+        <li><strong>Stop all running consumers</strong> (<code>Ctrl-C</code> in each terminal). Idle consumers still maintain heartbeats to the broker and consume connection slots.</li>
+        <li><strong>Delete your <code>_kafka_config.py</code></strong> if you are on a shared or public machine. The credentials give write access to the cluster.</li>
+        <li><strong>Do not share the API key or secret</strong> outside this course.</li>
     </ol>
 
-    <p>If you want to keep experimenting, leave the cluster running &mdash; a Basic cluster with minimal traffic costs well under $1/day.</p>
+    <p>The instructor will tear down the cluster after the lab period ends.</p>
 
 
     <footer class="doc-footer">

@@ -1,11 +1,12 @@
 # ── Confluent Cloud Kafka Credentials ────────────────────────────
-# Copy this file to  _kafka_config.py  and fill in your values.
+# Copy this file to  _kafka_config.py  and fill in the API key
+# and secret provided by your instructor.
 # DO NOT commit _kafka_config.py to git.
 
 KAFKA_CONFIG = {
-    "bootstrap.servers": "YOUR_CLUSTER.us-east-1.aws.confluent.cloud:9092",
+    "bootstrap.servers": "pkc-619z3.us-east1.gcp.confluent.cloud:9092",
     "security.protocol": "SASL_SSL",
     "sasl.mechanisms":   "PLAIN",
-    "sasl.username":     "YOUR_API_KEY",
-    "sasl.password":     "YOUR_API_SECRET",
+    "sasl.username":     "PASTE_API_KEY_HERE",
+    "sasl.password":     "PASTE_API_SECRET_HERE",
 }

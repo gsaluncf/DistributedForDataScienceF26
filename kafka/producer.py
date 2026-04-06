@@ -1,20 +1,23 @@
 """
-Week 12 — Kafka Producer: Greenhouse Sensor Telemetry
+Week 12 -- Kafka Producer: Greenhouse Sensor Telemetry
 =====================================================
 Simulates IoT sensors reporting temperature and humidity readings
-to a Confluent Cloud Kafka topic.  Each message is a JSON object:
+to a shared Confluent Cloud Kafka topic.  Each message is a JSON
+object tagged with your student ID so you can identify your own
+data in the shared topic:
 
-    {"sensor_id": "sensor-03", "temperature_c": 24.7,
-     "humidity_pct": 61.2, "timestamp": "2026-04-14T09:30:01Z"}
+    {"student": "alice", "sensor_id": "sensor-03",
+     "temperature_c": 24.7, "humidity_pct": 61.2,
+     "timestamp": "2026-04-14T09:30:01Z"}
 
 Setup:
-    1. Copy  _kafka_config.py.example  to  _kafka_config.py
-    2. Fill in your Confluent Cloud bootstrap server, API key, and secret.
+    1. Copy  kafka_config_example.py  to  _kafka_config.py
+    2. Paste the shared API key and secret provided by your instructor.
 
 Usage:
-    python producer.py                  # default: 20 messages, 1 per second
-    python producer.py --count 100      # send 100 messages
-    python producer.py --burst          # send all messages instantly (no delay)
+    python producer.py --student alice                # required: your first name
+    python producer.py --student alice --count 100    # send 100 messages
+    python producer.py --student alice --burst        # send all instantly
 """
 
 import argparse
@@ -38,9 +41,10 @@ TOPIC = "greenhouse-sensors"
 SENSOR_IDS = [f"sensor-{i:02d}" for i in range(1, 7)]  # sensor-01 … sensor-06
 
 
-def make_reading(sensor_id: str) -> dict:
-    """Generate a single simulated sensor reading."""
+def make_reading(student: str, sensor_id: str) -> dict:
+    """Generate a single simulated sensor reading tagged with student ID."""
     return {
+        "student": student,
         "sensor_id": sensor_id,
         "temperature_c": round(random.uniform(18.0, 35.0), 1),
         "humidity_pct": round(random.uniform(30.0, 90.0), 1),
@@ -59,23 +63,24 @@ def delivery_report(err, msg):
         )
 
 
-def run(count: int, burst: bool):
+def run(student: str, count: int, burst: bool):
     producer = Producer({
         **KAFKA_CONFIG,
-        "client.id": "greenhouse-producer",
+        "client.id": f"{student}-producer",
     })
 
-    print(f"Producing {count} messages to '{TOPIC}' ...")
+    print(f"[{student}] Producing {count} messages to '{TOPIC}' ...")
     for i in range(count):
         sensor_id = random.choice(SENSOR_IDS)
-        reading = make_reading(sensor_id)
+        reading = make_reading(student, sensor_id)
         value = json.dumps(reading)
 
-        # Key on sensor_id so all readings from one sensor land in the
-        # same partition — this preserves per-sensor ordering.
+        # Key on student + sensor_id so each student's sensors land in
+        # consistent partitions without colliding with other students.
+        msg_key = f"{student}-{sensor_id}"
         producer.produce(
             TOPIC,
-            key=sensor_id.encode("utf-8"),
+            key=msg_key.encode("utf-8"),
             value=value.encode("utf-8"),
             callback=delivery_report,
         )
@@ -96,7 +101,9 @@ def run(count: int, burst: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Greenhouse sensor producer")
+    parser.add_argument("--student", required=True,
+                        help="your first name (lowercase) -- tags every message")
     parser.add_argument("--count", type=int, default=20, help="messages to send")
     parser.add_argument("--burst", action="store_true", help="send without delay")
     args = parser.parse_args()
-    run(args.count, args.burst)
+    run(args.student.lower().strip(), args.count, args.burst)
