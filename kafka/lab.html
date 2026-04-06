@@ -110,7 +110,17 @@
 
     <div class="callout green">
         <div class="callout-label">No Sign-Up Required</div>
-        <p>I have provisioned a shared Kafka cluster on <strong>Confluent Cloud</strong>. You do not need to create an account, enter a credit card, or set up any infrastructure. The API credentials will be provided during the lab session.</p>
+        <p>I have provisioned a shared Kafka cluster on <strong>Confluent Cloud</strong> and invited you with your <code>@ncf.edu</code> email. You do not need to create your own account, enter a credit card, or set up any infrastructure. The API credentials for the Python scripts will be provided during the lab session.</p>
+    </div>
+
+    <div class="step">
+        <div class="step-num">0</div>
+        <div class="step-body">
+            <h4>Accept your Confluent Cloud invite and log in</h4>
+            <p>Check your <code>@ncf.edu</code> email for an invitation from Confluent Cloud. Click the link to set a password and activate your account. Once activated, log in at <a href="https://confluent.cloud" target="_blank">confluent.cloud</a>.</p>
+            <p>You have been given <strong>DataDiscovery</strong> access, which lets you browse topics, inspect messages, view consumer groups and lag, and explore schemas -- everything you need for this lab. You cannot create or delete topics, clusters, or API keys.</p>
+            <p>After logging in, click <strong>Environments</strong> &rarr; <strong>default</strong> &rarr; <strong>ncf-cluster_0</strong> to open the shared cluster.</p>
+        </div>
     </div>
 
     <h3 class="section">1.1 Cluster Details</h3>
@@ -141,7 +151,7 @@
 
     <h3 class="section">1.3 Exploring the Cluster in the Confluent Cloud Console</h3>
 
-    <p>Your instructor will briefly walk through the Confluent Cloud console during lab. Below is a tour of the key sections with screenshots from the live cluster.</p>
+    <p>Now that you are logged in, take a few minutes to explore the Confluent Cloud console. Below is a tour of the key sections with screenshots from the live cluster.</p>
 
     <h4>Cluster Overview</h4>
     <p>The overview dashboard shows real-time production and consumption throughput graphs, total storage used, and the number of topics and partitions. This is the first page you see when you open the cluster.</p>
@@ -282,7 +292,7 @@ cp kafka_config_example.py _kafka_config.py</pre>
     <p>Watch the delivery reports. Each line shows the topic, partition number, and offset. Messages route to different partitions based on your name and sensor ID key.</p>
 
     <h3 class="section">3.2 Observe in the Confluent Console</h3>
-    <p>Your instructor will project the Confluent Cloud UI during the lab. On the <strong>Topics</strong> page, click <code>greenhouse-sensors</code> &rarr; <strong>Messages</strong>. You should see your 20 JSON messages (and messages from other students) spread across the 3 partitions. Each message shows its partition number, offset, key, and full JSON value.</p>
+    <p>In your browser, open the Confluent Cloud console. Navigate to <strong>Topics</strong> &rarr; <code>greenhouse-sensors</code> &rarr; <strong>Messages</strong>. You should see your 20 JSON messages (and messages from other students) spread across the 3 partitions. Each message shows its partition number, offset, key, and full JSON value.</p>
 
     <h3 class="section">3.3 Questions to answer</h3>
     <ol>
