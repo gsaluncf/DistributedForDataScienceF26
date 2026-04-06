@@ -53,8 +53,8 @@
 
     <div class="callout teal">
         <div class="callout-label">This Week</div>
-        <p><strong>Tuesday:</strong> Lecture &mdash; where brokers live in the stack, what Kafka solves, core concepts (topics, partitions, offsets, consumer&nbsp;groups), and the complexities streaming introduces.</p>
-        <p><strong>Thursday:</strong> Lab &mdash; sign up for Confluent Cloud, produce and consume sensor telemetry with Python, observe consumer group rebalancing, and build a two-stage streaming pipeline.</p>
+        <p><strong>Tuesday:</strong> Lecture -- where brokers live in the stack, what Kafka solves, core concepts (topics, partitions, offsets, consumer groups), and the complexities streaming introduces.</p>
+        <p><strong>Thursday:</strong> Lab -- connect to a shared Confluent Cloud Kafka cluster, produce and consume greenhouse sensor telemetry with Python, observe consumer group rebalancing, and build a two-stage streaming pipeline. No sign-up or credit card required -- the instructor has provisioned the cluster and will share API credentials during the lab session.</p>
     </div>
 
     <h2 class="part"><span class="part-num">Part 1</span> Materials</h2>
@@ -68,27 +68,32 @@
         <a href="lab.html" class="card">
             <div class="card-label lab">Lab</div>
             <div class="card-title">Producer/Consumer with Confluent Cloud</div>
-            <div class="card-desc">Set up a managed Kafka cluster, stream greenhouse sensor data with Python, scale consumers horizontally, and build a real-time alert pipeline.</div>
+            <div class="card-desc">Connect to a shared managed Kafka cluster, stream greenhouse sensor data with Python, scale consumers horizontally, and build a real-time alert pipeline.</div>
         </a>
     </div>
 
     <h2 class="part"><span class="part-num">Part 2</span> Starter Code</h2>
 
-    <p>Download these files into a local <code>week12/</code> folder. The config template holds your Confluent Cloud credentials (never committed to git).</p>
+    <p>Download these files into a local <code>week12/</code> folder. The config template has the bootstrap server pre-filled -- you just paste the shared API key and secret provided by your instructor.</p>
 
     <ul class="file-list">
-        <li><a href="producer.py">producer.py</a> <code>Greenhouse sensor producer &mdash; keys on sensor_id for partition ordering</code></li>
-        <li><a href="consumer.py">consumer.py</a> <code>Consumer with running averages, graceful shutdown, session summary</code></li>
-        <li><a href="kafka_config_example.py">kafka_config_example.py</a> <code>Credentials template &mdash; copy to _kafka_config.py and fill in</code></li>
-        <li><a href="requirements.txt">requirements.txt</a> <code>confluent-kafka&gt;=2.6.0</code></li>
+        <li><a href="producer.py" download>producer.py</a> <code>Greenhouse sensor producer -- tags messages with your --student name and keys on student+sensor_id for partition ordering</code></li>
+        <li><a href="consumer.py" download>consumer.py</a> <code>Consumer with per-student filtering, running averages, graceful shutdown, and session summary</code></li>
+        <li><a href="kafka_config_example.py" download>kafka_config_example.py</a> <code>Credentials template -- copy to _kafka_config.py and paste the shared key/secret</code></li>
+        <li><a href="requirements.txt" download>requirements.txt</a> <code>confluent-kafka&gt;=2.6.0</code></li>
     </ul>
+
+    <div class="callout">
+        <div class="callout-label">Shared Cluster</div>
+        <p>Everyone in the class uses the same Kafka cluster and topics. The <code>--student YOURNAME</code> flag on both the producer and consumer ensures your messages are tagged and your consumer group is namespaced so you do not interfere with other students. Use your first name in lowercase and keep it consistent across all commands.</p>
+    </div>
 
     <h2 class="part"><span class="part-num">Part 3</span> Readings</h2>
 
     <ul>
-        <li><a href="https://kafka.apache.org/documentation/#gettingStarted" target="_blank">Apache Kafka &mdash; Getting Started</a></li>
-        <li><a href="https://developer.confluent.io/learn/apache-kafka-on-the-go/" target="_blank">Confluent Developer &mdash; Kafka Fundamentals</a></li>
-        <li><a href="https://docs.confluent.io/cloud/current/get-started/index.html" target="_blank">Confluent Cloud &mdash; Quick Start</a></li>
+        <li><a href="https://kafka.apache.org/documentation/#gettingStarted" target="_blank">Apache Kafka -- Getting Started</a></li>
+        <li><a href="https://developer.confluent.io/learn/apache-kafka-on-the-go/" target="_blank">Confluent Developer -- Kafka Fundamentals</a></li>
+        <li><a href="https://docs.confluent.io/cloud/current/get-started/index.html" target="_blank">Confluent Cloud -- Quick Start</a></li>
         <li><a href="https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html" target="_blank">confluent-kafka Python Client Docs</a></li>
     </ul>
 
@@ -96,7 +101,7 @@
         <div class="callout-label">Deliverables (due Sun Apr 20, 11:59 pm)</div>
         <p>1. Modified <code>consumer.py</code> with alert threshold and cross-topic alert production (Lab Exercises 6.1 and 6.3).</p>
         <p>2. Screenshot of alert messages visible in the Confluent Cloud UI on the <code>greenhouse-alerts</code> topic.</p>
-        <p>3. Short answers to the lab questions (Parts 3&ndash;5).</p>
+        <p>3. Short answers to the lab questions (Parts 3-5).</p>
     </div>
 
     <footer class="doc-footer">
