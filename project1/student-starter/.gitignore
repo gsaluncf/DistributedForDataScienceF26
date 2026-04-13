@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.aws-sam/
+_secrets.env
+.pytest_cache/

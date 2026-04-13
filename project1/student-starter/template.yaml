@@ -16,16 +16,13 @@ Parameters:
 
 Resources:
 
-  # -----------------------------------------------------------------------
   # SQS Queues
-  # -----------------------------------------------------------------------
-
   InputQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Sub "adflow-${StudentId}-input"
       VisibilityTimeout: 60
-      MessageRetentionPeriod: 86400  # 1 day
+      MessageRetentionPeriod: 86400   # 1 day
 
   ResultsQueue:
     Type: AWS::SQS::Queue
@@ -34,10 +31,7 @@ Resources:
       VisibilityTimeout: 30
       MessageRetentionPeriod: 86400
 
-  # -----------------------------------------------------------------------
   # DynamoDB Table
-  # -----------------------------------------------------------------------
-
   ResultsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -50,10 +44,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-  # -----------------------------------------------------------------------
   # Lambda Worker
-  # -----------------------------------------------------------------------
-
   WorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -84,16 +75,12 @@ Resources:
             FunctionResponseTypes:
               - ReportBatchItemFailures
 
-# -----------------------------------------------------------------------
-# Outputs - use these values for the test apparatus
-# -----------------------------------------------------------------------
-
 Outputs:
   InputQueueUrl:
     Description: URL of your input queue (paste into test apparatus)
     Value: !Ref InputQueue
   InputQueueArn:
-    Description: ARN of your input queue (needed for competition subscription)
+    Description: ARN of your input queue
     Value: !GetAtt InputQueue.Arn
   ResultsQueueUrl:
     Description: URL of your results queue

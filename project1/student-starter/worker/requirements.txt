@@ -1,3 +1,2 @@
-# boto3 is already included in the Lambda Python 3.12 runtime.
-# Do NOT add it here -- it bloats the package from 5KB to 15MB
-# and causes 2-3 second cold starts.
+# boto3 is pre-installed in the Lambda Python 3.12 runtime.
+# Do NOT add it here — it bloats the deployment package by ~15 MB.

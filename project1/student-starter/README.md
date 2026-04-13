@@ -1,111 +1,107 @@
-# AdFlow - Real-Time Ad Selection Pipeline
+# AdFlow — Real-Time Ad Selection Pipeline
+**Project 1 · Distributed Systems for Data Science · New College of Florida**
+
+## Student
+Matthew Macfarlane (`macfarlane`)
+
+---
 
 ## Quick Start
 
-### 1. Set your student ID
-
-Pick a short ID (your name, initials, etc.) and use it everywhere. Example: `gsalu`
-
-All your AWS resources will be named `adflow-{yourid}-*`.
-
-### 2. Deploy with SAM
-
+### 1. Create and activate a virtual environment
 ```bash
-sam build
-sam deploy --guided --stack-name adflow-YOURID
+python -m venv .venv
+# macOS / Linux
+source .venv/bin/activate
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
 ```
 
-When prompted for `StudentId`, enter your chosen ID.
-
-After deployment, note the outputs -- you will need the queue URLs for the test apparatus.
-
-### 3. Verify deployment
-
-```bash
-# Check your Lambda exists
-aws lambda get-function --function-name adflow-YOURID-worker
-
-# Check your queues
-aws sqs get-queue-url --queue-name adflow-YOURID-input
-aws sqs get-queue-url --queue-name adflow-YOURID-results
-
-# Check your DynamoDB table
-aws dynamodb describe-table --table-name adflow-YOURID-results
-
-# Tail your Lambda logs (live)
-aws logs tail /aws/lambda/adflow-YOURID-worker --follow
-```
-
-### 4. Run tests locally before deploying
-
+### 2. Install test dependencies
 ```bash
 pip install moto[sqs,dynamodb] pytest
+```
+
+### 3. Run tests (all 23 must pass)
+```bash
 pytest worker/tests/test_handler.py -v
 ```
 
-All three test classes must pass before you deploy.
-
-### 5. Test with the test apparatus
-
-Open the test apparatus web page, enter your student ID, select a test profile,
-and run. Watch your Lambda process messages and results appear in DynamoDB.
-
-### 6. Cleanup between test runs
-
+### 4. Deploy
 ```bash
-python cleanup.py --student-id YOURID --region us-east-1
+sam build
+sam deploy --guided --stack-name adflow-macfarlane
+# Parameter StudentId: macfarlane
 ```
 
-### 7. Tear down when done
-
+### 5. Verify deployment
 ```bash
-sam delete --stack-name adflow-YOURID
+aws lambda get-function --function-name adflow-macfarlane-worker
+aws sqs get-queue-url --queue-name adflow-macfarlane-input
+aws dynamodb describe-table --table-name adflow-macfarlane-results
 ```
+
+### 6. Stream logs
+```bash
+aws logs tail /aws/lambda/adflow-macfarlane-worker --follow
+```
+
+### 7. Cleanup between runs
+```bash
+python cleanup.py --student-id macfarlane
+```
+
+### 8. Tear down when done
+```bash
+sam delete --stack-name adflow-macfarlane
+```
+
+---
 
 ## Project Structure
-
 ```
-adflow-YOURID/
-  template.yaml              # SAM template (creates all AWS resources)
-  worker/
-    lambda_handler.py         # YOUR CODE - implement the four tasks
-    requirements.txt          # Dependencies (boto3)
-    tests/
-      test_handler.py         # Three test suites - all must pass
-  analysis/
-    analysis.ipynb            # Analyst report (Q1-Q4)
-  cleanup.py                  # Queue purge + table recreate
-  README.md                   # This file
-```
-
-## Viewing Logs
-
-Your Lambda writes structured logs to CloudWatch. To view them:
-
-```bash
-# Live tail (follows new log entries)
-aws logs tail /aws/lambda/adflow-YOURID-worker --follow
-
-# Search for specific patterns
-aws logs filter-log-events \
-    --log-group-name /aws/lambda/adflow-YOURID-worker \
-    --filter-pattern "Batch complete"
-
-# Filter by time range
-aws logs filter-log-events \
-    --log-group-name /aws/lambda/adflow-YOURID-worker \
-    --start-time 1710000000000 \
-    --filter-pattern "ERROR"
+.
+├── template.yaml              # SAM template — all AWS resources
+├── iam-policy.json            # Scoped IAM policy for adflow-tester user
+├── cleanup.py                 # Purge queues + recreate DynamoDB table
+├── worker/
+│   ├── lambda_handler.py      # Bid engine — Tasks 1–4
+│   ├── requirements.txt       # Intentionally empty (boto3 in Lambda runtime)
+│   └── tests/
+│       └── test_handler.py    # 23 tests across 3 suites
+├── analysis/
+│   └── analysis.ipynb         # Analyst report — pipeline evidence + Q1 + Q2
+└── screenshots/
+    └── burst_run.png          # Test apparatus screenshot (add after Burst run)
 ```
 
-In the AWS Console: **CloudWatch > Log groups > /aws/lambda/adflow-YOURID-worker**
+---
 
-## Naming Convention
+## Scoring Formula
+```
+score = bid_amount × relevance_multiplier × time_bonus × device_bonus
+```
 
-| Resource | Name |
-|----------|------|
-| Input Queue | `adflow-YOURID-input` |
-| Results Queue | `adflow-YOURID-results` |
-| DynamoDB Table | `adflow-YOURID-results` |
-| Lambda Function | `adflow-YOURID-worker` |
-| CloudWatch Logs | `/aws/lambda/adflow-YOURID-worker` |
+| Content | Advertiser | Multiplier |
+|---------|-----------|-----------|
+| sports | sportswear | 1.4 |
+| sports | energy_drink | 1.3 |
+| finance | fintech | 1.5 |
+| finance | insurance | 1.3 |
+| entertainment | streaming | 1.4 |
+| entertainment | gaming | 1.3 |
+| lifestyle | beauty | 1.3 |
+| lifestyle | travel | 1.2 |
+| any | any other | 1.0 |
+
+| UTC Hours | Bonus |
+|-----------|-------|
+| 06–08 | 1.20 |
+| 12–13 | 1.15 |
+| 19–22 | 1.25 |
+| Other | 1.00 |
+
+| Device | Bonus |
+|--------|-------|
+| mobile | 1.1 |
+| desktop | 1.0 |
