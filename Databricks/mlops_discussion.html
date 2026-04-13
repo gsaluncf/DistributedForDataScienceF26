@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Is MLOps?</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-faint:#8888aa;--rule:#e0e0ee;--bg:#fafafa;--accent:#1a4fa0;--accent-lt:#e8eef9;--gold:#b07d20;--gold-lt:#fdf6e3;--green:#1a6b3a;--green-lt:#eaf5ee;--purple:#553c9a;--purple-lt:#f3eeff;--code-bg:#f0f0f8}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);background:var(--bg);max-width:860px;margin:0 auto;padding:60px 48px 120px}
+        .doc-header{border-bottom:3px solid var(--ink);padding-bottom:24px;margin-bottom:44px}
+        .doc-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+        h1.doc-title{font-family:'IBM Plex Serif',serif;font-size:32px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:8px}
+        .doc-sub{font-size:14px;color:var(--ink-soft)}
+        h2.part{font-family:'IBM Plex Serif',serif;font-size:20px;font-weight:600;color:var(--ink);margin:44px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+        p{margin-bottom:14px}p:last-child{margin-bottom:0}
+        a{color:var(--accent)}a:hover{text-decoration:none}
+        ul{margin:10px 0 16px 24px}li{margin-bottom:6px}
+        .callout{border-left:4px solid var(--accent);background:var(--accent-lt);padding:14px 18px;margin:20px 0;border-radius:0 6px 6px 0}
+        .callout.gold{border-color:var(--gold);background:var(--gold-lt)}
+        .callout.green{border-color:var(--green);background:var(--green-lt)}
+        .callout.purple{border-color:var(--purple);background:var(--purple-lt)}
+        .callout-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+        .callout p{font-size:14px;margin-bottom:0}
+        .db-img{width:100%;border:1px solid var(--rule);border-radius:6px;margin:16px 0 4px;display:block}
+        .img-credit{font-size:11px;color:var(--ink-faint);margin-bottom:20px}
+        .doc-footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+        @media(max-width:640px){body{padding:32px 20px 80px}}
+    </style>
+</head>
+<body>
+
+<header class="doc-header">
+    <div class="doc-meta">Discussion &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+    <h1 class="doc-title">What Is MLOps?</h1>
+    <div class="doc-sub">ML development has a lifecycle — just like software. This is what that lifecycle looks like on Databricks.</div>
+</header>
+
+<h2 class="part">The Core Idea</h2>
+
+<p>Everything we've built this semester — Kafka, Spark, Delta — is infrastructure. MLOps is what happens when you apply
+    the same discipline to <em>models</em> that software engineering applied to code twenty years ago:
+    version everything, test before promoting, make every decision traceable.</p>
+
+<p>A data scientist trains a model in a notebook. It works. Six months later no one knows what data it was trained on,
+    which experiment produced the artifact that went to production, or why it's behaving differently now.
+    MLOps replaces that archaeology with a <strong>reproducible, versioned, observable pipeline</strong>.</p>
+
+<div class="callout gold">
+    <div class="callout-label">The GitHub Analogy</div>
+    <p>Imagine losing access to version control overnight. Nobody agrees on which file is current, reverting a bad change
+        is guesswork, and you have to re-run validation every time someone sends you a new notebook.
+        That's where most ML teams are right now. MLOps is the version control layer ML has been missing.</p>
+</div>
+
+<h2 class="part">The Platform</h2>
+
+<p>Databricks frames MLOps around three environments — <strong>development, staging, production</strong> —
+    each moving the same code and data through increasing levels of rigor before anything reaches users.</p>
+
+<img class="db-img" src="screenshots/db_platform.png" alt="MLOps on the Databricks Data Intelligence Platform">
+<div class="img-credit">Source: <a href="https://docs.databricks.com/aws/en/machine-learning/mlops/mlops-workflow" target="_blank">Databricks MLOps workflows documentation</a></div>
+
+<h2 class="part">Development: Experiment Freely, Log Everything</h2>
+
+<p>The dev stage is where data scientists work. The rule is simple: <strong>log every run</strong>.
+    Parameters, metrics, artifacts — everything goes into MLflow so no experiment is ever lost.
+    Multiple candidate models can be compared side by side in the UI without re-running anything.</p>
+
+<img class="db-img" src="screenshots/db_dev.png" alt="MLOps development stage diagram">
+<div class="img-credit">Source: <a href="https://docs.databricks.com/aws/en/machine-learning/mlops/mlops-workflow" target="_blank">Databricks MLOps workflows documentation</a></div>
+
+<p>This is what you're doing in today's lab: train two models, log both, compare in the Experiments UI.
+    The best run gets promoted — not by opinion, by metric.</p>
+
+<h2 class="part">Staging: Validate Before You Promote</h2>
+
+<p>Before a model reaches production it runs through staging on a separate, representative dataset.
+    This is where integration tests, bias checks, and human review happen. Nothing promotes automatically
+    without passing the gate.</p>
+
+<img class="db-img" src="screenshots/db_staging.png" alt="MLOps staging stage diagram">
+<div class="img-credit">Source: <a href="https://docs.databricks.com/aws/en/machine-learning/mlops/mlops-workflow" target="_blank">Databricks MLOps workflows documentation</a></div>
+
+<div class="callout">
+    <div class="callout-label">Champion / Challenger</div>
+    <p>The model currently in production is the <strong>champion</strong>. Any new model is a <strong>challenger</strong>.
+        The challenger only gets promoted if it definitively beats the champion on held-out data.
+        The old model is never deleted — rollback is just redeploying the previous version.</p>
+</div>
+
+<h2 class="part">Production: Serve, Monitor, Retrain</h2>
+
+<p>Once promoted, the model is served — as a REST endpoint, batch job, or embedded call.
+    Monitoring tracks whether performance degrades over time (data drift, concept drift).
+    When it does, the cycle starts again: new training run, new comparison, new promotion.</p>
+
+<img class="db-img" src="screenshots/db_prod.png" alt="MLOps production stage diagram">
+<div class="img-credit">Source: <a href="https://docs.databricks.com/aws/en/machine-learning/mlops/mlops-workflow" target="_blank">Databricks MLOps workflows documentation</a></div>
+
+<div class="callout green">
+    <div class="callout-label">What to take away</div>
+    <p>The pipeline you run today covers dev and the handoff to staging (the Model Registry).
+        The serving and monitoring layers are where a real production team would pick this up.
+        Everything you've built this semester — Kafka events, Spark compute, Delta tables — feeds directly
+        into that production stage. The infrastructure was never separate from the data science.</p>
+</div>
+
+<div class="callout purple">
+    <div class="callout-label">Discussion</div>
+    <p>A recommendation model trained six months ago is now behaving differently. Without MLflow, what would you need
+        to reconstruct the training run? With it, what can you recover in under five minutes?</p>
+</div>
+
+<footer class="doc-footer">
+    <a href="MLOps_index.html">Back to Index</a> &nbsp;&middot;&nbsp;
+    <a href="mlops_lab.html">Lab 1: ALS Pipeline &rarr;</a>
+    &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida
+</footer>
+
+</body>
+</html>
