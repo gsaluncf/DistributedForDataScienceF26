@@ -61,13 +61,15 @@
 <h2 class="part"><span class="part-num">Stage 1</span> Feature Table &mdash; Real Bluesky Data</h2>
 
 <p>The dataset is a 120-second capture of the <strong>Bluesky AT Protocol firehose</strong> — a public real-time
-    stream of every like, follow, and post on the network. The file <code>bluesky_interactions.json</code> in the
-    course repo contains <strong>42,181 raw interaction events</strong>, each with three fields:</p>
+    stream of every like, follow, and post on the network, recorded on <strong>April 13, 2026 at 17:51 UTC</strong>.
+    The file <code>bluesky_interactions.json</code> in the course repo contains <strong>42,181 raw interaction events</strong>
+    (39,118 likes and 3,063 follows), each with four fields:</p>
 
 <ul>
     <li><code>u</code> — the DID (Decentralized Identifier) of the user who acted</li>
     <li><code>a</code> — the DID of the account they interacted with</li>
     <li><code>t</code> — the interaction type: <code>"like"</code> or <code>"follow"</code></li>
+    <li><code>ts</code> — the UTC timestamp of the event (e.g. <code>"2026-04-13T17:51:44.092Z"</code>)</li>
 </ul>
 
 <p>The notebook reads this file, aggregates multiple interactions between the same (user, account) pair into a
