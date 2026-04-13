@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLOps &mdash; Model Lifecycle on Databricks</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-faint:#8888aa;--rule:#e0e0ee;--bg:#fafafa;--accent:#1a4fa0;--accent-lt:#e8eef9;--gold:#b07d20;--gold-lt:#fdf6e3;--green:#1a6b3a;--green-lt:#eaf5ee;--red:#9b1c1c;--red-lt:#fef2f2;--code-bg:#f0f0f8}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);background:var(--bg);max-width:880px;margin:0 auto;padding:60px 48px 120px}
+        .doc-header{border-bottom:3px solid var(--ink);padding-bottom:28px;margin-bottom:52px}
+        .doc-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+        h1.doc-title{font-family:'IBM Plex Serif',serif;font-size:34px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:10px}
+        .doc-sub{font-size:14px;color:var(--ink-soft)}
+        h2.part{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:600;color:var(--ink);margin:56px 0 20px;padding-bottom:8px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;gap:12px}
+        h2.part .part-num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:400}
+        h3.section{font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:var(--accent);margin:32px 0 10px}
+        p{margin-bottom:14px}p:last-child{margin-bottom:0}
+        a{color:var(--accent)}a:hover{text-decoration:none}
+        ul,ol{margin:10px 0 16px 24px}li{margin-bottom:6px}
+        code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+        .callout{border-left:4px solid var(--accent);background:var(--accent-lt);padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
+        .callout.gold{border-color:var(--gold);background:var(--gold-lt)}
+        .callout.green{border-color:var(--green);background:var(--green-lt)}
+        .callout-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+        .callout p{font-size:14px}
+        .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:28px 0}
+        .card{border:1.5px solid var(--rule);border-radius:8px;padding:24px;background:#fff;text-decoration:none;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+        .card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(26,79,160,.1)}
+        .card-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+        .card-label.discussion{color:var(--accent)}
+        .card-label.lab{color:var(--gold)}
+        .card-title{font-family:'IBM Plex Serif',serif;font-size:18px;font-weight:600;margin-bottom:8px}
+        .card-desc{font-size:13px;color:var(--ink-soft);line-height:1.5}
+        .pipeline-row{display:flex;gap:0;margin:32px 0;border:1.5px solid var(--rule);border-radius:8px;overflow:hidden}
+        .pipe-stage{flex:1;padding:16px 14px;border-right:1px solid var(--rule);font-size:13px;line-height:1.5}
+        .pipe-stage:last-child{border-right:none}
+        .pipe-num{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px}
+        .pipe-name{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px}
+        .doc-footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+        @media(max-width:640px){.card-grid{grid-template-columns:1fr}.pipeline-row{flex-direction:column}.pipe-stage{border-right:none;border-bottom:1px solid var(--rule)}}
+    </style>
+</head>
+<body>
+
+<header class="doc-header">
+    <div class="doc-meta">MLOps &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+    <h1 class="doc-title">MLOps &mdash; Model Lifecycle on Databricks</h1>
+    <div class="doc-sub">Feature engineering, model training, holdout evaluation, MLflow tracking,
+        and Model Registry promotion &mdash; using a social media recommendation system as the running example.</div>
+</header>
+
+<div class="callout gold">
+    <div class="callout-label">This Week</div>
+    <p><strong>Discussion:</strong> What MLOps is, why it exists, and how it connects to everything built this semester &mdash;
+        from raw Kafka events to a versioned, registered model ready for deployment.</p>
+    <p><strong>Lab:</strong> Run the complete 5-stage pipeline on Databricks using real Bluesky social network data.
+        Train two competing models, evaluate both with a holdout metric, compare runs in the MLflow UI,
+        and register the winner in the Model Registry.</p>
+</div>
+
+<div class="callout green">
+    <div class="callout-label">Get the Files</div>
+    <p>Everything is in the course repo. If the notebooks are not already in your Databricks workspace,
+        download them from GitHub and import into Databricks (<strong>Workspace → Import</strong>):</p>
+    <ul style="margin-top:10px">
+        <li>
+            <a href="https://github.com/gsaluncf/DistributedForDataScienceF26/tree/main/Databricks/student_notebooks" target="_blank">
+                github.com/gsaluncf/DistributedForDataScienceF26 → Databricks/student_notebooks/
+            </a>
+        </li>
+        <li style="margin-top:8px"><strong>You need three files:</strong>
+            <ul style="margin-top:4px">
+                <li><code>nb_mlops.py</code> &mdash; Lab 1 notebook (ALS pipeline)</li>
+                <li><code>nb_mlops_tf.py</code> &mdash; Lab 2 notebook (TF embedding)</li>
+                <li><code>bluesky_interactions.json</code> &mdash; the interaction dataset (42,181 events,
+                    captured April 13 2026). Upload this to
+                    <code>/Workspace/Repos/&lt;your-email&gt;/DistributedForDataScienceF26/Databricks/</code>
+                    via <strong>Workspace → the Databricks folder → Upload</strong>.</li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+<h2 class="part"><span class="part-num">Part 1</span> Materials</h2>
+
+<div class="card-grid">
+    <a href="mlops_discussion.html" class="card">
+        <div class="card-label discussion">Discussion</div>
+        <div class="card-title">What Is MLOps?</div>
+        <div class="card-desc">How the semester's distributed systems work fits into the ML lifecycle —
+            the GitHub analogy, deploy code vs. deploy model, Deployment Jobs, and Activity Logs.</div>
+    </a>
+    <a href="mlops_lab.html" class="card">
+        <div class="card-label lab">Lab 1 &mdash; ALS Pipeline</div>
+        <div class="card-title">Feature Table + ALS + Registry</div>
+        <div class="card-desc">Build the feature table from 42,181 real Bluesky events, train an ALS
+            collaborative filtering model using the <code>implicit</code> library, evaluate with
+            Hit Rate @ 10, and register <code>social_recommender v1</code> in the MLflow Model Registry.</div>
+    </a>
+    <a href="mlops_lab2.html" class="card">
+        <div class="card-label lab">Lab 2 &mdash; TF Embedding</div>
+        <div class="card-title">TensorFlow Challenger + Comparison</div>
+        <div class="card-desc">Train a Keras two-tower embedding model on the same feature table,
+            compare Hit Rate @ 10 against the ALS champion, and register v2 if the challenger wins.
+            Reads Activity Log to close the loop.</div>
+    </a>
+</div>
+
+<h2 class="part"><span class="part-num">Part 2</span> Pipeline at a Glance</h2>
+
+<p>Five artifacts are produced, each a permanent record that can be inspected, reproduced, or handed off
+    to a downstream system independently of the notebook that created it.</p>
+
+<div class="pipeline-row">
+    <div class="pipe-stage">
+        <div class="pipe-num">Stage 1</div>
+        <div class="pipe-name">Feature Table</div>
+        Weighted interaction score per user-account pair. Stored as a Delta table. Input to both models.
+    </div>
+    <div class="pipe-stage">
+        <div class="pipe-num">Stage 2</div>
+        <div class="pipe-name">ALS Model</div>
+        Matrix factorization via the <code>implicit</code> library. Serialized as an MLflow pyfunc artifact. Top-10 recs per user in Delta.
+    </div>
+    <div class="pipe-stage">
+        <div class="pipe-num">Stage 3</div>
+        <div class="pipe-name">TF Embedding</div>
+        Keras model trained on positive and negative pairs. Also in MLflow. Top-10 recs in Delta.
+    </div>
+    <div class="pipe-stage">
+        <div class="pipe-num">Stage 4</div>
+        <div class="pipe-name">Evaluation</div>
+        Hit Rate @ 10 via holdout. Logged as a metric to each MLflow run &mdash; queryable and permanent.
+    </div>
+    <div class="pipe-stage">
+        <div class="pipe-num">Stage 5</div>
+        <div class="pipe-name">Registry</div>
+        Winning model promoted to the MLflow Model Registry with a version number. Ready for deployment.
+    </div>
+</div>
+
+<h2 class="part"><span class="part-num">Part 3</span> Notebook</h2>
+
+<p>The lab runs in a single Databricks notebook. Import it into your workspace or clone the course repo.
+    Each section below corresponds to one stage in the pipeline &mdash; run them in order.</p>
+
+<div class="callout">
+    <div class="callout-label">Lab 1 Notebook — nb_mlops.py</div>
+    <p>Installs <code>implicit</code> (ALS library) via <code>%pip install</code> at the top, which triggers
+        an automatic Python session restart — this is expected. After the restart, run all cells from the
+        top in order. Completes in ~4&ndash;6 minutes on serverless compute.</p>
+</div>
+<div class="callout gold">
+    <div class="callout-label">Lab 2 Notebook — nb_mlops_tf.py</div>
+    <p>Requires Lab 1 to be complete first — it reads the feature table, holdout set, and ALS recommendation
+        table created in Lab 1. Installs <code>tensorflow&gt;=2.16</code> at the top, which also triggers
+        a Python session restart. After the restart, run all cells from the top in order.
+        Completes in ~8&ndash;12 minutes on serverless compute.</p>
+</div>
+
+<footer class="doc-footer">
+    MLOps &mdash; Model Lifecycle &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida &nbsp;&middot;&nbsp; Spring 2026
+</footer>
+
+</body>
+</html>
