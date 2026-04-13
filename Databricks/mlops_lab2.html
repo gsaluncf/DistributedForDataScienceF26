@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 2: TensorFlow Embedding Model &mdash; MLOps</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-faint:#8888aa;--rule:#e0e0ee;--bg:#fafafa;--accent:#1a4fa0;--accent-lt:#e8eef9;--gold:#b07d20;--gold-lt:#fdf6e3;--green:#1a6b3a;--green-lt:#eaf5ee;--red:#9b1c1c;--red-lt:#fef2f2;--purple:#553c9a;--purple-lt:#f3eeff;--code-bg:#f0f0f8}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);background:var(--bg);max-width:880px;margin:0 auto;padding:60px 48px 120px}
+        .doc-header{border-bottom:3px solid var(--ink);padding-bottom:28px;margin-bottom:52px}
+        .doc-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+        h1.doc-title{font-family:'IBM Plex Serif',serif;font-size:34px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:10px}
+        .doc-sub{font-size:14px;color:var(--ink-soft)}
+        h2.part{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:600;color:var(--ink);margin:56px 0 20px;padding-bottom:8px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;gap:12px}
+        h2.part .part-num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:400}
+        h3.section{font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:var(--accent);margin:32px 0 10px}
+        p{margin-bottom:14px}p:last-child{margin-bottom:0}
+        a{color:var(--accent)}a:hover{text-decoration:none}
+        ul,ol{margin:10px 0 16px 24px}li{margin-bottom:6px}li strong{color:var(--ink)}
+        code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+        pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:6px;padding:18px 22px;margin:16px 0;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--ink)}
+        .callout{border-left:4px solid var(--accent);background:var(--accent-lt);padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
+        .callout.gold{border-color:var(--gold);background:var(--gold-lt)}
+        .callout.green{border-color:var(--green);background:var(--green-lt)}
+        .callout.red{border-color:var(--red);background:var(--red-lt)}
+        .callout.purple{border-color:var(--purple);background:var(--purple-lt)}
+        .callout-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+        .callout p,.callout ul{font-size:14px}
+        .task-box{border:2px solid var(--accent);border-radius:8px;padding:20px 24px;margin:24px 0;background:#fff}
+        .task-box-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--accent);margin-bottom:10px}
+        .deliverable{border:2px solid var(--green);border-radius:8px;padding:20px 24px;margin:24px 0;background:var(--green-lt)}
+        .deliverable-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green);margin-bottom:10px}
+        .doc-footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+        .cell-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin:28px 0 4px;font-weight:600}
+        .cell-label span{background:var(--accent);color:#fff;padding:1px 7px;border-radius:3px;margin-right:6px;font-size:9px}
+        .expected{background:#f0faf4;border:1px solid #b2dfcc;border-radius:6px;padding:12px 16px;margin:10px 0 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6;color:#1a4a2e}
+        .expected::before{content:"Expected output";display:block;font-family:'IBM Plex Sans',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#2e7d52;font-weight:600;margin-bottom:6px}
+        @media(max-width:640px){body{padding:32px 20px 80px}}
+    </style>
+</head>
+<body>
+
+<header class="doc-header">
+    <div class="doc-meta">Lab 2 &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+    <h1 class="doc-title">Lab 2: TensorFlow Embedding Model &mdash; MLOps</h1>
+    <div class="doc-sub">Train a Keras two-tower embedding model on the same feature table as Lab 1,
+        compare it against the registered ALS model using Hit Rate @ 10, and promote the winner
+        in the Model Registry. Close the loop by reading the Activity Log.</div>
+</header>
+
+<div class="callout red">
+    <div class="callout-label">Prerequisite: Lab 1 Must Be Complete</div>
+    <p><strong>Lab 1 (<a href="mlops_lab.html">mlops_lab.html</a>) must be finished before starting this lab.</strong>
+        This notebook reads the feature table, holdout set, and ALS recommendation table created in Lab 1.
+        If those Delta tables do not exist in <code>workspace.mlops</code>, run Lab 1 first.</p>
+</div>
+
+<div class="callout gold">
+    <div class="callout-label">Before You Start</div>
+    <p><strong>Notebook:</strong> Import <code>nb_mlops_tf.py</code> into your Databricks workspace.
+        Use <strong>serverless compute</strong>.</p>
+    <p><strong>Time:</strong> ~30&ndash;40 minutes. TensorFlow install + restart (~2 min) + 20 epochs of training (~5 min).</p>
+    <p>The first cell installs TensorFlow. After the install the Python session
+        <strong>restarts automatically</strong> &mdash; this is normal. Wait for the restart message,
+        then run all remaining cells in order from the top.</p>
+</div>
+
+
+<!-- STAGE 1 -->
+<h2 class="part"><span class="part-num">Stage 1</span> Setup &mdash; TensorFlow Install and Data Verification</h2>
+
+<p>TensorFlow is not pre-installed on Databricks serverless. The first cell installs it, which
+    <strong>automatically restarts the Python session</strong> — this is expected and normal.
+    After the restart message appears, run all cells again from the top in order.</p>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Install TensorFlow</p>
+<pre>%pip install -q "tensorflow>=2.16,<2.18"</pre>
+<div class="expected">...
+Successfully installed tensorflow-2.17.0 ...
+WARNING: Restarting Python due to pip install of packages that are already imported.
+Python interpreter restarted.</div>
+
+<p class="cell-label"><span>Cell</span> Configuration — derive N_USERS and N_ACCOUNTS from Lab 1</p>
+<p>Unlike Lab 1, <code>N_USERS</code> and <code>N_ACCOUNTS</code> are not hardcoded. They are read
+    from the feature table so the embedding layers are exactly the right size for whatever data Lab 1 produced.
+    An embedding layer with size 17,000 that receives an index of 17,001 will crash — this prevents that.</p>
+<pre>N_FACTORS  = 32   # embedding dimension — richer than ALS rank=20
+N_REC      = 10   # must match Lab 1
+SCHEMA     = "workspace.mlops"
+
+_stats = spark.table(f"{SCHEMA}.mlops_features").agg(
+    F.max("user_id").alias("max_user"),
+    F.max("account_id").alias("max_acct")
+).collect()[0]
+N_USERS    = int(_stats["max_user"]) + 1
+N_ACCOUNTS = int(_stats["max_acct"]) + 1</pre>
+<div class="expected">Schema: workspace.mlops  |  N_USERS=17462  N_ACCOUNTS=19088  N_FACTORS=32</div>
+
+<p class="cell-label"><span>Cell</span> Verify Lab 1 tables exist</p>
+<p>All three must show non-zero counts. If any are missing, run Lab 1 first.</p>
+<pre>for tbl in ["mlops_train", "mlops_holdout", "mlops_als_recs"]:
+    n = spark.table(f"{SCHEMA}.{tbl}").count()
+    print(f"  {SCHEMA}.{tbl}: {n:,} rows")</pre>
+<div class="expected">  workspace.mlops.mlops_train: 36,399 rows
+  workspace.mlops.mlops_holdout: 500 rows
+  workspace.mlops.mlops_als_recs: 5,000 rows</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 1.1 &mdash; Install and Verify</div>
+    <ol>
+        <li>Run the <code>%pip install</code> cell. Wait for the automatic Python session restart — you will see
+            <em>"Python interpreter restarted"</em> in the output. This is expected.</li>
+        <li>After the restart, run <strong>all cells from the top again</strong> in order (imports, config, verify).</li>
+        <li>Confirm the verify cell shows non-zero row counts for all three tables. If any are missing, run Lab 1 first.</li>
+    </ol>
+</div>
+
+<!-- STAGE 2 -->
+<h2 class="part"><span class="part-num">Stage 2</span> TensorFlow Embedding Model &mdash; Architecture and Training</h2>
+
+<p>ALS factorized the interaction matrix algebraically in one step. The TF embedding model learns
+    the same kind of user and account vectors through <strong>gradient descent</strong> — iterating over
+    the data 20 times (epochs), nudging the vectors a little each time to reduce prediction error.</p>
+
+<div class="callout gold">
+    <div class="callout-label">What is a Two-Tower Model?</div>
+    <p>A <strong>two-tower model</strong> has two separate "towers" — one for users, one for items (accounts here).
+        Each tower is just an <strong>Embedding layer</strong>: a lookup table that maps an integer ID to a
+        dense vector. User 42 maps to a 32-dimensional vector; Account 7 maps to another 32-dimensional vector.
+        During training those vectors are adjusted so that pairs that actually interacted end up pointing in the
+        same direction. At inference time you score a user against all accounts by computing the dot product of
+        their vectors — high dot product = strong recommendation.</p>
+    <p>This is conceptually identical to ALS. The difference is <em>how</em> the vectors are learned:
+        ALS solves a least-squares problem in closed form; the TF model uses backpropagation and gradient descent.</p>
+</div>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Negative sampling</p>
+<p>The training table only contains real (positive) interactions. A model trained only on positives learns
+    to output a high score for every input — it never sees a "no" to learn from. For each positive pair
+    we sample one random pair that is not in the training set and label it 0.</p>
+<pre>known = set(zip(users_pos.tolist(), accts_pos.tolist()))
+neg   = []
+while len(neg) < len(train_pd):
+    u, a = np.random.randint(0, N_USERS), np.random.randint(0, N_ACCOUNTS)
+    if (u, a) not in known:       # only sample pairs with no real interaction
+        neg.append((u, a))
+
+all_u = np.concatenate([users_pos, neg[:, 0]])   # positives + negatives
+all_y = np.concatenate([labels_pos, np.zeros(len(neg), ...)])  # labels: score or 0</pre>
+<div class="expected">Training pairs loaded: 36,399
+Score range: 1 – 17
+Total training pairs (positive + negative): 72,798</div>
+
+<p class="cell-label"><span>Cell</span> Define the Keras model</p>
+<p>The architecture in code. Each line corresponds to one layer in the two-tower diagram above.</p>
+<pre>ui = keras.Input(shape=(1,), name="user_id")
+ai = keras.Input(shape=(1,), name="account_id")
+
+# Tower 1: user embedding — N_USERS × N_FACTORS lookup table
+ue = keras.layers.Flatten()(keras.layers.Embedding(N_USERS,    N_FACTORS, name="user_emb")(ui))
+# Tower 2: account embedding — N_ACCOUNTS × N_FACTORS lookup table
+ae = keras.layers.Flatten()(keras.layers.Embedding(N_ACCOUNTS, N_FACTORS, name="acct_emb")(ai))
+
+# Dot product → sigmoid → probability of interaction
+out = keras.layers.Dense(1, activation="sigmoid")(keras.layers.Dot(axes=1)([ue, ae]))
+tf_model = keras.Model(inputs=[ui, ai], outputs=out)
+tf_model.compile(optimizer="adam", loss="binary_crossentropy")</pre>
+<div class="expected">Model: "functional"
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃ Layer               ┃ Output Shape      ┃ Param #      ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ user_emb (Embedding)│ (None, 1, 32)     │  558,784     │
+│ acct_emb (Embedding)│ (None, 1, 32)     │  610,816     │
+│ dot (Dot)           │ (None, 1)         │          0   │
+│ dense (Dense)       │ (None, 1)         │          2   │
+└─────────────────────┴───────────────────┴──────────────┘
+ Total params: 1,169,602</div>
+
+<p class="cell-label"><span>Cell</span> Train inside an MLflow run</p>
+<p>Training runs for 20 epochs. Loss should drop from ~0.69 (random) at epoch 1 toward ~0.35–0.45 by epoch 20.
+    The model and its parameters are logged inside the <code>with mlflow.start_run()</code> block — same
+    pattern as Lab 1's ALS run, just a different model.</p>
+<pre>with mlflow.start_run(run_name="embedding_model") as emb_run:
+    mlflow.log_params({"algorithm": "TF-Embedding-Keras",
+                       "n_factors": N_FACTORS, "optimizer": "adam",
+                       "epochs": 20, "n_users": N_USERS, "n_accounts": N_ACCOUNTS})
+
+    tf_model.fit([all_u, all_a], all_y,
+                 epochs=20, batch_size=256, validation_split=0.1)
+
+    tf_model.save("/tmp/embedding_model_export.keras")   # .keras = Keras 3 format
+    mlflow.pyfunc.log_model(artifact_path="embedding_model", ...)</pre>
+<div class="expected">Epoch 1/20  loss: 0.6821  val_loss: 0.6734
+Epoch 5/20  loss: 0.5912  val_loss: 0.5988
+Epoch 10/20 loss: 0.4801  val_loss: 0.4953
+Epoch 20/20 loss: 0.3724  val_loss: 0.4102
+TF trained in 42.3s  |  run_id: 69ad52c6d2dd4d4ab88634a15d85fbbb</div>
+
+<p style="font-size:13px;color:#666;margin-bottom:6px"><strong>After training</strong> — open Experiments in the left sidebar (under AI/ML), click <strong>mlops_social_recommender</strong>, then click the <strong>embedding_model</strong> row:</p>
+<img src="screenshots/lab2_02_emb_run_detail.png" alt="MLflow embedding_model run detail showing parameters and artifacts"
+     style="width:100%;border:1px solid #dde1ef;border-radius:6px;margin-bottom:16px">
+
+<div class="task-box">
+    <div class="task-box-label">Task 2.1 &mdash; Train and Inspect the MLflow Run</div>
+    <ol>
+        <li>Run the negative sampling cell. Confirm total pairs ≈ 2× the training row count from Lab 1.</li>
+        <li>Read <code>tf_model.summary()</code> output. How many total parameters? The user embedding alone is
+            17,462 × 32 = 558,784. Compare that to ALS rank=20: 17,462 × 20 = 349,240. More parameters, more capacity — but does it help?</li>
+        <li>Watch the loss drop across 20 epochs. It should go from ~0.68 to below 0.45. If it stays flat, something is wrong.</li>
+        <li>In <strong>Experiments → mlops_social_recommender</strong>, click the <strong>embedding_model</strong> run.
+            Under <strong>Parameters</strong> confirm <code>n_factors</code>, <code>epochs</code>, and <code>optimizer</code> are logged.</li>
+    </ol>
+</div>
+
+<!-- STAGE 3 -->
+<h2 class="part"><span class="part-num">Stage 3</span> Recommendations and Hit Rate @ 10</h2>
+
+<p>The model scores every possible (user, account) pair in one batched call — no loop, no Spark,
+    just one matrix multiply on the driver. A Spark window function then keeps only the top-10 per user.
+    The same <code>hit_rate()</code> function from Lab 1 is used so the evaluation is identical.</p>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Score all user × account pairs</p>
+<p>We build a grid of every possible pair using <code>np.repeat</code> and <code>np.tile</code>,
+    run a single batched <code>predict()</code> call, then write the top-10 per user to a Delta table.</p>
+<pre># Build a full grid: all N_USERS × N_ACCOUNTS combinations
+grid_u = np.repeat(np.arange(N_USERS,    dtype="int32"), N_ACCOUNTS)
+grid_a = np.tile(  np.arange(N_ACCOUNTS, dtype="int32"), N_USERS)
+
+# One batched forward pass through the model — returns a score per pair
+scores = tf_model.predict([grid_u, grid_a], verbose=0).flatten()
+
+# Keep top-10 per user using a Spark window function
+emb_recs = (spark.createDataFrame(pd.DataFrame(
+                {"user_id": grid_u.astype(int),
+                 "account_id": grid_a.astype(int), "score": scores.astype(float)}))
+    .withColumn("rnk", F.row_number().over(
+        Window.partitionBy("user_id").orderBy(F.desc("score"))))
+    .filter(F.col("rnk") <= N_REC).drop("rnk"))
+emb_recs.write.mode("overwrite").saveAsTable(f"{SCHEMA}.mlops_emb_recs")</pre>
+<div class="expected">Embedding recommendations written: 174,620 rows</div>
+
+<p class="cell-label"><span>Cell</span> Evaluate both models on the same holdout</p>
+<pre>als_hr = hit_rate(f"{SCHEMA}.mlops_als_recs")
+emb_hr = hit_rate(f"{SCHEMA}.mlops_emb_recs")
+
+with mlflow.start_run(run_id=emb_run_id):
+    mlflow.log_metric("hit_rate_at_10", emb_hr)</pre>
+<div class="expected">Hit Rate @ 10:
+  workspace.mlops.mlops_als_recs   13/500 hits  =>  0.0260
+  workspace.mlops.mlops_emb_recs   15/500 hits  =>  0.0300
+
+Metric logged to embedding run: 69ad52c6d2dd4d4ab88634a15d85fbbb</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 3.1 &mdash; Evaluate and Compare</div>
+    <ol>
+        <li>Run the scoring cell. Expect <strong>N_USERS × 10</strong> rows in <code>mlops_emb_recs</code>
+            (17,462 × 10 = 174,620).</li>
+        <li>Run the evaluation cell. Both hit rates print side by side — this is the first time you can
+            directly compare the two models on identical test data.</li>
+        <li>Which model wins? By how much? Remember: both are limited by the same data sparsity —
+            a difference of 2–3 hits out of 500 is meaningful but small.</li>
+    </ol>
+</div>
+
+<!-- STAGE 4 -->
+<h2 class="part"><span class="part-num">Stage 4</span> Compare in MLflow and Decide</h2>
+
+<p>Go to <strong>Experiments → mlops_social_recommender</strong>, check the box next to both
+    the <code>als_model</code> run and the <code>embedding_model</code> run, then click <strong>Compare</strong>.
+    Both models ran on identical data with an identical holdout evaluation. The numbers decide.</p>
+
+<div class="callout purple">
+    <div class="callout-label">This Is the Model Selection Meeting</div>
+    <p>Both runs are on record. The comparison is reproducible by anyone with workspace access.
+        No "I think my model is better" — the metric either crosses the bar or it doesn't.
+        In a production team this comparison view is what you screenshot for the model review meeting.</p>
+</div>
+
+<h3 class="section">What the comparison cell prints</h3>
+
+<p class="cell-label"><span>Cell</span> Model comparison and decision</p>
+<pre>print(f"  ALS        hit_rate@10 = {als_hr:.4f}  (Lab 1, registered as v1)")
+print(f"  Embedding  hit_rate@10 = {emb_hr:.4f}  (Lab 2, this run)")
+
+if emb_hr > als_hr:
+    print(f"TF embedding model wins by {emb_hr - als_hr:.4f}. Registering as v2.")
+else:
+    print(f"ALS holds as champion. No new version registered.")</pre>
+<div class="expected">============================================================
+MODEL COMPARISON
+============================================================
+  ALS        hit_rate@10 = 0.0260  (Lab 1, registered as v1)
+  Embedding  hit_rate@10 = 0.0300  (Lab 2, this run)
+
+TF embedding model wins by 0.0040.
+Will register as social_recommender v2.</div>
+
+<p style="font-size:13px;color:#666;margin:16px 0 6px">
+    <strong>The MLflow Compare view</strong> — check both runs in the experiment table then click Compare.
+    Your workspace will show the same layout with your actual hit rates:</p>
+<img src="screenshots/lab2_03_compare_view.png" alt="MLflow Compare view showing als_model and embedding_model runs side by side"
+     style="width:100%;border:1px solid #dde1ef;border-radius:6px;margin-bottom:16px">
+
+<div class="task-box">
+    <div class="task-box-label">Task 4.1 &mdash; Compare in MLflow and Screenshot</div>
+    <ol>
+        <li>Run the comparison cell. It states which model wins and by how much.</li>
+        <li>In <strong>Experiments → mlops_social_recommender</strong>, check the box next to both
+            the <code>als_model</code> row and the <code>embedding_model</code> row. A <strong>Compare</strong>
+            button appears at the top — click it. You will see both runs' parameters and
+            <code>hit_rate_at_10</code> side by side.</li>
+        <li>If the models tied: what other criteria would you use to break the tie?
+            Think about inference speed, interpretability, retraining cost, and regulatory requirements.</li>
+    </ol>
+</div>
+
+<!-- STAGE 5 -->
+<h2 class="part"><span class="part-num">Stage 5</span> Register the Winner and Inspect the Artifact</h2>
+
+<p>If TF wins, the notebook attempts to register it as <code>social_recommender v2</code>.
+    If ALS holds, registration is skipped. The decision is automated and evidence-based —
+    the metric determined the outcome, not a person's opinion.</p>
+
+<div class="callout gold">
+    <div class="callout-label">What is the Champion / Challenger Pattern?</div>
+    <p>The <strong>champion</strong> is the model currently in production — the one serving real users.
+        The <strong>challenger</strong> is a new model being evaluated. The challenger only gets promoted
+        if it definitively beats the champion on a held-out test set.</p>
+    <p>This notebook implements the simplest version: one metric, one threshold (must be strictly greater).
+        In production you might require the challenger to beat the champion by at least 1%, pass a latency
+        test, and get sign-off from a human reviewer before promotion.</p>
+    <p>The key property: <strong>the old model is never deleted</strong>. Both versions remain in MLflow
+        with full lineage — you can always roll back by redeploying v1.</p>
+</div>
+
+<h3 class="section">What the cell actually does</h3>
+
+<p class="cell-label"><span>Cell</span> Register the winner (with free-tier fallback)</p>
+<pre>if emb_hr > als_hr:
+    model_uri = f"runs:/{emb_run_id}/embedding_model"
+    try:
+        reg = mlflow.register_model(model_uri, MODEL_NAME)
+        print(f"Registered: {MODEL_NAME}  version={reg.version}")
+
+    except Exception as e:
+        # Free tier: IAM denies writes to the registry storage bucket
+        model_card = {
+            "model_name":         MODEL_NAME,
+            "algorithm":          "TF-Embedding-Keras",
+            "hit_rate_at_10":     round(emb_hr, 4),
+            "als_hit_rate_at_10": round(als_hr, 4),
+            "decision":           "TF wins — would register as social_recommender v2",
+        }
+        with mlflow.start_run(run_id=emb_run_id):
+            mlflow.log_artifact(card_path, "registry_card")
+else:
+    print("ALS is still champion. No new version registered.")</pre>
+<div class="expected">Registry write blocked (Databricks Free tier — expected).
+Logging a model card artifact to the run instead.
+Model card logged → Artifacts → registry_card/model_card.json
+
+====================================================
+  Lab 2 — TF Embedding Recommender  |  Results
+====================================================
+  Users                       17,462
+  Accounts                    19,088
+  Embedding dim                   32  (N_FACTORS)
+----------------------------------------------------
+  ALS  Hit Rate@10           0.0260  (Lab 1 champion)
+  TF   Hit Rate@10           0.0300  (Lab 2 challenger)
+  Margin                     0.0040  → champion: TF embedding
+----------------------------------------------------
+  MLflow run       69ad52c6d2dd4d4ab88634a15d85fbbb
+  Registry status  not registered (free tier)</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 5.1 &mdash; Run the Registration Cell and Read the Output</div>
+    <ol>
+        <li>Run the Stage 5 cell. Read the output: which model won, by how much, and what status was assigned.</li>
+        <li>If the TF model won, open the <strong>embedding_model</strong> run in <strong>Experiments</strong>.
+            Click <strong>Artifacts</strong>. Find <code>registry_card/model_card.json</code> and preview it.</li>
+        <li>Confirm the model card contains: model name, run ID, algorithm, TF hit rate, ALS hit rate, and decision.</li>
+        <li>If ALS held, look at the ALS run&rsquo;s <strong>Artifacts</strong> tab from Lab 1 for the model card logged there.</li>
+    </ol>
+</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 5.2 &mdash; Trace Both Runs</div>
+    <ol>
+        <li>Open both the <code>als_model</code> and <code>embedding_model</code> runs in <strong>Experiments</strong>.</li>
+        <li>Each has its own parameters, metric, and model artifact.
+            What would it take to reproduce either result exactly from scratch?</li>
+        <li>In a production registry, clicking a registered version links directly to its source run.
+            If a deployed model starts producing bad predictions, what is the first thing you would check?</li>
+    </ol>
+</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 5.3 &mdash; The Deployment Pipeline Concept</div>
+    <p>Run the final notebook cell. Think through the full deployment pipeline:</p>
+    <ol>
+        <li>New version registered &rarr; Databricks Job triggered automatically</li>
+        <li>Validation notebook evaluates hit rate on fresh holdout data</li>
+        <li>If passes threshold &rarr; assign alias <code>@champion</code></li>
+        <li>Serving endpoint loads <code>models:/social_recommender@champion</code></li>
+        <li>Every step appears in the Activity Log. <strong>This is MLOps.</strong></li>
+    </ol>
+</div>
+
+<div class="deliverable">
+    <div class="deliverable-label">Deliverable — Lab 2</div>
+    <p>Submit three screenshots:</p>
+    <ol>
+        <li>MLflow Experiment <strong>Compare</strong> view with <code>hit_rate_at_10</code> for both runs</li>
+        <li>The final cell output showing which model won and the hit rates for both</li>
+        <li>The <code>registry_card/model_card.json</code> artifact open in the winning run&rsquo;s Artifacts tab</li>
+    </ol>
+</div>
+
+<h2 class="part"><span class="part-num">Extension</span> If You Finish Early</h2>
+<ul>
+    <li><strong>Change <code>N_FACTORS</code> to 64.</strong> Retrain, re-evaluate, compare three runs.
+        Does the larger embedding space improve hit rate?</li>
+    <li><strong>Assign an alias.</strong> In the registry, assign <code>@champion</code> to the winning version.
+        Load it in a new cell: <code>mlflow.pyfunc.load_model("models:/social_recommender@champion")</code>.
+        A serving endpoint uses exactly this call — no version number hardcoded.</li>
+    <li><strong>Sketch the deployment job.</strong> In Databricks Workflows, create a Job with two tasks:
+        (1) this TF training notebook, (2) a validation notebook that reads the latest registry version
+        and checks its hit rate metric. You do not need a trigger — seeing the task graph is the exercise.</li>
+</ul>
+
+<footer class="doc-footer">
+    <a href="MLOps_index.html">Back to Index</a> &nbsp;&middot;&nbsp;
+    <a href="mlops_lab.html">Lab 1: ALS Pipeline</a> &nbsp;&middot;&nbsp;
+    <a href="mlops_discussion.html">Discussion: What Is MLOps?</a>
+    &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida
+</footer>
+
+</body>
+</html>

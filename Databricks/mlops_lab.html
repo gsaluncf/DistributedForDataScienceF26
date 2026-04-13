@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Social Media Recommender &mdash; MLOps Pipeline</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--ink:#1a1a2e;--ink-soft:#4a4a6a;--ink-faint:#8888aa;--rule:#e0e0ee;--bg:#fafafa;--accent:#1a4fa0;--accent-lt:#e8eef9;--gold:#b07d20;--gold-lt:#fdf6e3;--green:#1a6b3a;--green-lt:#eaf5ee;--red:#9b1c1c;--red-lt:#fef2f2;--code-bg:#f0f0f8}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.75;color:var(--ink);background:var(--bg);max-width:880px;margin:0 auto;padding:60px 48px 120px}
+        .doc-header{border-bottom:3px solid var(--ink);padding-bottom:28px;margin-bottom:52px}
+        .doc-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+        h1.doc-title{font-family:'IBM Plex Serif',serif;font-size:34px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:10px}
+        .doc-sub{font-size:14px;color:var(--ink-soft)}
+        h2.part{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:600;color:var(--ink);margin:56px 0 20px;padding-bottom:8px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;gap:12px}
+        h2.part .part-num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:400}
+        h3.section{font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:var(--accent);margin:32px 0 10px}
+        p{margin-bottom:14px}p:last-child{margin-bottom:0}
+        a{color:var(--accent)}a:hover{text-decoration:none}
+        ul,ol{margin:10px 0 16px 24px}li{margin-bottom:6px}li strong{color:var(--ink)}
+        code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+        pre{background:var(--code-bg);border:1px solid var(--rule);border-radius:6px;padding:18px 22px;margin:16px 0;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--ink)}
+        .callout{border-left:4px solid var(--accent);background:var(--accent-lt);padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
+        .callout.gold{border-color:var(--gold);background:var(--gold-lt)}
+        .callout.green{border-color:var(--green);background:var(--green-lt)}
+        .callout.red{border-color:var(--red);background:var(--red-lt)}
+        .callout-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+        .callout p,.callout ul{font-size:14px}
+        .task-box{border:2px solid var(--accent);border-radius:8px;padding:20px 24px;margin:24px 0;background:#fff}
+        .task-box-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--accent);margin-bottom:10px}
+        .deliverable{border:2px solid var(--green);border-radius:8px;padding:20px 24px;margin:24px 0;background:var(--green-lt)}
+        .deliverable-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--green);margin-bottom:10px}
+        .doc-footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+        .cell-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin:28px 0 4px;font-weight:600}
+        .cell-label span{background:var(--accent);color:#fff;padding:1px 7px;border-radius:3px;margin-right:6px;font-size:9px}
+        .expected{background:#f0faf4;border:1px solid #b2dfcc;border-radius:6px;padding:12px 16px;margin:10px 0 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6;color:#1a4a2e}
+        .expected::before{content:"Expected output";display:block;font-family:'IBM Plex Sans',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#2e7d52;font-weight:600;margin-bottom:6px}
+        @media print{body{padding:40px;font-size:13px}h2.part{page-break-before:always}pre{font-size:11px}}
+        @media(max-width:640px){body{padding:32px 20px 80px}}
+    </style>
+</head>
+<body>
+
+<header class="doc-header">
+    <div class="doc-meta">Lab &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida</div>
+    <h1 class="doc-title">Lab: Social Media Recommender &mdash; MLOps Pipeline</h1>
+    <div class="doc-sub">Build a complete model lifecycle on Databricks: feature engineering, two competing models,
+        holdout evaluation, MLflow experiment tracking, and Model Registry promotion. All five stages run
+        in a single notebook.</div>
+</header>
+
+<div class="callout gold">
+    <div class="callout-label">Before You Start</div>
+    <p><strong>Notebook:</strong> Open <code>nb_mlops</code> from the course repo in your Databricks workspace.
+        Use <strong>serverless compute</strong>. The data file described below is already in the repo — you do not
+        need to download or upload anything.</p>
+</div>
+
+<!-- STAGE 1 -->
+<h2 class="part"><span class="part-num">Stage 1</span> Feature Table &mdash; Real Bluesky Data</h2>
+
+<p>The dataset is a 120-second capture of the <strong>Bluesky AT Protocol firehose</strong> — a public real-time
+    stream of every like, follow, and post on the network. The file <code>bluesky_interactions.json</code> in the
+    course repo contains <strong>42,181 raw interaction events</strong>, each with three fields:</p>
+
+<ul>
+    <li><code>u</code> — the DID (Decentralized Identifier) of the user who acted</li>
+    <li><code>a</code> — the DID of the account they interacted with</li>
+    <li><code>t</code> — the interaction type: <code>"like"</code> or <code>"follow"</code></li>
+</ul>
+
+<p>The notebook reads this file, aggregates multiple interactions between the same (user, account) pair into a
+    single <strong>interaction score</strong> (follow = 3 pts, like = 2 pts), and integer-encodes every DID
+    so the IDs can be used as matrix indices. The result is <strong>36,899 unique (user, account) preference
+    signals</strong> across 17,462 users and 19,088 accounts.</p>
+
+<div class="callout">
+    <div class="callout-label">Why This Data Shape Matters</div>
+    <p>The interaction matrix is 17,462 × 19,088 — over 333 million cells. Only 36,899 of them have any observed
+        value. That is a <strong>density of 0.01%</strong>. This extreme sparsity is the defining challenge of
+        recommendation: the model must infer preferences for the 99.99% of pairs it has never seen.
+        ALS and the TF embedding model in Lab 2 both solve this problem, in different ways.</p>
+</div>
+
+<p>The aggregated feature table is written to a <strong>Delta table</strong> (<code>workspace.mlops.mlops_features</code>).
+    Before any model sees it, one interaction per user is held out as the test set
+    (<code>workspace.mlops.mlops_holdout</code>). The remaining rows form the training set
+    (<code>workspace.mlops.mlops_train</code>).</p>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Setup — Configuration</p>
+<p>All tunable values are defined as constants at the top of the notebook so you only change them in one place.
+    The data path points to <code>bluesky_interactions.json</code> already in the course repo.</p>
+<pre>BLUESKY_DATA_PATH = "/Workspace/Repos/gsalu@ncf.edu/.../bluesky_interactions.json"
+
+ALS_RANK = 20    # latent factors — the "rank" of the two factor matrices
+ALS_ITER = 10    # how many ALS training iterations to run
+ALS_REG  = 0.1  # regularization: prevents embeddings from growing too large
+N_REC    = 10    # how many recommendations to generate per user
+
+SCHEMA   = "workspace.mlops"   # catalog.schema where Delta tables are written</pre>
+
+<p class="cell-label"><span>Cell</span> Step 1a — Load interactions and weight by type</p>
+<p>Reads every raw event from the JSON file. Multiple interactions between the same user and account
+    are collapsed into a single score. A follow is worth more than a like because it signals stronger intent.</p>
+<pre>_weights = {"follow": 3, "like": 2}
+_scores  = {}
+for _ev in _events:
+    _key = (_ev["u"], _ev["a"])                         # (user_did, account_did)
+    _scores[_key] = _scores.get(_key, 0) + _weights.get(_ev["t"], 1)</pre>
+<div class="expected">Bluesky interactions loaded: 36,899 unique (user, account) pairs
+Unique users: 17,462  |  Unique accounts: 19,088
+Score stats: min=2  max=17  mean=2.31</div>
+
+<div class="callout gold">
+    <div class="callout-label">What is a holdout?</div>
+    <p>A <strong>holdout</strong> (also called a <em>test set</em>) is data the model is <strong>never allowed to see during training</strong>.
+        You set it aside first, train on everything else, then use the holdout only at evaluation time — once, to get an honest measure of how the model performs on data it has never encountered.</p>
+    <p>Think of it like a closed-book exam. If the student studied the exam questions beforehand, the score tells you nothing about whether they actually learned the material.
+        A model evaluated on its own training data always looks great — and always lies.
+        The holdout is the exam the model hasn't seen.</p>
+    <p>Here we hold out <strong>one interaction per user</strong> — their strongest signal (highest score).
+        After training, we check whether the model's top-10 recommendations include that exact account.
+        If it does: hit. If not: miss.</p>
+</div>
+
+<p class="cell-label"><span>Cell</span> Step 1d — Train / holdout split</p>
+<p>A window function ranks each user's interactions by score. Rank 1 (the strongest signal) goes to the
+    holdout. Every other interaction goes to training. This means the model is evaluated on the interaction
+    it <em>should</em> have been most confident about — a conservative test.</p>
+<pre>w = Window.partitionBy("user_id").orderBy(F.desc("interaction_score"))
+ranked = feat_table.withColumn("rnk", F.row_number().over(w))
+
+holdout_df = ranked.filter(F.col("rnk") == 1).drop("rnk")   # one row per user
+train_df   = ranked.filter(F.col("rnk") >  1).drop("rnk")   # everything else</pre>
+<div class="expected">Training set:  36,399 rows
+Holdout set:     500 rows  (one per user)</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 1.1 &mdash; Run Stage 1 and Inspect the Tables</div>
+    <ol>
+        <li>Run all Stage 1 cells in order. Confirm your printed counts match the expected output above.</li>
+        <li>In the left sidebar, open <strong>Catalog → workspace → mlops</strong>. Confirm all three tables exist:
+            <code>mlops_features</code>, <code>mlops_train</code>, <code>mlops_holdout</code>.</li>
+        <li>Why does the holdout contain exactly one row per user instead of a random 20%?
+            What goes wrong if you evaluate on randomly sampled rows from the same users who are in training?</li>
+    </ol>
+</div>
+
+<!-- STAGE 2 -->
+<h2 class="part"><span class="part-num">Stage 2</span> ALS Model &mdash; <code>implicit</code> Library</h2>
+
+<p>ALS (Alternating Least Squares) is <strong>matrix factorization</strong>. It decomposes the sparse
+    user-account interaction matrix into two dense factor matrices — one for users, one for accounts — each
+    with <code>rank</code> dimensions (latent factors). Each dimension captures a learned concept such as
+    "tech content", "news", or "art". A user's predicted affinity for any account is then the dot product
+    of their two vectors.</p>
+
+<p>The notebook uses the <a href="https://github.com/benfred/implicit"><code>implicit</code></a> Python library
+    rather than Spark MLlib. Both implement the same ALS algorithm. <code>implicit</code> runs on the driver in
+    Python, which works on Databricks serverless compute and is trivially fast for this dataset size.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" style="width:100%;max-width:760px;display:block;margin:1.5em auto"
+     font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#a0aec0"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect width="760" height="330" rx="12" fill="#f8f9fc" stroke="#dde1ef" stroke-width="1.5"/>
+
+  <!-- title -->
+  <text x="380" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#1a202c">ALS: How the Interaction Matrix Gets Factored</text>
+
+  <!-- ── SPARSE INTERACTION MATRIX ── -->
+  <rect x="12" y="36" width="168" height="200" rx="8" fill="white" stroke="#e2e5ef" stroke-width="1"/>
+  <text x="96" y="52"  text-anchor="middle" font-size="10" font-weight="600" fill="#2d3748">Interaction Matrix</text>
+  <text x="96" y="64"  text-anchor="middle" font-size="8"  fill="#a0aec0">17,462 users × 19,088 accounts</text>
+
+  <!-- rows × cols: cell=19px gap=2px step=21px  start x=18 y=72 -->
+  <!-- row 0: [_ 2 _ _ 5 _ _] -->
+  <rect x="18"  y="72" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="39"  y="72" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="48"  y="85" text-anchor="middle" font-size="8" font-weight="700" fill="white">2</text>
+  <rect x="60"  y="72" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="81"  y="72" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="102" y="72" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="111" y="85" text-anchor="middle" font-size="8" font-weight="700" fill="white">5</text>
+  <rect x="123" y="72" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="144" y="72" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <!-- row 1: [_ _ _ 3 _ _ _] -->
+  <rect x="18"  y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="39"  y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="60"  y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="81"  y="93" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="90"  y="106" text-anchor="middle" font-size="8" font-weight="700" fill="white">3</text>
+  <rect x="102" y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="123" y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="144" y="93" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <!-- row 2: [3 _ _ _ _ 2 _] -->
+  <rect x="18"  y="114" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="27"  y="127" text-anchor="middle" font-size="8" font-weight="700" fill="white">3</text>
+  <rect x="39"  y="114" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="60"  y="114" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="81"  y="114" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="102" y="114" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="123" y="114" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="132" y="127" text-anchor="middle" font-size="8" font-weight="700" fill="white">2</text>
+  <rect x="144" y="114" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <!-- row 3: [_ _ 5 _ _ _ _] -->
+  <rect x="18"  y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="39"  y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="60"  y="135" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="69"  y="148" text-anchor="middle" font-size="8" font-weight="700" fill="white">5</text>
+  <rect x="81"  y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="102" y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="123" y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="144" y="135" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <!-- row 4: [_ 2 _ 3 _ _ _] -->
+  <rect x="18"  y="156" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="39"  y="156" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="48"  y="169" text-anchor="middle" font-size="8" font-weight="700" fill="white">2</text>
+  <rect x="60"  y="156" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="81"  y="156" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="90"  y="169" text-anchor="middle" font-size="8" font-weight="700" fill="white">3</text>
+  <rect x="102" y="156" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="123" y="156" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="144" y="156" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <!-- row 5: [_ _ _ _ _ 5 _] -->
+  <rect x="18"  y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="39"  y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="60"  y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="81"  y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="102" y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+  <rect x="123" y="177" width="19" height="19" rx="2" fill="#4f8ef7"/><text x="132" y="190" text-anchor="middle" font-size="8" font-weight="700" fill="white">5</text>
+  <rect x="144" y="177" width="19" height="19" rx="2" fill="#edf2f7"/>
+
+  <!-- axis labels -->
+  <text x="7" y="135" text-anchor="middle" font-size="8" fill="#a0aec0" transform="rotate(-90,7,135)">users ↓</text>
+  <text x="96" y="208" text-anchor="middle" font-size="8" fill="#a0aec0">← accounts →</text>
+
+  <!-- density badge -->
+  <rect x="22" y="215" width="132" height="14" rx="4" fill="#fed7d7"/>
+  <text x="88" y="225" text-anchor="middle" font-size="8" font-weight="600" fill="#c53030">density 0.01% — mostly empty</text>
+
+  <!-- ── ≈ ── -->
+  <text x="196" y="138" text-anchor="middle" font-size="24" fill="#718096" font-weight="300">≈</text>
+  <line x1="184" y1="134" x2="202" y2="134" stroke="#a0aec0" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- ── USER FACTORS ── -->
+  <rect x="206" y="36" width="70" height="200" rx="8" fill="white" stroke="#c6f6d5" stroke-width="1.5"/>
+  <text x="241" y="52"  text-anchor="middle" font-size="10" font-weight="600" fill="#276749">User Factors</text>
+  <text x="241" y="64"  text-anchor="middle" font-size="8"  fill="#68d391">users × rank (20)</text>
+  <!-- 6 rows × 3 cols, step=22, start x=209 y=72 -->
+  <rect x="209" y="72"  width="20" height="19" rx="2" fill="#68d391"/>  <rect x="231" y="72"  width="20" height="19" rx="2" fill="#48bb78"/>  <rect x="253" y="72"  width="20" height="19" rx="2" fill="#9ae6b4"/>
+  <rect x="209" y="93"  width="20" height="19" rx="2" fill="#9ae6b4"/>  <rect x="231" y="93"  width="20" height="19" rx="2" fill="#68d391"/>  <rect x="253" y="93"  width="20" height="19" rx="2" fill="#48bb78"/>
+  <rect x="209" y="114" width="20" height="19" rx="2" fill="#48bb78"/>  <rect x="231" y="114" width="20" height="19" rx="2" fill="#9ae6b4"/>  <rect x="253" y="114" width="20" height="19" rx="2" fill="#68d391"/>
+  <rect x="209" y="135" width="20" height="19" rx="2" fill="#68d391"/>  <rect x="231" y="135" width="20" height="19" rx="2" fill="#48bb78"/>  <rect x="253" y="135" width="20" height="19" rx="2" fill="#9ae6b4"/>
+  <rect x="209" y="156" width="20" height="19" rx="2" fill="#9ae6b4"/>  <rect x="231" y="156" width="20" height="19" rx="2" fill="#48bb78"/>  <rect x="253" y="156" width="20" height="19" rx="2" fill="#68d391"/>
+  <rect x="209" y="177" width="20" height="19" rx="2" fill="#48bb78"/>  <rect x="231" y="177" width="20" height="19" rx="2" fill="#9ae6b4"/>  <rect x="253" y="177" width="20" height="19" rx="2" fill="#68d391"/>
+  <text x="241" y="208" text-anchor="middle" font-size="8" fill="#68d391">one row per user</text>
+  <text x="241" y="220" text-anchor="middle" font-size="8" fill="#a0aec0">3 of 20 dims shown</text>
+
+  <!-- ── × ── -->
+  <text x="288" y="140" text-anchor="middle" font-size="18" fill="#718096">×</text>
+
+  <!-- ── ACCOUNT FACTORS ── -->
+  <rect x="302" y="36" width="192" height="96" rx="8" fill="white" stroke="#fefcbf" stroke-width="1.5"/>
+  <text x="398" y="52"  text-anchor="middle" font-size="10" font-weight="600" fill="#744210">Account Factors</text>
+  <text x="398" y="64"  text-anchor="middle" font-size="8"  fill="#f6ad55">rank (20) × accounts</text>
+  <!-- 3 rows × 7 cols, step=24, start x=308 y=72 -->
+  <rect x="308" y="72" width="22" height="19" rx="2" fill="#f6ad55"/>  <rect x="332" y="72" width="22" height="19" rx="2" fill="#ed8936"/>  <rect x="356" y="72" width="22" height="19" rx="2" fill="#fbd38d"/>
+  <rect x="380" y="72" width="22" height="19" rx="2" fill="#f6ad55"/>  <rect x="404" y="72" width="22" height="19" rx="2" fill="#ed8936"/>  <rect x="428" y="72" width="22" height="19" rx="2" fill="#fbd38d"/>  <rect x="452" y="72" width="22" height="19" rx="2" fill="#f6ad55"/>
+  <rect x="308" y="93" width="22" height="19" rx="2" fill="#fbd38d"/>  <rect x="332" y="93" width="22" height="19" rx="2" fill="#f6ad55"/>  <rect x="356" y="93" width="22" height="19" rx="2" fill="#ed8936"/>
+  <rect x="380" y="93" width="22" height="19" rx="2" fill="#fbd38d"/>  <rect x="404" y="93" width="22" height="19" rx="2" fill="#f6ad55"/>  <rect x="428" y="93" width="22" height="19" rx="2" fill="#ed8936"/>  <rect x="452" y="93" width="22" height="19" rx="2" fill="#fbd38d"/>
+  <rect x="308" y="114" width="22" height="19" rx="2" fill="#ed8936"/>  <rect x="332" y="114" width="22" height="19" rx="2" fill="#fbd38d"/>  <rect x="356" y="114" width="22" height="19" rx="2" fill="#f6ad55"/>
+  <rect x="380" y="114" width="22" height="19" rx="2" fill="#ed8936"/>  <rect x="404" y="114" width="22" height="19" rx="2" fill="#fbd38d"/>  <rect x="428" y="114" width="22" height="19" rx="2" fill="#f6ad55"/>  <rect x="452" y="114" width="22" height="19" rx="2" fill="#ed8936"/>
+  <text x="398" y="146" text-anchor="middle" font-size="8" fill="#f6ad55">3 of 20 rows shown</text>
+  <text x="398" y="158" text-anchor="middle" font-size="8" fill="#a0aec0">← one column per account →</text>
+
+  <!-- ── LEGEND (right of user factors, below account factors) ── -->
+  <rect x="508" y="100" width="240" height="130" rx="8" fill="white" stroke="#e2e5ef" stroke-width="1"/>
+  <text x="628" y="116" text-anchor="middle" font-size="9.5" font-weight="600" fill="#4a5568">Legend</text>
+  <rect x="518" y="124" width="11" height="11" rx="2" fill="#4f8ef7"/>  <text x="534" y="134" font-size="8.5" fill="#4a5568">observed interaction score</text>
+  <rect x="518" y="140" width="11" height="11" rx="2" fill="#edf2f7" stroke="#cbd5e0" stroke-width="0.5"/>  <text x="534" y="150" font-size="8.5" fill="#4a5568">no interaction (99.99% of cells)</text>
+  <rect x="518" y="156" width="11" height="11" rx="2" fill="#68d391"/>  <text x="534" y="166" font-size="8.5" fill="#4a5568">user latent factor (learned)</text>
+  <rect x="518" y="172" width="11" height="11" rx="2" fill="#f6ad55"/>  <text x="534" y="182" font-size="8.5" fill="#4a5568">account latent factor (learned)</text>
+  <text x="628" y="200" text-anchor="middle" font-size="8" fill="#667eea" font-style="italic">ALS adjusts both tables so their</text>
+  <text x="628" y="212" text-anchor="middle" font-size="8" fill="#667eea" font-style="italic">dot products ≈ observed scores</text>
+  <text x="628" y="224" text-anchor="middle" font-size="8" fill="#667eea" font-style="italic">then predicts all missing cells</text>
+
+  <!-- ── INFERENCE ROW ── -->
+  <line x1="12" y1="248" x2="748" y2="248" stroke="#e2e5ef" stroke-width="1"/>
+  <text x="380" y="265" text-anchor="middle" font-size="10.5" font-weight="600" fill="#4a5568">Scoring at Inference Time</text>
+
+  <rect x="18"  y="273" width="148" height="22" rx="4" fill="#c6f6d5"/>
+  <text x="92"  y="288" text-anchor="middle" font-size="8.5" font-weight="600" fill="#276749">user 42 vector [dim=20]</text>
+  <text x="174" y="288" text-anchor="middle" font-size="13" fill="#718096">·</text>
+  <rect x="184" y="273" width="192" height="22" rx="4" fill="#fefcbf"/>
+  <text x="280" y="288" text-anchor="middle" font-size="8.5" font-weight="600" fill="#744210">all 19,088 account vectors [dim=20]</text>
+  <text x="388" y="288" text-anchor="middle" font-size="11" fill="#718096">→</text>
+  <rect x="400" y="273" width="104" height="22" rx="4" fill="#ebf4ff"/>
+  <text x="452" y="288" text-anchor="middle" font-size="8.5" font-weight="600" fill="#2b6cb0">19,088 scores</text>
+  <text x="516" y="288" text-anchor="middle" font-size="11" fill="#718096">→</text>
+  <rect x="528" y="273" width="140" height="22" rx="4" fill="#4f8ef7"/>
+  <text x="598" y="288" text-anchor="middle" font-size="8.5" font-weight="700" fill="white">top-10 recommendations</text>
+
+  <text x="380" y="318" text-anchor="middle" font-size="8" fill="#a0aec0">one matrix multiply per user · runs in milliseconds · same operation for every user in the dataset</text>
+</svg>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Build a sparse matrix</p>
+<p>The <code>implicit</code> library needs a <strong>scipy sparse matrix</strong>, not a Spark DataFrame.
+    We pull the training table to the driver with <code>.toPandas()</code> then build a
+    <code>csr_matrix</code> — a format that only stores the non-zero cells, which is critical when
+    99.99% of the matrix is empty.</p>
+<pre>train_pdf = spark.table(f"{SCHEMA}.mlops_train").toPandas()
+
+user_item = sp.csr_matrix(
+    (train_pdf["interaction_score"].astype(float).values,
+     (train_pdf["user_id"].values, train_pdf["account_id"].values)),
+    shape=(N_USERS, N_ACCOUNTS))</pre>
+<div class="expected">Sparse matrix: 17,462 users × 19,088 items  density=0.011%</div>
+
+<p class="cell-label"><span>Cell</span> Train ALS inside an MLflow run</p>
+<p><code>with mlflow.start_run(run_name="als_model")</code> opens a run context. Every
+    <code>mlflow.log_params()</code> and <code>mlflow.pyfunc.log_model()</code> call inside it
+    is attached to this run. When the <code>with</code> block exits, the run is closed and the
+    data is committed to the tracking server. The model is wrapped in a custom
+    <code>ALSRecommender</code> class so MLflow can serialize it as a standard <code>pyfunc</code>.</p>
+<pre>with mlflow.start_run(run_name="als_model") as als_run:
+    mlflow.log_params({"algorithm": "ALS-implicit",
+                       "rank": ALS_RANK, "maxIter": ALS_ITER, "regParam": ALS_REG})
+
+    als_model = implicit.als.AlternatingLeastSquares(
+        factors=ALS_RANK, iterations=ALS_ITER,
+        regularization=ALS_REG, random_state=SEED)
+    als_model.fit(user_item)          # &lt; 2 seconds on this dataset
+
+    mlflow.pyfunc.log_model(          # saves the model as an artifact
+        artifact_path="als_model",
+        python_model=ALSRecommender(),
+        artifacts={"bundle": bundle_path}, ...)</pre>
+<div class="expected">ALS trained in 1.4s  |  run_id: 7897edb3f01c4839aaa69671ac6f14d5</div>
+
+<div class="callout gold">
+    <div class="callout-label">What is an account factor?</div>
+    <p>An <strong>account factor</strong> (also called a <em>latent factor</em> or <em>embedding</em>) is a list of numbers that ALS learns to represent an account.
+        You choose how long the list is — that length is the <strong>rank</strong> (default: 20).
+        Each position in the list corresponds to some concept the model discovered on its own, like "tech content", "news", or "sports". The model is never told what those concepts are — it infers them from the interaction patterns.</p>
+    <p>Every user gets a matching list of the same length (a <strong>user factor</strong>).
+        To predict how much user A would like account B, the model computes the <strong>dot product</strong>
+        of user A's list with account B's list — one multiplication per dimension, then sum them all up.
+        A high dot product means the two vectors are pointing in the same direction, i.e. the user's interests
+        align with what the account posts.</p>
+    <p>Before training, both lists are random numbers. ALS alternates between adjusting the user factors (holding account factors fixed)
+        and adjusting the account factors (holding user factors fixed), repeating until the dot products
+        match the observed interaction scores as closely as possible. That process is the "Alternating" in ALS.</p>
+</div>
+
+<h3 class="section">Key parameters</h3>
+<ul>
+    <li><strong>factors (rank):</strong> Number of latent dimensions per user and account. Default: 20.</li>
+    <li><strong>iterations:</strong> Alternating least-squares steps before stopping. Default: 10.</li>
+    <li><strong>regularization:</strong> L2 penalty. Prevents embeddings from growing arbitrarily large and overfitting.</li>
+</ul>
+
+<div class="task-box">
+    <div class="task-box-label">Task 2.1 &mdash; Train ALS and Observe the MLflow Run</div>
+    <p>Run all the Stage 2 cells. Once they finish, MLflow will have created an experiment and logged a run.
+        Use the diagram below to find it:</p>
+
+    <p style="font-size:13px;color:#666;margin-bottom:6px"><strong>① In the left sidebar click Experiments</strong> — then click <strong>mlops_social_recommender</strong>:</p>
+    <img src="screenshots/06_runs_wide.png" alt="MLflow experiment runs list showing als_model and embedding_model runs"
+         style="width:100%;border:1px solid #dde1ef;border-radius:6px;margin-bottom:16px">
+
+    <p style="font-size:13px;color:#666;margin-bottom:6px"><strong>② Click any als_model row</strong> to open the run detail page:</p>
+    <img src="screenshots/07_als_run_detail_top.png" alt="MLflow run detail page showing Parameters, Metrics, and Artifacts tabs"
+         style="width:100%;border:1px solid #dde1ef;border-radius:6px;margin-bottom:16px">
+
+    <ol>
+        <li>In the <strong>left sidebar</strong>, click the <strong>⚗️ Experiments</strong> icon
+            (the beaker — below Workspace, above Data).</li>
+        <li>Click <strong>mlops_social_recommender</strong> in the experiment list.</li>
+        <li>Click the <strong>als_model</strong> row in the run table.</li>
+        <li>The run detail page has three tabs: <strong>Parameters</strong>, <strong>Metrics</strong>,
+            <strong>Artifacts</strong>. Under <em>Parameters</em> confirm you see <code>rank</code>,
+            <code>iterations</code>, and <code>regularization</code>.</li>
+        <li>Under <strong>Artifacts</strong>, find the <code>als_model/</code> folder — the serialized model
+            wrapped as an MLflow <code>pyfunc</code>. Any system that can call Python can load it,
+            regardless of how it was trained.</li>
+    </ol>
+</div>
+
+<!-- STAGE 3 -->
+<h2 class="part"><span class="part-num">Stage 3</span> Evaluation &mdash; Hit Rate @ 10</h2>
+
+<p>The ALS model produced top-10 recommendations for every user. Evaluation scores them against the holdout
+    set — one real interaction per user that was set aside before training began.</p>
+
+<p><strong>Hit Rate @ 10</strong> = users whose held-out account appears in their top-10 list &divide; total users evaluated.</p>
+
+<h3 class="section">What the cells actually do</h3>
+
+<p class="cell-label"><span>Cell</span> Compute hit rate</p>
+<p>The evaluation is a simple join: join the recommendations table against the holdout table on
+    <code>(user_id, account_id)</code>. Any row that matches is a hit — the model recommended
+    the exact account the user actually interacted with. Count the hits, divide by total holdout rows.</p>
+<pre>def hit_rate(recs_table: str) -> float:
+    recs    = spark.table(recs_table)
+    holdout = spark.table(f"{SCHEMA}.mlops_holdout")
+    hits    = holdout.join(recs, ["user_id", "account_id"], "inner")
+    n_hits  = hits.count()
+    total   = holdout.count()
+    return n_hits / total
+
+als_hr = hit_rate(f"{SCHEMA}.mlops_als_recs")</pre>
+<div class="expected">workspace.mlops.mlops_als_recs   13/500 hits  =>  hit_rate@10 = 0.0260
+ALS hit_rate@10 = 0.0260</div>
+
+<p class="cell-label"><span>Cell</span> Log the metric back into the MLflow run</p>
+<p>The run was already closed when training finished. We <strong>reopen</strong> it by passing the same
+    <code>run_id</code> to <code>mlflow.start_run()</code>. This adds the evaluation metric to the
+    existing run record — so both training parameters <em>and</em> the evaluation score live in
+    the same place.</p>
+<pre>with mlflow.start_run(run_id=als_run_id):
+    mlflow.log_metric("hit_rate_at_10", als_hr)</pre>
+<div class="expected">hit_rate_at_10 = 0.0260 logged to run 7897edb3f01c4839aaa69671ac6f14d5</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 3.1 &mdash; Evaluate and Confirm in the MLflow UI</div>
+    <ol>
+        <li>Run the evaluation cell. Note the printed hit rate. (Expect roughly 2–3% — the data is very sparse;
+            the final cell explains why this is normal.)</li>
+        <li>Go back to <strong>Experiments → mlops_social_recommender → als_model run</strong>.
+            Under <strong>Metrics</strong> confirm that <code>hit_rate_at_10</code> appears. Notice it lives in
+            the same record as the training parameters — this is why MLflow is useful: every number that
+            describes a run is in one place, tied to the exact code and data that produced it.</li>
+        <li>Why is it useful that the evaluation metric lives in the same run record as the training parameters?
+            What would you need to answer if you came back to this experiment in six months?</li>
+    </ol>
+</div>
+
+<div class="callout red">
+    <div class="callout-label">Evaluation Integrity</div>
+    <p>The holdout was constructed before any model saw the data. Evaluating on training data makes every model
+        look good and produces a meaningless metric. Holdout discipline is non-negotiable in production ML.</p>
+</div>
+
+<!-- STAGE 4 -->
+<h2 class="part"><span class="part-num">Stage 4</span> Model Registry &amp; Deployment Lifecycle</h2>
+
+<p>Once training and evaluation are complete, the model is packaged as a versioned artifact in the
+    <strong>MLflow Model Registry</strong> under the name <code>social_recommender</code>. Registration is
+    a promotion event: the model moves from an ephemeral experiment run to a named, versioned artifact that
+    any downstream system can reference by name.</p>
+
+<ul>
+    <li><strong>Stable reference:</strong> <code>models:/social_recommender/latest</code> always resolves to the current best version</li>
+    <li><strong>Version history:</strong> Every registration increments the version — old versions are preserved for rollback</li>
+    <li><strong>Traceability:</strong> Each registry entry links back to the exact run, parameters, and metrics that produced it</li>
+</ul>
+
+<div class="callout">
+    <div class="callout-label">Note on the Free Tier</div>
+    <p>On Databricks Free Edition, writes to the Unity Catalog model registry bucket are blocked.
+        The notebook catches this and logs a <strong>model card JSON</strong> artifact to the run instead —
+        it contains the same information (model name, run ID, algorithm, hit rate) that a registry entry would hold.
+        The pipeline structure and concepts are identical to a paid workspace.</p>
+</div>
+
+<p>In a production team, registering a model version is also the trigger for a <strong>Deployment Job</strong>:
+    an automated pipeline that picks up the new version, runs a validation pass, waits for human approval,
+    and then promotes it to a serving endpoint. Every step that job takes is written to the model version's
+    <strong>Activity Log</strong> &mdash; a permanent, auditable record of exactly what happened to this
+    version of the model and when.</p>
+
+<div class="callout">
+    <div class="callout-label">Why This Replaces Email</div>
+    <p>Without an activity log, the answer to "when did this model go to production and who approved it?" is
+        usually an email chain or a Slack thread &mdash; if it exists at all. With the registry and deployment jobs,
+        that information is attached to the model version itself and queryable by any system that has access.</p>
+</div>
+
+<h3 class="section">What the cell actually does</h3>
+
+<p class="cell-label"><span>Cell</span> Register the model (with free-tier fallback)</p>
+<p><code>mlflow.register_model()</code> copies the artifact from the run into the Unity Catalog model
+    registry and assigns it a version number. On the free tier, the registry storage bucket denies writes.
+    The <code>try/except</code> catches that and logs a <strong>model card JSON</strong> to the run's
+    Artifacts tab instead — same information, different location.</p>
+<pre>model_uri  = f"runs:/{als_run_id}/als_model"
+MODEL_NAME = "workspace.mlops.social_recommender"
+
+try:
+    reg = mlflow.register_model(model_uri, MODEL_NAME)
+    print(f"Registered: {MODEL_NAME}  version={reg.version}")
+
+except Exception as e:
+    # Free tier: IAM denies PutObject on the registry bucket
+    print("Registry write blocked — logging model card instead.")
+    model_card = {
+        "model_name":     MODEL_NAME,
+        "run_id":         als_run_id,
+        "algorithm":      "ALS-implicit",
+        "hit_rate_at_10": round(als_hr, 4),
+        "status":         "CANDIDATE — not registered (free tier)",
+    }
+    with mlflow.start_run(run_id=als_run_id):
+        mlflow.log_artifact(card_path, "registry_card")</pre>
+
+<p><strong>On the free tier you will see:</strong></p>
+<div class="expected">Registry write blocked (Databricks Free tier — expected).
+Logging a model card artifact to the run instead.
+
+Model card logged. Open the run → Artifacts → registry_card/model_card.json
+
+What the registry entry would contain:
+  model_name: workspace.mlops.social_recommender
+  algorithm:  ALS-implicit
+  rank:       20
+  hit_rate_at_10: 0.026
+  status:     CANDIDATE — not yet registered (free tier limitation)</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 4.1 &mdash; Run the Registration Cell and Read the Output</div>
+    <ol>
+        <li>Run the Stage 4 cell. Read what prints: model name, version (or status), source run ID, and hit rate.</li>
+        <li>Open <strong>Experiments → mlops_social_recommender → als_model run</strong>.
+            Click <strong>Artifacts</strong>. Find <code>registry_card/model_card.json</code>.</li>
+        <li>Click the file to preview it. Confirm it contains the model name, run ID, algorithm, and hit rate.</li>
+        <li>This is the same information a registry entry would hold &mdash; name, provenance, and metric
+            attached to a specific run. On a workspace with write access to the registry bucket,
+            this information would also appear under <strong>Models</strong> in the left sidebar.</li>
+    </ol>
+</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 4.2 &mdash; Trace the Run</div>
+    <ol>
+        <li>Note the <code>run_id</code> in the model card. Open that run in <strong>Experiments</strong>.</li>
+        <li>Confirm the <code>rank</code>, <code>maxIter</code>, <code>regParam</code> parameters and
+            <code>hit_rate_at_10</code> metric match what's in the model card.</li>
+        <li>In a production registry, clicking a registered version takes you to exactly this run.
+            What is the value of that link for a team debugging a production regression?</li>
+    </ol>
+</div>
+
+<div class="task-box">
+    <div class="task-box-label">Task 4.3 &mdash; The Deployment Pipeline Concept</div>
+    <p>Think through what happens after a model is registered:</p>
+    <ol>
+        <li>A new version is registered &rarr; a <strong>Deployment Job</strong> is triggered automatically</li>
+        <li>The job loads the model by name: <code>mlflow.pyfunc.load_model("models:/social_recommender/latest")</code></li>
+        <li>It runs a validation pass on fresh holdout data. If the metric passes the threshold &rarr; promote to <code>@champion</code></li>
+        <li>Every step appears in the model version's <strong>Activity Log</strong> &mdash; timestamped, attributed, permanent</li>
+    </ol>
+    <p>What additional events would you want in the Activity Log for a model serving a live customer API?
+        (canary rollout, human approval, traffic shift, rollback)</p>
+</div>
+
+
+<div class="callout green">
+    <div class="callout-label">Next: Lab 2</div>
+    <p>Lab 2 (<a href="mlops_lab2.html">mlops_lab2.html</a>) trains a TensorFlow embedding model
+        on the same feature table, compares hit rates against ALS, and decides whether to register
+        a new version. Run it after this lab is complete &mdash; the feature table and ALS
+        recommendations created here are prerequisites.</p>
+</div>
+
+<h2 class="part"><span class="part-num">Extension</span> If You Finish Early</h2>
+<ul>
+    <li><strong>Retrain ALS with rank=50.</strong> Change the <code>ALS_RANK</code> constant from 20 to 50 and
+        rerun the ALS cells. Does hit rate improve? More factors mean a richer model but also more parameters
+        to fit on the same sparse data — does overfitting show up?</li>
+    <li><strong>Add a popularity baseline.</strong> Before training any model, compute the globally
+        top-10 most-interacted-with accounts and recommend that same list to every user.
+        What hit rate does a model that ignores individual preferences entirely achieve?
+        ALS must beat this null model to justify its complexity.</li>
+    <li><strong>Read the model card.</strong> In <strong>Experiments → mlops_social_recommender → als_model run →
+        Artifacts</strong>, open <code>registry_card/model_card.json</code>. Add a field to the card in the notebook
+        (e.g. <code>trained_by</code> with your name) and rerun Stage 4 to see it update.</li>
+    <li><strong>Start Lab 2.</strong> Go to <a href="mlops_lab2.html">mlops_lab2.html</a> and run
+        the TensorFlow embedding model. See whether it beats ALS on the same holdout.</li>
+</ul>
+
+<footer class="doc-footer">
+    <a href="MLOps_index.html">Back to Index</a> &nbsp;&middot;&nbsp;
+    <a href="mlops_discussion.html">Discussion: What Is MLOps?</a>
+    &nbsp;&middot;&nbsp; Distributed Systems for Data Science &nbsp;&middot;&nbsp; New College of Florida
+</footer>
+
+</body>
+</html>
