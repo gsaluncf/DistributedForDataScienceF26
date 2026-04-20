@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 13 - Know Your Data: A Discovery Session</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-faint: #8888aa;
+            --rule: #e0e0ee;
+            --bg: #f4f6fa;
+            --bg-warm: #fffdf7;
+            --accent: #1a4fa0;
+            --accent-lt: #e8eef9;
+            --gold: #b07d20;
+            --gold-lt: #fdf6e3;
+            --green: #1a6b3a;
+            --green-lt: #eaf5ee;
+            --red: #9b1c1c;
+            --red-lt: #fef2f2;
+            --code-bg: #f0f0f8;
+            --purple: #553c9a;
+            --purple-lt: #f3eeff;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink);
+            background: var(--bg);
+            min-height: 100vh;
+        }
+
+        /* ─── SPA LAYOUT ─── */
+        .spa-page { display: none; max-width: 860px; margin: 0 auto; padding: 40px 48px 80px; }
+        .spa-page.active { display: block; animation: pageIn 0.45s ease; }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── NAV BAR ─── */
+        .spa-nav {
+            background: var(--ink);
+            color: #fff;
+            padding: 0 48px;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: none;
+        }
+        .spa-nav .nav-brand {
+            font-family: 'IBM Plex Serif', serif;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 14px 0;
+            margin-right: auto;
+            white-space: nowrap;
+        }
+        .nav-tab {
+            padding: 14px 22px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .nav-tab:hover { color: rgba(255,255,255,0.8); }
+        .nav-tab.active { color: #fff; border-bottom-color: #fff; }
+        .nav-tab.locked { cursor: not-allowed; opacity: 0.35; }
+        .nav-tab .tab-check {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 1.5px solid currentColor;
+            vertical-align: -2px;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        .nav-tab.completed .tab-check {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        /* ─── HEADER ─── */
+        .doc-header {
+            border-bottom: 3px solid var(--ink);
+            padding-bottom: 28px;
+            margin-bottom: 40px;
+        }
+        .doc-meta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 12px;
+        }
+        h1.doc-title {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: 34px;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+        .doc-sub { font-size: 14px; color: var(--ink-soft); }
+
+        /* ─── PART HEADINGS ─── */
+        h2.part {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 48px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--ink);
+            display: flex; align-items: baseline; gap: 12px;
+        }
+        h2.part .part-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--ink-faint); font-weight: 400;
+        }
+        h3.section {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 16px; font-weight: 600;
+            color: var(--accent); margin: 32px 0 10px;
+        }
+        p { margin-bottom: 14px; }
+        p:last-child { margin-bottom: 0; }
+
+        /* ─── CALLOUT ─── */
+        .callout {
+            border-left: 4px solid var(--accent);
+            background: var(--accent-lt);
+            padding: 16px 20px; margin: 24px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .callout.gold { border-color: var(--gold); background: var(--gold-lt); }
+        .callout.green { border-color: var(--green); background: var(--green-lt); }
+        .callout.red { border-color: var(--red); background: var(--red-lt); }
+        .callout-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; letter-spacing: .1em;
+            text-transform: uppercase; font-weight: 600;
+            margin-bottom: 6px; color: var(--ink-soft);
+        }
+        .callout p { font-size: 14px; }
+        code {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px; background: var(--code-bg);
+            padding: 1px 5px; border-radius: 3px;
+        }
+
+        /* ─── CARD DECK ─── */
+        .card-deck { position: relative; margin: 32px 0 32px; }
+        .card-controls {
+            display: flex; align-items: center; justify-content: center;
+            gap: 20px; margin-bottom: 24px;
+        }
+        .card-counter {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px; color: var(--ink-faint);
+            min-width: 80px; text-align: center;
+        }
+        .card-btn, .page-btn {
+            background: var(--ink); color: #fff; border: none; border-radius: 8px;
+            padding: 10px 22px; font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; letter-spacing: .02em;
+        }
+        .card-btn:hover, .page-btn:hover {
+            background: var(--accent); transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26,79,160,0.25);
+        }
+        .card-btn:disabled { background: var(--rule); color: var(--ink-faint); cursor: not-allowed; transform: none; box-shadow: none; }
+        .page-btn { padding: 14px 36px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .page-btn.green-btn { background: var(--green); }
+        .page-btn.green-btn:hover { background: #228b22; }
+
+        .question-card {
+            display: none; border: 1.5px solid var(--rule); border-radius: 12px;
+            overflow: hidden; animation: cardIn 0.4s ease;
+            box-shadow: 0 4px 20px rgba(26,26,46,0.08); background: #fff;
+        }
+        .question-card.active { display: block; }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .card-category {
+            padding: 14px 22px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card-category .cat-icon { display: inline-flex; align-items: center; }
+        .card-category .cat-icon svg { width: 16px; height: 16px; }
+        .card-category.intro { background: var(--ink); color: #fff; }
+        .card-category.getting { background: #e0f2fe; color: #0369a1; }
+        .card-category.shaping { background: var(--red-lt); color: var(--red); }
+        .card-category.understanding { background: var(--gold-lt); color: var(--gold); }
+        .card-category.shipping { background: var(--green-lt); color: var(--green); }
+
+        .card-image { display: flex; justify-content: center; padding: 24px 28px 8px; }
+        .card-image svg { max-width: 100%; height: auto; }
+        .card-lead { padding: 36px 32px; text-align: center; }
+        .card-lead .lead-title {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: 28px; font-weight: 600; color: var(--ink);
+            margin-bottom: 16px; line-height: 1.3;
+        }
+        .card-lead .lead-body { font-size: 14px; color: var(--ink-soft); line-height: 1.7; max-width: 580px; margin: 0 auto; }
+        .card-question { padding: 28px 28px 16px; font-family: 'IBM Plex Serif', serif; font-size: 20px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+        .card-subtext { padding: 0 28px 12px; font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+        .card-think {
+            margin: 0 22px 22px; background: var(--bg); border: 1px dashed var(--rule);
+            border-radius: 8px; padding: 14px 18px; font-size: 12px; color: var(--ink-faint);
+            font-family: 'IBM Plex Mono', monospace; cursor: pointer; transition: all 0.25s ease;
+        }
+        .card-think:hover { border-color: var(--ink-faint); background: #fff; }
+        .card-think .think-label { font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .card-think .think-content { display: none; font-size: 13px; color: var(--ink-soft); line-height: 1.6; font-family: 'IBM Plex Sans', sans-serif; animation: fadeReveal 0.3s ease; }
+        .card-think.revealed .think-content { display: block; }
+        .card-think.revealed { border-color: var(--accent); border-style: solid; background: #fff; }
+        @keyframes fadeReveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ─── SCORE BUTTONS ─── */
+        .card-score-btns { display: flex; gap: 10px; padding: 8px 22px 20px; }
+        .score-btn {
+            flex: 1; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--rule);
+            background: #fff; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--ink-soft);
+        }
+        .score-btn:hover { border-color: var(--ink-faint); background: var(--bg); }
+        .score-btn svg { width: 14px; height: 14px; }
+        .score-btn.selected-know { background: var(--green-lt); border-color: var(--green); color: var(--green); }
+        .score-btn.selected-unsure { background: var(--gold-lt); border-color: var(--gold); color: var(--gold); }
+
+        .score-summary {
+            display: flex; justify-content: center; gap: 20px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+            color: var(--ink-faint); margin: 16px 0 20px; transition: all 0.3s ease;
+        }
+        .score-summary .know-count { color: var(--green); font-weight: 600; }
+        .score-summary .unsure-count { color: var(--gold); font-weight: 600; }
+
+        .progress-dots { display: flex; justify-content: center; gap: 6px; margin: 20px 0; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); transition: all 0.3s ease; }
+        .dot.active { background: var(--accent); transform: scale(1.3); }
+        .dot.done { background: var(--green); }
+        .dot.done-unsure { background: var(--gold); }
+
+        /* ─── ASSESSMENT GRID ─── */
+        .assessment-grid { margin: 28px 0; }
+        .assess-row {
+            display: grid; grid-template-columns: 180px 1fr 60px; gap: 0;
+            border: 1px solid var(--rule); border-bottom: none; min-height: 60px;
+        }
+        .assess-row:last-child { border-bottom: 1px solid var(--rule); border-radius: 0 0 8px 8px; }
+        .assess-row:first-child { border-radius: 8px 8px 0 0; }
+        .assess-header {
+            background: var(--ink); color: #fff; font-family: 'IBM Plex Sans', sans-serif;
+            font-weight: 600; font-size: 12px; padding: 10px 16px;
+            display: flex; align-items: center; letter-spacing: .02em;
+        }
+        .assess-header:first-child { border-radius: 8px 0 0 0; }
+        .assess-header:last-child { border-radius: 0 8px 0 0; }
+        .assess-dim {
+            padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--ink);
+            background: #fff; display: flex; align-items: center; gap: 8px; border-right: 1px solid var(--rule);
+        }
+        .assess-dim .dim-icon { display: inline-flex; align-items: center; }
+        .assess-dim .dim-icon svg { width: 14px; height: 14px; }
+        .assess-desc {
+            padding: 10px 16px; font-size: 12px; color: var(--ink-soft); background: #fff;
+            line-height: 1.5; display: flex; align-items: center; border-right: 1px solid var(--rule);
+        }
+        .assess-score { padding: 10px 12px; background: #fff; display: flex; align-items: center; justify-content: center; }
+        .score-select {
+            font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600;
+            border: 1.5px solid var(--rule); border-radius: 6px; padding: 4px 4px;
+            width: 42px; text-align: center; color: var(--ink); cursor: pointer;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none; background: #fff;
+        }
+        .score-select:focus { outline: none; border-color: var(--accent); }
+        .total-row { display: flex; justify-content: flex-end; align-items: center; gap: 14px; padding: 16px 0 0; }
+        .total-label { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; }
+        .total-score { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 600; color: var(--ink); min-width: 70px; text-align: right; }
+        .readiness-bar { margin: 18px 0 8px; height: 10px; background: var(--rule); border-radius: 5px; overflow: hidden; }
+        .readiness-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease, background 0.3s ease; width: 0%; }
+        .readiness-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); text-align: right; margin-bottom: 24px; }
+
+        /* ─── SPRINT GOALS (PAGE 3) ─── */
+        .sprint-card {
+            background: #fff; border: 1.5px solid var(--rule); border-radius: 12px;
+            padding: 28px 28px 24px; margin: 20px 0;
+            box-shadow: 0 2px 12px rgba(26,26,46,0.06);
+        }
+        .sprint-card .sprint-label {
+            font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+            letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+            color: var(--ink-faint); margin-bottom: 10px;
+        }
+        .sprint-card .sprint-question {
+            font-family: 'IBM Plex Serif', serif; font-size: 17px;
+            font-weight: 600; color: var(--ink); margin-bottom: 12px;
+        }
+        .sprint-input {
+            width: 100%; min-height: 80px; border: 1.5px solid var(--rule);
+            border-radius: 8px; padding: 14px 16px;
+            font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
+            line-height: 1.6; color: var(--ink); resize: vertical; transition: border-color 0.2s;
+        }
+        .sprint-input:focus { outline: none; border-color: var(--accent); }
+        .sprint-input::placeholder { color: var(--ink-faint); }
+
+        /* ─── SAVE BANNER ─── */
+        .save-banner {
+            display: none; background: var(--green-lt); border: 1.5px solid var(--green);
+            border-radius: 10px; padding: 16px 22px; margin: 24px 0;
+            font-size: 13px; color: var(--green);
+            display: flex; align-items: center; gap: 10px;
+            animation: fadeReveal 0.4s ease;
+        }
+        .save-banner svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .save-banner { display: none; }
+
+        .restore-banner {
+            background: var(--accent-lt); border: 1.5px solid var(--accent);
+            border-radius: 10px; padding: 16px 22px; margin-bottom: 28px;
+            font-size: 13px; color: var(--accent);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .restore-banner svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+        /* page-action row */
+        .page-actions {
+            display: flex; justify-content: flex-end; margin-top: 36px; gap: 12px;
+        }
+
+        /* ─── FOOTER ─── */
+        .doc-footer {
+            max-width: 860px; margin: 0 auto;
+            padding: 20px 48px; font-size: 13px; color: var(--ink-soft);
+            border-top: 1px solid var(--rule);
+        }
+
+        @media print {
+            .spa-nav { display: none; }
+            .spa-page { display: block !important; }
+            .question-card { display: block !important; page-break-inside: avoid; margin-bottom: 20px; }
+            .card-controls, .progress-dots, .card-score-btns { display: none; }
+            .card-think .think-content { display: block !important; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAV BAR -->
+    <nav class="spa-nav">
+        <div class="nav-brand">Know Your Data</div>
+        <div class="nav-tab active" data-page="page1" onclick="goToPage('page1')">
+            <span class="tab-check"></span> Discovery
+        </div>
+        <div class="nav-tab locked" data-page="page2" onclick="goToPage('page2')">
+            <span class="tab-check"></span> Assessment
+        </div>
+        <div class="nav-tab locked" data-page="page3" onclick="goToPage('page3')">
+            <span class="tab-check"></span> Action Plan
+        </div>
+    </nav>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PAGE 1: DISCOVERY ROUND
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="spa-page active" id="page1">
+
+        <header class="doc-header">
+            <div class="doc-meta">Week 13 &middot; Distributed Systems for Data Science &middot;
+                New College of Florida &middot; Spring 2026</div>
+            <h1 class="doc-title">Know Your Data: A Discovery Session</h1>
+            <div class="doc-sub">A 30-minute in-class exercise to sharpen your awareness of the data
+                powering your Project 2 pipeline. No code required, just honest thinking and good
+                conversation.</div>
+        </header>
+
+        <div id="restoreBanner" style="display:none;" class="restore-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+            <span>Welcome back! Your previous session from <strong id="restoreDate"></strong> has been restored.</span>
+        </div>
+
+        <h2 class="part"><span class="part-num">Part 1</span> The Data Detective Round</h2>
+
+        <p>We'll flip through these one card at a time. For each question, <strong>think about your own
+        project's data.</strong> Click "I know this" or "I need to check" on each card.</p>
+
+        <div class="callout gold">
+            <div class="callout-label">Why This Is Worth Your Time</div>
+            <p>The best data scientists aren't the ones with the fanciest models. They're the ones who
+                know their data cold. Every insight you surface now is a gift to future-you at 2 AM
+                during finals week.</p>
+        </div>
+
+        <div class="progress-dots" id="progressDots"></div>
+        <div class="card-controls">
+            <button class="card-btn" id="prevBtn" onclick="prevCard()" disabled>&larr; Back</button>
+            <span class="card-counter" id="cardCounter">1 / 16</span>
+            <button class="card-btn" id="nextBtn" onclick="nextCard()">Next &rarr;</button>
+        </div>
+
+        <div class="card-deck" id="cardDeck">
+
+            <!-- CARD 0: PIE CHART -->
+            <div class="question-card active" data-category="intro">
+                <div class="card-category intro">
+                    <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> The Reality of Data Science
+                </div>
+                <div class="card-image">
+                    <svg width="460" height="340" viewBox="0 0 460 340" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', sans-serif">
+                        <rect width="460" height="340" fill="#fafafa" rx="8"/>
+                        <text x="230" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a2e">How Data Scientists Actually Spend Their Time</text>
+                        <g transform="translate(160,185)">
+                            <path d="M0,-120 A120,120 0 1,1 -103.92,60 L0,0 Z" fill="#1a4fa0" opacity="0.85"/>
+                            <path d="M-103.92,60 A120,120 0 0,1 -29.5,-116.3 L0,0 Z" fill="#b07d20" opacity="0.85"/>
+                            <path d="M-29.5,-116.3 A120,120 0 0,1 44.6,-111.4 L0,0 Z" fill="#1a6b3a" opacity="0.85"/>
+                            <path d="M44.6,-111.4 A120,120 0 0,1 74.16,-93.96 L0,0 Z" fill="#553c9a" opacity="0.85"/>
+                            <path d="M74.16,-93.96 A120,120 0 0,1 11.5,-119.4 L0,0 Z" fill="#9b1c1c" opacity="0.7"/>
+                            <path d="M0,-120 A120,120 0 0,1 69.28,-97.98 L0,0 Z" fill="#1a4fa0" opacity="0.15" stroke="#1a1a2e" stroke-width="1" stroke-dasharray="4 3"/>
+                        </g>
+                        <g transform="translate(305,80)">
+                            <rect x="0" y="0" width="12" height="12" rx="2" fill="#1a4fa0" opacity="0.85"/><text x="18" y="10" font-size="11" fill="#1a1a2e" font-weight="600">60%</text><text x="46" y="10" font-size="11" fill="#4a4a6a">Cleaning data</text>
+                            <rect x="0" y="22" width="12" height="12" rx="2" fill="#b07d20" opacity="0.85"/><text x="18" y="32" font-size="11" fill="#1a1a2e" font-weight="600">19%</text><text x="46" y="32" font-size="11" fill="#4a4a6a">Collecting data</text>
+                            <rect x="0" y="44" width="12" height="12" rx="2" fill="#1a6b3a" opacity="0.85"/><text x="18" y="54" font-size="11" fill="#1a1a2e" font-weight="600">9%</text><text x="46" y="54" font-size="11" fill="#4a4a6a">Building models</text>
+                            <rect x="0" y="66" width="12" height="12" rx="2" fill="#553c9a" opacity="0.85"/><text x="18" y="76" font-size="11" fill="#1a1a2e" font-weight="600">5%</text><text x="46" y="76" font-size="11" fill="#4a4a6a">Visualizing</text>
+                            <rect x="0" y="88" width="12" height="12" rx="2" fill="#9b1c1c" opacity="0.7"/><text x="18" y="98" font-size="11" fill="#1a1a2e" font-weight="600">7%</text><text x="46" y="98" font-size="11" fill="#4a4a6a">Googling errors</text>
+                            <rect x="0" y="110" width="12" height="12" rx="2" fill="#1a4fa0" opacity="0.15" stroke="#1a1a2e" stroke-width="0.5" stroke-dasharray="3 2"/><text x="18" y="120" font-size="11" fill="#1a1a2e" font-weight="600">12%</text><text x="46" y="120" font-size="11" fill="#4a4a6a">Complaining about</text><text x="46" y="133" font-size="11" fill="#4a4a6a">cleaning data</text>
+                        </g>
+                        <text x="230" y="318" text-anchor="middle" font-size="10" fill="#8888aa" font-style="italic">Source: CrowdFlower / Figure Eight (loosely). Total: 112%. That tracks.</text>
+                    </svg>
+                </div>
+                <div class="card-subtext" style="text-align:center; padding: 12px 28px 22px;">80% of the work happens <em>before</em> the model. That's what today is about.</div>
+            </div>
+
+            <!-- CARD 1: LEAD-IN -->
+            <div class="question-card" data-category="intro">
+                <div class="card-category intro">
+                    <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span> Let's Begin
+                </div>
+                <div class="card-lead">
+                    <div class="lead-title">Know Your Data.</div>
+                    <div class="lead-body">The next cards follow the lifecycle of your data: <strong>getting it, shaping it, understanding it, and shipping it.</strong><br><br>Click "I know this" or "I need to check" on each one. Your score builds as you go. There's no quiz, just awareness.</div>
+                </div>
+            </div>
+
+            <!-- ACT 1: GETTING THE DATA -->
+            <div class="question-card" data-category="getting" data-scorable="true"><div class="card-category getting"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span> Getting the Data</div><div class="card-question">How many rows are in your dataset? How many columns?</div><div class="card-subtext">Not a vague sense. The actual number. If you can rattle this off from memory, you're already ahead of most working data scientists.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">A model trained on 200 rows behaves fundamentally differently from one trained on 200,000 rows. If you're building a classifier with 12 classes but only have 50 examples per class, your model will overfit on noise. <strong>Knowing the shape is knowing what's possible.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="getting" data-scorable="true"><div class="card-category getting"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span> Getting the Data</div><div class="card-question">What does one row represent?</div><div class="card-subtext">One row represents ___. A single transaction? A daily average? A user session? A sensor reading every 5 seconds? If you can't fill in that blank precisely, your silver-to-gold transformation is at risk.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">Aggregation errors are the #1 silent killer of data pipelines. If your bronze table has one row per sensor reading but your model expects one row per hour, your transformation must aggregate correctly. Getting the grain wrong means your model learns from a fiction.</div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="getting" data-scorable="true"><div class="card-category getting"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span> Getting the Data</div><div class="card-question">Is there fresher data available for your problem?</div><div class="card-subtext">Stale data steals your sizzle. An API that hasn't been called since March, a Kaggle CSV from 2019, a scrape you ran once and never refreshed. If newer data exists and is accessible, updating your pipeline now is one of the highest-impact moves you can make before submission.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">Concept drift is real. A model trained on pre-pandemic restaurant data will make terrible predictions about 2026 dining patterns. For your write-up, being able to state "this data covers January 2024 through March 2026" shows awareness. <strong>State the temporal bounds of your data in your write-up. It's a sign of professional maturity.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <!-- ACT 2: SHAPING -->
+            <div class="question-card" data-category="shaping" data-scorable="true"><div class="card-category shaping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Shaping the Data</div><div class="card-question">What percentage of your most important column has missing values?</div><div class="card-subtext">Pick the single column your model depends on most. Your target variable or your strongest feature. Do you know its null rate?</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">Many modeling frameworks silently drop rows with nulls, or fill them with a default. If 30% of your key column is null, you may be training on a biased 70% subset without knowing it. <strong>You must make a conscious decision.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="shaping" data-scorable="true"><div class="card-category shaping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Shaping the Data</div><div class="card-question">Do you have any duplicate rows? How would you know?</div><div class="card-subtext">What's your primary key or unique identifier? Have you run a <code>GROUP BY</code> and <code>HAVING COUNT(*) > 1</code> check on it?</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">Duplicate records inflate the importance of certain observations. In a training set, duplicates bias the model toward those examples. <strong>Your silver layer should be the deduplication boundary.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="shaping" data-scorable="true"><div class="card-category shaping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Shaping the Data</div><div class="card-question">Are your columns the right data types?</div><div class="card-subtext">Is the "price" column actually a float, or is it a string with dollar signs? Type mismatches are one of the most common sources of silent errors in pipelines.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">A column that <em>looks</em> numeric but is stored as a string will pass through your pipeline without complaint. Spark is especially unforgiving: if your bronze schema infers "price" as StringType, every downstream aggregation on that column is wrong. <strong>Run <code>df.dtypes</code> or <code>df.printSchema()</code> and verify every column.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="shaping" data-scorable="true"><div class="card-category shaping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span> Shaping the Data</div><div class="card-question">Have you looked at the distribution of your key features?</div><div class="card-subtext">Not just the mean. The actual shape. Is it bell-curved, skewed, bimodal? A price column where 99% of values are under $100 but one entry is $1,000,000 will distort everything.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content">Most ML algorithms assume your features are reasonably distributed. Run <code>df.describe()</code> on your gold table and look at the min, max, and standard deviation. <strong>If the max is 100x the mean, you probably have outliers to handle.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <!-- ACT 3: UNDERSTANDING -->
+            <div class="question-card" data-category="understanding" data-scorable="true"><div class="card-category understanding"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><circle cx="5" cy="14" r="3"/><circle cx="19" cy="14" r="3"/></svg></span> Understanding the Data</div><div class="card-question">Who or what might be underrepresented in your data?</div><div class="card-subtext">If your dataset is restaurant reviews, small towns are probably invisible. If it's weather data, ocean-adjacent sensors dominate. <em>What slice of reality is your data quietly ignoring?</em></div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>The most dangerous model is the confident one that's never seen your test case.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="understanding" data-scorable="true"><div class="card-category understanding"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><circle cx="5" cy="14" r="3"/><circle cx="19" cy="14" r="3"/></svg></span> Understanding the Data</div><div class="card-question">What time period does your data cover? What's outside that window?</div><div class="card-subtext">2020 data includes a pandemic. Summer data doesn't know about winter. Understanding your data's time horizon is a sign of real analytical maturity.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>Ask: would my model's predictions change if I shifted the data window by 6 months?</strong> If yes, you have temporal bias.</div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="understanding" data-scorable="true"><div class="card-category understanding"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><circle cx="5" cy="14" r="3"/><circle cx="19" cy="14" r="3"/></svg></span> Understanding the Data</div><div class="card-question">Is your target variable balanced?</div><div class="card-subtext">If you're doing classification, what's the split? 90/10 is common, and it means your model can get 90% accuracy by always predicting the majority class.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>Choose a metric that's honest about your class distribution, not one that flatters it.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="understanding" data-scorable="true"><div class="card-category understanding"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><circle cx="5" cy="14" r="3"/><circle cx="19" cy="14" r="3"/></svg></span> Understanding the Data</div><div class="card-question">Could any of your features be secretly leaking the answer?</div><div class="card-subtext">Feature leakage happens when a column encodes information that wouldn't exist at prediction time. Think carefully about what your model would know <em>before</em> the event you're predicting.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>If your model accuracy seems too good to be true, audit your features for leakage.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <!-- ACT 4: SHIPPING -->
+            <div class="question-card" data-category="shipping" data-scorable="true"><div class="card-category shipping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span> Modeling & Shipping</div><div class="card-question">If a user sends your model a totally unexpected input, what happens?</div><div class="card-subtext">Negative temperatures for an ice cream predictor. A restaurant with 0 reviews. Thinking through edge cases now makes your app way more robust.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>Your UI should make it hard to send bad input, and your API should handle it when someone does anyway.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="shipping" data-scorable="true"><div class="card-category shipping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span> Modeling & Shipping</div><div class="card-question">If you re-ran your entire pipeline from scratch right now, would you get the exact same gold table?</div><div class="card-subtext">Same row count? Same values? Same column types? If not, it's worth figuring out what would shift.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>If you can't reproduce your data, you can't trust your model.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+            <div class="question-card" data-category="shipping" data-scorable="true"><div class="card-category shipping"><span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span> Modeling & Shipping</div><div class="card-question">What's the one step in your pipeline you'd most want to strengthen?</div><div class="card-subtext">An API rate limit. A hardcoded file path. A column name that might change. Every pipeline has a spot that could use a bit more love.</div><div class="card-think" onclick="revealThink(this)"><div class="think-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Click to reveal</div><div class="think-content"><strong>Know your single point of failure.</strong></div></div><div class="card-score-btns"><button class="score-btn know" onclick="scoreCard(this,'know')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> I know this</button><button class="score-btn unsure" onclick="scoreCard(this,'unsure')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> I need to check</button></div></div>
+
+        </div><!-- /card-deck -->
+
+        <div class="score-summary" id="scoreSummary">
+            <span>Score: <span class="know-count" id="knowCount">0</span> know it
+            &nbsp;/&nbsp; <span class="unsure-count" id="unsureCount">0</span> need to check</span>
+        </div>
+
+        <div id="page1Complete" style="display:none;">
+            <div class="callout green" style="margin-top:16px;">
+                <div class="callout-label">Discovery Round Complete</div>
+                <p>Nice work. You scored <strong id="finalKnow">0</strong> out of 14 as "I know this."</p>
+            </div>
+            <div class="page-actions">
+                <button class="page-btn" onclick="goToPage('page2')">Continue to Self-Assessment <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+        </div>
+
+    </div><!-- /page1 -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PAGE 2: SELF-ASSESSMENT
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="spa-page" id="page2">
+
+        <h2 class="part"><span class="part-num">Part 2</span> Data Readiness Self-Assessment</h2>
+
+        <p>Rate your project's data readiness on each dimension below. Be honest. This is for you, not
+            for a grade. A low score isn't a failure; it's a <strong>compass</strong> pointing you
+            exactly where to invest your energy.</p>
+
+        <div class="callout green">
+            <div class="callout-label">Scoring Guide</div>
+            <p><strong>1</strong> = Haven't started &nbsp;&nbsp;
+               <strong>2</strong> = Aware but haven't addressed it &nbsp;&nbsp;
+               <strong>3</strong> = Partially handled &nbsp;&nbsp;
+               <strong>4</strong> = Solid &nbsp;&nbsp;
+               <strong>5</strong> = Nailed it</p>
+        </div>
+
+        <div class="assessment-grid">
+            <div class="assess-row"><div class="assess-header">Dimension</div><div class="assess-header">What "5" looks like</div><div class="assess-header" style="border-radius:0 8px 0 0;">Score</div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 21l9-9 4 4 5-5"/></svg></span> Data shape</div><div class="assess-desc">You can state rows, columns, grain, and types without looking anything up.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span> Missing values</div><div class="assess-desc">Null rates checked. Strategy decided (drop, fill, flag). Implemented in silver.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Duplicates</div><div class="assess-desc">Primary key defined. Pipeline enforces uniqueness before gold.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><circle cx="5" cy="14" r="3"/><circle cx="19" cy="14" r="3"/></svg></span> Bias awareness</div><div class="assess-desc">You can name what your data underrepresents and what that means.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg></span> Reproducible</div><div class="assess-desc">Re-run ingestion to gold on a fresh environment. Same output. No mystery files.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> ML-ready</div><div class="assess-desc">Gold table has clean, typed columns. No further pandas wrangling at training time.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+            <div class="assess-row"><div class="assess-dim"><span class="dim-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Input validation</div><div class="assess-desc">Serving endpoint rejects absurd inputs gracefully. No crashes, no garbage.</div><div class="assess-score"><select class="score-select" onchange="updateTotal()"><option value="0">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></div>
+        </div>
+
+        <div class="readiness-bar"><div class="readiness-fill" id="readinessFill"></div></div>
+        <div class="readiness-label" id="readinessLabel">Select scores above</div>
+        <div class="total-row">
+            <span class="total-label">Data Readiness Score</span>
+            <span class="total-score" id="totalScore">- / 35</span>
+        </div>
+
+        <div class="callout" id="interpretHigh" style="display:none;"><div class="callout-label">28-35: You're in great shape</div><p>Your data foundation is solid. Spend the remaining time on UI polish, model tuning, and writing the test script.</p></div>
+        <div class="callout gold" id="interpretMid" style="display:none;"><div class="callout-label">18-27: Good foundation, a few gaps to close</div><p>Look at your lowest scores. Those are your highest-leverage improvements. You've got time. Use it wisely.</p></div>
+        <div class="callout red" id="interpretLow" style="display:none;"><div class="callout-label">Below 18: Pipeline-first this week</div><p>Don't panic. Focus on getting clean, reproducible data flowing before worrying about the model or UI. Come to office hours.</p></div>
+
+        <div class="page-actions">
+            <button class="page-btn" onclick="goToPage('page1')" style="background:var(--ink-faint);">&larr; Back to Discovery</button>
+            <button class="page-btn" onclick="completePage2(); goToPage('page3')">Continue to Action Plan <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+
+    </div><!-- /page2 -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PAGE 3: ACTION PLAN (SPRINT GOALS)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="spa-page" id="page3">
+
+        <h2 class="part"><span class="part-num">Part 3</span> Your Action Plan</h2>
+
+        <p>You've identified what you know and what needs attention. Now commit to specific, achievable
+            goals for the next two weeks. Be concrete. "Fix data" isn't a sprint goal.
+            "Deduplicate bronze table by transaction_id" is.</p>
+
+        <div class="sprint-card">
+            <div class="sprint-label">Sprint Goal 1</div>
+            <div class="sprint-question">What is the single most impactful thing you will accomplish this week?</div>
+            <textarea id="sprint1" class="sprint-input" placeholder="e.g., My silver layer doesn't handle null values in the 'price' column. I will add a median fill step in my Spark notebook by Wednesday."></textarea>
+        </div>
+
+        <div class="sprint-card">
+            <div class="sprint-label">Sprint Goal 2</div>
+            <div class="sprint-question">What is the second most impactful thing you will accomplish this week?</div>
+            <textarea id="sprint2" class="sprint-input" placeholder="e.g., I haven't tested what happens when someone sends a string to my /predict endpoint. I will add type validation in the Lambda handler by Thursday."></textarea>
+        </div>
+
+        <div class="sprint-card">
+            <div class="sprint-label">Sprint Goal 3 (Stretch)</div>
+            <div class="sprint-question">If you finish the first two, what would you tackle next?</div>
+            <textarea id="sprint3" class="sprint-input" placeholder="e.g., Run df.describe() on my gold table and document the distributions of my top 5 features in my write-up."></textarea>
+        </div>
+
+        <div class="callout green">
+            <div class="callout-label">You've Got This</div>
+            <p>These three goals are your agenda for the next two weeks. If you close them, you'll walk
+                into submission feeling confident. If you want help with any of them, that's exactly what
+                office hours are for. Come say hi. We love this stuff.</p>
+        </div>
+
+        <div class="page-actions">
+            <button class="page-btn" onclick="goToPage('page2')" style="background:var(--ink-faint);">&larr; Back to Assessment</button>
+            <button class="page-btn green-btn" onclick="saveSession()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save My Session
+            </button>
+        </div>
+
+        <div id="saveBanner" class="save-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Session saved! Your responses will be here next time you open this page. Last saved: <strong id="saveTimestamp"></strong></span>
+        </div>
+
+    </div><!-- /page3 -->
+
+
+    <!-- FOOTER -->
+    <footer class="doc-footer">
+        Week 13 &middot; Distributed Systems for Data Science &middot; New College of Florida &middot; Spring 2026
+    </footer>
+
+
+    <script>
+        // ─── SPA NAVIGATION ───
+        const pages = { page1: true, page2: false, page3: false };
+
+        function goToPage(pageId) {
+            const tab = document.querySelector(`.nav-tab[data-page="${pageId}"]`);
+            if (tab.classList.contains('locked')) return;
+
+            document.querySelectorAll('.spa-page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            tab.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function unlockPage(pageId) {
+            const tab = document.querySelector(`.nav-tab[data-page="${pageId}"]`);
+            tab.classList.remove('locked');
+            pages[pageId] = true;
+        }
+
+        function completePage(pageId) {
+            const tab = document.querySelector(`.nav-tab[data-page="${pageId}"]`);
+            tab.classList.add('completed');
+        }
+
+        function completePage2() {
+            completePage('page2');
+            unlockPage('page3');
+        }
+
+
+        // ─── CARD DECK ───
+        const cards = document.querySelectorAll('.question-card');
+        const totalCards = cards.length;
+        let currentCard = 0;
+        const cardScores = {};
+
+        const dotsContainer = document.getElementById('progressDots');
+        for (let i = 0; i < totalCards; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dotsContainer.appendChild(dot);
+        }
+
+        function showCard(index) {
+            cards.forEach((c, i) => c.classList.toggle('active', i === index));
+            document.getElementById('cardCounter').textContent = `${index + 1} / ${totalCards}`;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').textContent = index === totalCards - 1 ? 'Done' : 'Next \u2192';
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((d, i) => {
+                d.className = 'dot';
+                if (i < index) d.classList.add(cardScores[i] === 'unsure' ? 'done-unsure' : 'done');
+                if (i === index) d.classList.add('active');
+            });
+        }
+
+        function nextCard() { if (currentCard < totalCards - 1) { currentCard++; showCard(currentCard); } }
+        function prevCard() { if (currentCard > 0) { currentCard--; showCard(currentCard); } }
+        function revealThink(el) { el.classList.toggle('revealed'); }
+
+        function scoreCard(btn, type) {
+            const card = btn.closest('.question-card');
+            const idx = Array.from(cards).indexOf(card);
+            card.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected-know', 'selected-unsure'));
+            btn.classList.add(type === 'know' ? 'selected-know' : 'selected-unsure');
+            cardScores[idx] = type;
+            updateScoreSummary();
+        }
+
+        function updateScoreSummary() {
+            let knows = 0, unsures = 0;
+            Object.values(cardScores).forEach(v => { if (v === 'know') knows++; if (v === 'unsure') unsures++; });
+            document.getElementById('knowCount').textContent = knows;
+            document.getElementById('unsureCount').textContent = unsures;
+
+            const scorableCards = document.querySelectorAll('[data-scorable="true"]').length;
+            if (knows + unsures >= scorableCards) {
+                document.getElementById('finalKnow').textContent = knows;
+                document.getElementById('page1Complete').style.display = 'block';
+                completePage('page1');
+                unlockPage('page2');
+            }
+        }
+
+
+        // ─── SELF-ASSESSMENT ───
+        function updateTotal() {
+            const selects = document.querySelectorAll('.score-select');
+            let total = 0, answered = 0;
+            selects.forEach(s => {
+                const v = parseInt(s.value);
+                if (v > 0) { total += v; answered++; s.style.color = v <= 2 ? 'var(--red)' : v <= 3 ? 'var(--gold)' : 'var(--green)'; }
+                else { s.style.color = 'var(--ink)'; }
+            });
+            const max = selects.length * 5;
+            document.getElementById('totalScore').textContent = answered > 0 ? `${total} / ${max}` : `- / ${max}`;
+            const pct = (total / max) * 100;
+            const fill = document.getElementById('readinessFill');
+            fill.style.width = `${pct}%`;
+            fill.style.background = pct >= 80 ? 'linear-gradient(90deg,#1a6b3a,#2d9e5e)' : pct >= 50 ? 'linear-gradient(90deg,#b07d20,#d4a83a)' : pct > 0 ? 'linear-gradient(90deg,#9b1c1c,#d04848)' : '';
+            const label = document.getElementById('readinessLabel');
+            label.textContent = answered === 0 ? 'Select scores above' : answered < selects.length ? `${answered} of ${selects.length} scored` : `${Math.round(pct)}% ready`;
+            document.getElementById('interpretHigh').style.display = (answered === selects.length && total >= 28) ? 'block' : 'none';
+            document.getElementById('interpretMid').style.display = (answered === selects.length && total >= 18 && total < 28) ? 'block' : 'none';
+            document.getElementById('interpretLow').style.display = (answered === selects.length && total < 18) ? 'block' : 'none';
+        }
+
+
+        // ─── SAVE / RESTORE ───
+        const STORAGE_KEY = 'kyd_session_w13';
+
+        function saveSession() {
+            const selects = document.querySelectorAll('.score-select');
+            const assessScores = Array.from(selects).map(s => s.value);
+            const data = {
+                cardScores: cardScores,
+                assessScores: assessScores,
+                sprint1: document.getElementById('sprint1').value,
+                sprint2: document.getElementById('sprint2').value,
+                sprint3: document.getElementById('sprint3').value,
+                savedAt: new Date().toISOString()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            const ts = new Date().toLocaleString();
+            document.getElementById('saveTimestamp').textContent = ts;
+            document.getElementById('saveBanner').style.display = 'flex';
+        }
+
+        function restoreSession() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+
+                // Restore card scores
+                if (data.cardScores) {
+                    Object.entries(data.cardScores).forEach(([idx, type]) => {
+                        const card = cards[parseInt(idx)];
+                        if (!card) return;
+                        const btn = card.querySelector(type === 'know' ? '.score-btn.know' : '.score-btn.unsure');
+                        if (btn) { cardScores[parseInt(idx)] = type; btn.classList.add(type === 'know' ? 'selected-know' : 'selected-unsure'); }
+                    });
+                    updateScoreSummary();
+                }
+
+                // Restore assessment
+                if (data.assessScores) {
+                    const selects = document.querySelectorAll('.score-select');
+                    data.assessScores.forEach((v, i) => { if (selects[i]) selects[i].value = v; });
+                    updateTotal();
+                }
+
+                // Restore sprint goals
+                if (data.sprint1) document.getElementById('sprint1').value = data.sprint1;
+                if (data.sprint2) document.getElementById('sprint2').value = data.sprint2;
+                if (data.sprint3) document.getElementById('sprint3').value = data.sprint3;
+
+                // Show restore banner
+                const savedDate = new Date(data.savedAt).toLocaleString();
+                document.getElementById('restoreDate').textContent = savedDate;
+                document.getElementById('restoreBanner').style.display = 'flex';
+
+            } catch (e) { console.warn('Could not restore session:', e); }
+        }
+
+
+        // ─── KEYBOARD NAV ───
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextCard(); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); prevCard(); }
+        });
+
+
+        // ─── INIT ───
+        restoreSession();
+    </script>
+
+</body>
+</html>
