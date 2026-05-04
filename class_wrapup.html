@@ -160,24 +160,24 @@
 <h2 class="part"><span class="part-num">Unit 1</span> Foundations: Git and AWS Onboarding</h2>
 <h3 class="section">What we covered</h3>
 <p>Git workflow (branch, commit, push, pull, merge, force push and why not), GitHub PR mechanics, merge conflicts. The AWS CLI, profiles, <code>aws sts get-caller-identity</code> as the canonical "who am I" check. The shape of an AWS account and the three pieces of credentials.</p>
-<p><em>On the quiz: Q1 to Q5.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
     <li><strong><code>git push --force</code>:</strong> rewrites remote history, breaks teammates' clones</li>
+    <li><strong>Fast-forward vs merge commit:</strong> linear advance vs an explicit join point in the graph</li>
     <li><strong>Merge conflict:</strong> same lines edited on different branches, must resolve manually</li>
+    <li><strong>IAM user vs IAM role:</strong> user has long-lived keys, role is assumed and gives short-lived credentials</li>
     <li><strong>AWS named profile:</strong> <code>--profile name</code> flag, lives in <code>~/.aws/credentials</code></li>
+    <li><strong>Env vars:</strong> <code>AWS_PROFILE</code>, <code>AWS_REGION</code>, <code>AWS_ACCESS_KEY_ID</code> override the file</li>
     <li><strong><code>aws sts get-caller-identity</code>:</strong> the canonical "who am I" check</li>
     <li><strong>Three credential parts:</strong> access key ID, secret access key, session token</li>
+    <li><strong><code>.gitignore</code>:</strong> the only thing standing between you and an exposed key on GitHub</li>
   </ul>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 2</span> S3, Cloud Computing, Distributed Systems</h2>
 <h3 class="section">What we covered</h3>
 <p>S3 buckets and the global namespace, static hosting, the cannon trajectory simulator as a worked example of when you do and do not need a server, the difference between "client only", "client plus API", and "client plus API plus database".</p>
-<p><em>On the quiz: Q6 and Q7.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
@@ -185,6 +185,10 @@
     <li><strong>Static hosting:</strong> <code>index.html</code> + bucket policy, no server</li>
     <li><strong>Three architecture shapes:</strong> client only, client + API, client + API + DB</li>
     <li><strong>Cannon simulator:</strong> pure client-side compute, zero backend needed</li>
+    <li><strong>Storage classes:</strong> Standard, Standard-IA, Glacier (cheaper to keep, slower to read)</li>
+    <li><strong>Presigned URL:</strong> time-limited signed access to one object, no AWS credentials needed by the caller</li>
+    <li><strong>CORS</strong> on the bucket is what lets a browser at a different origin actually upload or download</li>
+    <li><strong>Bucket policy vs object ACL:</strong> coarse, JSON, the modern default vs per-object legacy</li>
     <li><strong>Region</strong> is the failure boundary, <strong>Availability Zone</strong> is the rack-level isolation inside it</li>
   </ul>
 </div>
@@ -192,13 +196,19 @@
 <h2 class="part"><span class="part-num">Unit 3</span> Serverless: Lambda, DynamoDB, SAM</h2>
 <h3 class="section">What we covered</h3>
 <p>The AWS Lambda execution model, cold starts vs warm starts, why <code>boto3.resource(...)</code> belongs at module scope. DynamoDB partition keys, hot partitions, <code>get_item</code> vs <code>query</code> vs <code>scan</code>, and the <code>Decimal</code>-not-<code>float</code> rule. SAM as a way to describe Lambda + queue + table in one YAML file.</p>
-<p><em>On the quiz: Q8 to Q12 (and short answer S1).</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Cold vs warm start:</strong> first invocation pays init cost, subsequent ones reuse the container</li>
-    <li><strong><code>boto3.resource(...)</code> at module scope:</strong> reused across warm invocations, never re-built inside the handler</li>
+    <li><strong>boto3:</strong> the official AWS SDK for Python; every AWS API call you make from Python goes through it</li>
+    <li><strong><code>boto3.client</code> vs <code>boto3.resource</code>:</strong> low-level (every API parameter spelled out) vs higher-level object wrappers</li>
+    <li><strong>Cold vs warm start:</strong> first invocation pays init cost, subsequent ones reuse the same container and its module-scope state</li>
+    <li><strong><code>boto3.resource(...)</code> at module scope:</strong> built once per container, reused across warm invocations, never rebuilt inside the handler</li>
+    <li><strong>Why it matters:</strong> avoids paying TCP plus TLS plus auth on every call; cuts handler time and cost</li>
+    <li><strong>What to watch out for:</strong> do not stash per-request user state in module-scope objects (the next caller in that container will see it), and the connection pool inside the client is finite</li>
+    <li><strong>Lambda execution role:</strong> the IAM role Lambda assumes to call other AWS services on your behalf</li>
+    <li><strong>Lambda timeout:</strong> default 3 seconds, hard maximum 15 minutes</li>
+    <li><strong>Provisioned concurrency:</strong> pre-warmed containers to skip cold starts (costs money even when idle)</li>
+    <li><strong><code>requirements.txt</code></strong> is packaged at build time, not pip-installed at invoke time</li>
     <li><strong>DynamoDB partition key:</strong> routes the row to a physical partition</li>
     <li><strong>Hot partition:</strong> too many requests to one key value, throttling</li>
     <li><strong><code>get_item</code></strong> (O(1) by key) vs <strong><code>query</code></strong> (key range) vs <strong><code>scan</code></strong> (full table, avoid)</li>
@@ -210,8 +220,6 @@
 <h2 class="part"><span class="part-num">Unit 4</span> Scaling Laws and Reliability</h2>
 <h3 class="section">What we covered</h3>
 <p>Moore's Law and the clock-speed wall around 4 GHz. Amdahl's Law (the serial fraction caps your speedup) and Gustafson's Law (let the problem grow with the cores). The shift from "scale up" to "scale out" as a software-design consequence. Idempotency as the property that lets a system safely retry.</p>
-<p><em>On the quiz: Q13 to Q16.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
@@ -220,6 +228,10 @@
     <li><strong>Amdahl's Law:</strong> the serial fraction is the ceiling on parallel speedup</li>
     <li><strong>Gustafson's Law:</strong> scale the problem with the cores, not the speedup of a fixed problem</li>
     <li><strong>Scale up vs scale out:</strong> bigger machine vs more machines</li>
+    <li><strong>Latency vs throughput:</strong> time per request vs requests per second; you can trade one for the other</li>
+    <li><strong>Strong vs eventual consistency:</strong> read sees the latest write, vs read may see a slightly stale value</li>
+    <li><strong>CAP theorem:</strong> under a network partition you choose consistency or availability</li>
+    <li><strong>Backpressure:</strong> slow the producer when the consumer cannot keep up</li>
     <li><strong>Idempotent:</strong> safe to retry, same result every time</li>
   </ul>
 </div>
@@ -227,57 +239,61 @@
 <h2 class="part"><span class="part-num">Unit 5</span> Queues, Retries, the Distributed Cipher Lab</h2>
 <h3 class="section">What we covered</h3>
 <p>SQS visibility timeout, why the same message can be delivered twice, how to design a worker so that double delivery does not produce double side effects. The Distributed Cipher lab as a place where all of this had to be real, not theoretical.</p>
-<p><em>On the quiz: Q17.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
     <li><strong>SQS visibility timeout:</strong> message hidden from other workers after delivery, reappears if not deleted in time</li>
     <li><strong>At-least-once delivery:</strong> the same message can arrive twice, must design for it</li>
     <li><strong>Idempotent worker:</strong> double delivery produces no extra side effects</li>
-    <li><strong>Dead letter queue:</strong> catches messages that fail repeatedly</li>
+    <li><strong>Standard vs FIFO queue:</strong> high throughput, possible duplicates and reorder, vs ordered, deduplicated, lower throughput</li>
+    <li><strong>Dead letter queue:</strong> catches messages that fail repeatedly; redrive policy says after how many tries</li>
+    <li><strong>Batching:</strong> up to 10 messages per send or receive call to amortize the request overhead</li>
     <li><strong>Long polling:</strong> cheaper and faster than constant short polls</li>
+    <li><strong>"Exactly once"</strong> is a fairy tale you build out of at-least-once plus an idempotent consumer</li>
   </ul>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 6</span> pandas to Polars</h2>
 <h3 class="section">What we covered</h3>
 <p>Why pandas runs out of memory on a single laptop with multi-gigabyte files. Polars's lazy API, predicate pushdown, projection pushdown, and the Arrow columnar format underneath both Polars and Spark. The single-machine sweet spot before you have to reach for a cluster.</p>
-<p><em>On the quiz: Q18.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
     <li><strong>pandas:</strong> row-based, eager, single-threaded, runs out of memory around 1-2 GB</li>
     <li><strong>Polars:</strong> columnar, lazy, multi-threaded, scales to roughly RAM size</li>
+    <li><strong>The GIL:</strong> the reason pure-Python loops in pandas cannot use more than one core</li>
+    <li><strong>Vectorization:</strong> the trick that makes NumPy and Polars fast (C loops, not Python loops)</li>
     <li><strong>Predicate pushdown:</strong> apply filters at file scan, not after load</li>
     <li><strong>Projection pushdown:</strong> read only the columns you need</li>
     <li><strong>Apache Arrow:</strong> shared columnar in-memory format under both Polars and Spark</li>
+    <li><strong>DuckDB:</strong> another single-machine analytics engine, SQL on top of Parquet and Arrow</li>
+    <li><strong>Dask:</strong> the pandas-style API spread across many cores or many machines</li>
   </ul>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 7</span> Spark, the Lakehouse, and Unity Catalog</h2>
 <h3 class="section">What we covered</h3>
 <p>Spark transformations are lazy and only execute when an action is called (the DAG, the Catalyst optimizer). Unity Catalog as "DNS for data" with its three-level namespace (catalog.schema.table). Why a columnar query on Parquet is so much faster than the same query on CSV. The Lakehouse pattern as the answer to "data swamps".</p>
-<p><em>On the quiz: Q19 to Q23.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
     <li><strong>Lazy:</strong> transformations build a DAG, only actions trigger execution</li>
     <li><strong>Catalyst:</strong> Spark's query optimizer, rewrites the plan before it runs</li>
+    <li><strong>Driver vs executor:</strong> the planner that holds your code vs the workers that run the tasks</li>
+    <li><strong>Shuffle:</strong> the expensive operation when data has to move between executors</li>
+    <li><strong>Broadcast join:</strong> small table sent to every executor, no shuffle needed</li>
     <li><strong>Unity Catalog three-level namespace:</strong> <code>catalog.schema.table</code></li>
     <li><strong>Parquet vs CSV:</strong> columnar, compressed, schema-aware, much faster scans</li>
     <li><strong>Lakehouse:</strong> cheap object storage plus warehouse-grade governance and ACID</li>
     <li><strong>Delta Lake:</strong> the table format that gives you ACID transactions on top of Parquet</li>
+    <li><strong>Time travel:</strong> <code>VERSION AS OF</code> on a Delta table reads it as it was at that commit</li>
+    <li><strong>Iceberg, Hudi:</strong> the other two open table formats in the same family as Delta</li>
   </ul>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 8</span> Medallion Architecture: Bronze, Silver, Gold</h2>
 <h3 class="section">What we covered</h3>
 <p>Bronze as raw, append-only, all-strings, untouched. Silver as cleaned, typed, deduplicated, modeled. Gold as business-ready aggregates and joins. The custodian-report worked example. Why separating Silver from Gold pays off as soon as more than one team needs the cleaned data.</p>
-<p><em>On the quiz: Q24 and Q25 (and short answer S3).</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
@@ -286,22 +302,27 @@
     <li><strong>Gold:</strong> business-ready aggregates and joins, what dashboards and reports read</li>
     <li><strong>Why split Silver from Gold:</strong> many Gold tables can share the same Silver source</li>
     <li><strong>Reprocess from Bronze</strong> if Silver logic has a bug, no need to re-ingest</li>
+    <li><strong>Idempotent Bronze ingest:</strong> the same source file landed twice produces no duplicates downstream</li>
+    <li><strong>SCD Type 1 vs Type 2:</strong> overwrite the row vs keep history with <code>valid_from</code> and <code>valid_to</code></li>
+    <li><strong>Star schema:</strong> a fact table in the middle, dimension tables hanging off it</li>
   </ul>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 9</span> Declarative Pipelines and dbt</h2>
 <h3 class="section">What we covered</h3>
 <p>The imperative way: notebooks chained by Workflows, you wire the dependency graph by hand. The declarative way: <code>@dlt.table()</code> in Lakeflow Declarative Pipelines (DLT), where you describe the contract and the platform handles ordering, retries, and quality expectations. dbt as the SQL-first cousin: every model is a <code>SELECT</code>, <code>ref()</code> and <code>source()</code> build the DAG, the warehouse does the work.</p>
-<p><em>On the quiz: Q26 to Q28.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
     <li><strong>Imperative pipeline:</strong> notebooks chained by Workflows, you wire the DAG manually</li>
     <li><strong>Declarative pipeline:</strong> <code>@dlt.table()</code> describes the contract, platform handles ordering and retries</li>
     <li><strong>DLT expectations:</strong> data quality rules enforced at write time</li>
+    <li><strong>Streaming table vs materialized view in DLT:</strong> append-only incremental vs full recompute on a schedule</li>
     <li><strong>dbt model:</strong> every model is a <code>SELECT</code>, <code>ref()</code> and <code>source()</code> build the DAG</li>
     <li><strong>Materializations:</strong> view, table, incremental, ephemeral</li>
+    <li><strong>Incremental needs a watermark column</strong> (typically <code>updated_at</code>) so dbt knows what is new</li>
+    <li><strong>Jinja in dbt:</strong> SQL with conditionals, loops, and macros</li>
+    <li><strong>dbt snapshot:</strong> the built-in SCD2 helper</li>
     <li><strong>dbt tests:</strong> <code>unique</code>, <code>not_null</code>, <code>accepted_values</code>, custom SQL</li>
   </ul>
 </div>
@@ -309,8 +330,6 @@
 <h2 class="part"><span class="part-num">Unit 10</span> MLOps</h2>
 <h3 class="section">What we covered</h3>
 <p>The dev / staging / production framework. MLflow as the experiment tracker (params, metrics, artifacts, every run logged). The Model Registry as named, versioned models with stage transitions. The "imagine if all the engineers in the world suddenly lost GitHub" framing for why this matters in data science.</p>
-<p><em>On the quiz: Q29.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
@@ -318,6 +337,11 @@
     <li><strong>MLflow tracks:</strong> parameters, metrics, artifacts, every run</li>
     <li><strong>Model Registry:</strong> named, versioned models with stage transitions</li>
     <li><strong>Reproducibility:</strong> log enough that you can rerun the experiment six months later</li>
+    <li><strong>Feature store:</strong> shared, versioned features used by both training and serving</li>
+    <li><strong>Training-serving skew:</strong> the same feature computed two different ways in the two paths</li>
+    <li><strong>Model drift vs data drift:</strong> the model degrades vs the inputs themselves shift</li>
+    <li><strong>Canary or champion-challenger:</strong> route a small slice of traffic to the new version before full rollout</li>
+    <li><strong>Pickle is a known security risk</strong> for distributing model files</li>
     <li><strong>"GitHub for models":</strong> versioning, lineage, rollback</li>
   </ul>
 </div>
@@ -325,8 +349,6 @@
 <h2 class="part"><span class="part-num">Unit 11</span> Kafka and Event Streaming</h2>
 <h3 class="section">What we covered</h3>
 <p>Topics, partitions, offsets. The producer key as the routing input (<code>hash(key) mod num_partitions</code>) and what that gives you (per-key ordering) and what it costs you (a hot key is a hot partition). Consumer groups, rebalancing, the greenhouse-sensor lab.</p>
-<p><em>On the quiz: Q30.</em></p>
-
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
@@ -336,6 +358,10 @@
     <li><strong>Hot key</strong> creates a hot partition (the cost of ordering)</li>
     <li><strong>Consumer group:</strong> each partition consumed by exactly one member at a time</li>
     <li><strong>Rebalancing:</strong> triggered when a consumer joins or leaves the group</li>
+    <li><strong>Replication factor:</strong> how many brokers hold a copy of each partition</li>
+    <li><strong>Schema Registry:</strong> Avro or Protobuf contract enforcement on the topic</li>
+    <li><strong>Compaction vs retention:</strong> keep only the latest value per key vs delete after N days</li>
+    <li><strong>Kafka Connect, Kafka Streams, ksqlDB</strong> are the rest of the broader Kafka ecosystem</li>
   </ul>
 </div>
 
@@ -350,6 +376,10 @@
     <li><strong>Queue worker</strong> (async job) vs <strong>HTTP endpoint</strong> (sync request)</li>
     <li><strong>GPU vs CPU:</strong> massively parallel matrix math vs general-purpose compute</li>
     <li><strong>Cold start on GPU</strong> is real and expensive (model load time)</li>
+    <li><strong>Quantization (int8, int4):</strong> smaller weights, lower memory, slight accuracy loss</li>
+    <li><strong>Batching:</strong> pile multiple requests into one GPU call to amortize the per-call overhead</li>
+    <li><strong>vLLM, TGI:</strong> inference servers that handle batching and KV-cache reuse for you</li>
+    <li><strong>Container image size matters:</strong> bigger image, slower pull, slower cold start</li>
     <li><strong>You never own the hardware</strong></li>
   </ul>
 </div>
@@ -360,7 +390,6 @@
 
 <h3 class="section">Project 2: End-to-end pipeline with a predictive component</h3>
 <p>Ingestion, processing/storage, ML, serving. Medallion layers, MLflow tracking, a live endpoint behind a UI. The whole semester compressed into one deliverable.</p>
-<p><em>On the quiz: short answer S4.</em></p>
 
 <h2 class="part"><span class="part-num">Unit 14</span> The Map of the Territory</h2>
 <h3 class="section">One-page summary of the toolchains</h3>
