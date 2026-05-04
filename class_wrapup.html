@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semester in Review - Distributed Systems for Data Science</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink-soft: #4a4a6a;
+    --ink-faint: #8888aa;
+    --rule: #e0e0ee;
+    --bg: #fafafa;
+    --code-bg: #f0f0f8;
+    --accent: #1a4fa0;
+    --accent-lt: #e8eef9;
+    --gold: #b07d20;
+    --gold-lt: #fdf6e3;
+    --green: #1a6b3a;
+    --green-lt: #eaf5ee;
+    --red: #9b1c1c;
+    --red-lt: #fef2f2;
+  }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ink);
+    background: var(--bg);
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 60px 48px 120px;
+  }
+  .doc-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+  }
+  h1.doc-title {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .doc-sub { font-size: 14px; color: var(--ink-soft); }
+  .doc-header { border-bottom: 3px solid var(--ink); padding-bottom: 28px; margin-bottom: 52px; }
+
+  h2.part {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 56px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2.part .part-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+  h3.section {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 28px 0 8px;
+  }
+  h4.subsection {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 20px 0 6px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  p { margin: 8px 0; }
+
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-lt);
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout.gold  { border-color: var(--gold);  background: var(--gold-lt); }
+  .callout.green { border-color: var(--green); background: var(--green-lt); }
+  .callout.red   { border-color: var(--red);   background: var(--red-lt); }
+  .callout-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--ink-soft);
+  }
+  .callout p { font-size: 14px; }
+  .callout ul { font-size: 14px; margin: 6px 0 0 18px; padding: 0; }
+  .callout li { margin: 4px 0; }
+
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    background: var(--ink); color: #fff;
+    font-weight: 600;
+    font-family: 'IBM Plex Sans', sans-serif;
+    text-align: left; padding: 10px 14px;
+  }
+  tbody tr:nth-child(even) { background: #f4f4f8; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tbody td:first-child {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .doc-footer {
+    margin-top: 72px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <div class="doc-meta">Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida &nbsp;·&nbsp; Spring 2026</div>
+  <h1 class="doc-title">Semester in Review</h1>
+  <div class="doc-sub">A wall-chart of the territory we covered. Names the concepts on the final quiz, and pairs each unit with one open question for the room.</div>
+</header>
+
+<div class="callout">
+  <div class="callout-label">How To Use This</div>
+  <p>The left side of each unit lists the concrete things we touched: tools, commands, ideas, papers. The right side asks one open question for the class. There are no wrong answers in the discussion column. Plan to volunteer at least twice. The quiz numbers in parentheses tell you which final-quiz questions map to that unit, so this doubles as a study sheet.</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 1</span> Foundations: Git and AWS Onboarding</h2>
+<h3 class="section">What we covered</h3>
+<p>Git workflow (branch, commit, push, pull, merge, force push and why not), GitHub PR mechanics, merge conflicts. The AWS CLI, profiles, <code>aws sts get-caller-identity</code> as the canonical "who am I" check. The shape of an AWS account and the three pieces of credentials.</p>
+<p><em>On the quiz: Q1 to Q5.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Walk me through what felt different about cloud development versus the way you had been writing code before this class. Where did the change in mindset hit you?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 2</span> S3, Cloud Computing, Distributed Systems</h2>
+<h3 class="section">What we covered</h3>
+<p>S3 buckets and the global namespace, static hosting, the cannon trajectory simulator as a worked example of when you do and do not need a server, the difference between "client only", "client plus API", and "client plus API plus database".</p>
+<p><em>On the quiz: Q6 and Q7.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Pick one website or app you use every day. Sketch its minimum viable architecture in three boxes. What would have to change about your sketch if it suddenly had a million users tomorrow?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 3</span> Serverless: Lambda, DynamoDB, SAM</h2>
+<h3 class="section">What we covered</h3>
+<p>The AWS Lambda execution model, cold starts vs warm starts, why <code>boto3.resource(...)</code> belongs at module scope. DynamoDB partition keys, hot partitions, <code>get_item</code> vs <code>query</code> vs <code>scan</code>, and the <code>Decimal</code>-not-<code>float</code> rule. SAM as a way to describe Lambda + queue + table in one YAML file.</p>
+<p><em>On the quiz: Q8 to Q12 (and short answer S1).</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Where did the serverless model click for you? Where did it feel like fighting the framework? Be specific about the moment.</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 4</span> Scaling Laws and Reliability</h2>
+<h3 class="section">What we covered</h3>
+<p>Moore's Law and the clock-speed wall around 4 GHz. Amdahl's Law (the serial fraction caps your speedup) and Gustafson's Law (let the problem grow with the cores). The shift from "scale up" to "scale out" as a software-design consequence. Idempotency as the property that lets a system safely retry.</p>
+<p><em>On the quiz: Q13 to Q16.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Point at one moment this semester where Amdahl's Law actually mattered for something you built or were thinking about building. If you cannot find one, point at a moment in your life where Amdahl's Law was the explanation and you did not have a name for it yet.</p>
+</div>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Idempotency. Was this an "aha" or did it feel obvious? What changed (or did not change) in how you write code now that you have a name for it?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 5</span> Queues, Retries, the Distributed Cipher Lab</h2>
+<h3 class="section">What we covered</h3>
+<p>SQS visibility timeout, why the same message can be delivered twice, how to design a worker so that double delivery does not produce double side effects. The Distributed Cipher lab as a place where all of this had to be real, not theoretical.</p>
+<p><em>On the quiz: Q17.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>The cipher lab forced you to reason about a worker that could be invoked twice for the same message. Did that change how you would design a queue-driven system going forward? What is the first thing you would put in place?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 6</span> pandas to Polars</h2>
+<h3 class="section">What we covered</h3>
+<p>Why pandas runs out of memory on a single laptop with multi-gigabyte files. Polars's lazy API, predicate pushdown, projection pushdown, and the Arrow columnar format underneath both Polars and Spark. The single-machine sweet spot before you have to reach for a cluster.</p>
+<p><em>On the quiz: Q18.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Be honest. When would you actually reach for Polars over pandas? When would you skip both and jump straight to Spark? What is your real decision rule, not the textbook one?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 7</span> Spark, the Lakehouse, and Unity Catalog</h2>
+<h3 class="section">What we covered</h3>
+<p>Spark transformations are lazy and only execute when an action is called (the DAG, the Catalyst optimizer). Unity Catalog as "DNS for data" with its three-level namespace (catalog.schema.table). Why a columnar query on Parquet is so much faster than the same query on CSV. The Lakehouse pattern as the answer to "data swamps".</p>
+<p><em>On the quiz: Q19 to Q23.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Lazy evaluation. What was harder than expected about it? Has there been a moment where the laziness surprised you (in a good way or a bad one)?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 8</span> Medallion Architecture: Bronze, Silver, Gold</h2>
+<h3 class="section">What we covered</h3>
+<p>Bronze as raw, append-only, all-strings, untouched. Silver as cleaned, typed, deduplicated, modeled. Gold as business-ready aggregates and joins. The custodian-report worked example. Why separating Silver from Gold pays off as soon as more than one team needs the cleaned data.</p>
+<p><em>On the quiz: Q24 and Q25 (and short answer S3).</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Bronze, Silver, Gold makes a clean story on a slide. Did it feel useful when you were actually building, or did it feel like extra ceremony? Where did it earn its keep?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 9</span> Declarative Pipelines and dbt</h2>
+<h3 class="section">What we covered</h3>
+<p>The imperative way: notebooks chained by Workflows, you wire the dependency graph by hand. The declarative way: <code>@dlt.table()</code> in Lakeflow Declarative Pipelines (DLT), where you describe the contract and the platform handles ordering, retries, and quality expectations. dbt as the SQL-first cousin: every model is a <code>SELECT</code>, <code>ref()</code> and <code>source()</code> build the DAG, the warehouse does the work.</p>
+<p><em>On the quiz: Q26 to Q28.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>DLT versus the imperative notebook chain. Which one do you trust more, today, with what you know? What size team or what kind of project would change your answer?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 10</span> MLOps</h2>
+<h3 class="section">What we covered</h3>
+<p>The dev / staging / production framework. MLflow as the experiment tracker (params, metrics, artifacts, every run logged). The Model Registry as named, versioned models with stage transitions. The "imagine if all the engineers in the world suddenly lost GitHub" framing for why this matters in data science.</p>
+<p><em>On the quiz: Q29.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>The MLflow plus Model Registry workflow. Is this the kind of structure you would want in your own projects, or does it feel heavy for the work you actually do? What is the smallest version of it that would still be worth having?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 11</span> Kafka and Event Streaming</h2>
+<h3 class="section">What we covered</h3>
+<p>Topics, partitions, offsets. The producer key as the routing input (<code>hash(key) mod num_partitions</code>) and what that gives you (per-key ordering) and what it costs you (a hot key is a hot partition). Consumer groups, rebalancing, the greenhouse-sensor lab.</p>
+<p><em>On the quiz: Q30.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>What clicked for you about partitions and ordering? What is still murky? If you had to explain to a friend in one sentence why Kafka is not "just a message queue," what would you say?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 12</span> Specialized Compute (Runpod, GPUs)</h2>
+<h3 class="section">What we covered</h3>
+<p>Runpod serverless workers, the GPU vs CPU split, queue-based workers vs load-balanced HTTP endpoints. Compute as something you rent for ninety seconds at a time. The economics of "I do not own any of this hardware and I never will."</p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>What does it change about how you would design a feature when the GPU is something you rent for under two minutes per request? What kinds of products become possible that were not possible before?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 13</span> The Projects</h2>
+<h3 class="section">Project 1: AdFlow (serverless ad-auction pipeline)</h3>
+<p>SAM, Lambda, SQS, DynamoDB. Idempotency under retries. The first time most of you deployed infrastructure as code instead of clicking around the console.</p>
+
+<h3 class="section">Project 2: End-to-end pipeline with a predictive component</h3>
+<p>Ingestion, processing/storage, ML, serving. Medallion layers, MLflow tracking, a live endpoint behind a UI. The whole semester compressed into one deliverable.</p>
+<p><em>On the quiz: short answer S4.</em></p>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Of Project 1 and Project 2, which one taught you more? Why? Be specific - was it a concept, a debugging session, a design choice you had to defend, or something else entirely?</p>
+</div>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>One architectural decision you made on either project that you would revisit if you started over today. What would you change, and what is the lesson you want to keep?</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 14</span> The Map of the Territory</h2>
+<h3 class="section">One-page summary of the toolchains</h3>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Layer</th><th>Single machine</th><th>Distributed / cloud</th><th>What it adds</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Compute</td><td>your laptop</td><td>Lambda, Spark on Databricks, Runpod</td><td>elastic capacity, pay per call</td></tr>
+    <tr><td>Storage</td><td>local files, SQLite</td><td>S3, DynamoDB, Delta on object store</td><td>durable, shared, scales independently of compute</td></tr>
+    <tr><td>Processing</td><td>pandas, NumPy</td><td>Polars, Spark, dbt</td><td>columnar I/O, lazy plans, distributed shuffle</td></tr>
+    <tr><td>Pipelines</td><td>cron + scripts</td><td>Workflows, DLT, dbt DAGs</td><td>declarative dependencies, retries, lineage</td></tr>
+    <tr><td>Messaging</td><td>function calls</td><td>SQS, SNS, Kafka</td><td>decoupling, replay, partitioned ordering</td></tr>
+    <tr><td>ML lifecycle</td><td>a notebook somewhere</td><td>MLflow + Model Registry</td><td>reproducibility, versioned deploys</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 15</span> Open Discussion</h2>
+<p>The remaining time is yours. Below are five prompts. Pick at least one. Disagreement is welcome. Half-formed thoughts are welcome.</p>
+
+<div class="callout">
+  <div class="callout-label">Prompt 1 - More Time</div>
+  <p>What do you wish we had spent more time on? Be specific about what you would have traded away to get it.</p>
+</div>
+
+<div class="callout">
+  <div class="callout-label">Prompt 2 - The Surprise</div>
+  <p>What was the thing about distributed systems that surprised you most? Not the hardest thing - the most surprising one.</p>
+</div>
+
+<div class="callout">
+  <div class="callout-label">Prompt 3 - Forward</div>
+  <p>What is the next thing you want to build with what you learned this semester? Even if it is half-baked. Especially if it is half-baked.</p>
+</div>
+
+<div class="callout">
+  <div class="callout-label">Prompt 4 - The Honest One</div>
+  <p>Name one concept on the wall above that you nodded along to in lecture but you could not actually defend if a stranger pressed you on it. The point of saying it out loud is that we can fix it in the next twenty minutes.</p>
+</div>
+
+<div class="callout">
+  <div class="callout-label">Prompt 5 - The Career One</div>
+  <p>Which of these tools do you think you will actually touch in the next twelve months in school, an internship, a job, or a side project? Which one do you find most interesting intellectually, even if you do not expect to touch it day to day?</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Closing</div>
+  <p>The final quiz mirrors the structure of this chart. If you can carry on a real conversation about each of these fifteen units, you have the semester.</p>
+</div>
+
+<footer class="doc-footer">
+  Semester in Review &nbsp;·&nbsp; Distributed Systems for Data Science &nbsp;·&nbsp; New College of Florida &nbsp;·&nbsp; Spring 2026
+</footer>
+
+</body>
+</html>
