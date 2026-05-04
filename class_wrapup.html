@@ -163,15 +163,28 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong><code>git push --force</code>:</strong> rewrites remote history, breaks teammates' clones</li>
-    <li><strong>Fast-forward vs merge commit:</strong> linear advance vs an explicit join point in the graph</li>
+    <li><strong>What is Git:</strong> distributed version control; tracks changes to files over time, every clone is a full copy of the history</li>
+    <li><strong>Repository (repo):</strong> the folder Git tracks plus the hidden <code>.git</code> directory that holds the history</li>
+    <li><strong>Commit:</strong> a snapshot of the repo at a point in time, with author, message, and a parent commit</li>
+    <li><strong>Branch:</strong> a named pointer to a commit; lets parallel work happen without stepping on each other</li>
+    <li><strong>Merge:</strong> combine two branches; produces a merge commit with two parents</li>
+    <li><strong>Fast-forward vs merge commit:</strong> linear advance (no new commit) vs an explicit join point in the graph</li>
+    <li><strong>Pull request (PR):</strong> a GitHub workflow for proposing and reviewing a merge before it lands on <code>main</code></li>
     <li><strong>Merge conflict:</strong> same lines edited on different branches, must resolve manually</li>
-    <li><strong>IAM user vs IAM role:</strong> user has long-lived keys, role is assumed and gives short-lived credentials</li>
-    <li><strong>AWS named profile:</strong> <code>--profile name</code> flag, lives in <code>~/.aws/credentials</code></li>
+    <li><strong><code>git push --force</code>:</strong> rewrites remote history, breaks teammates' clones</li>
+    <li><strong><code>.gitignore</code>:</strong> list of paths Git refuses to track; the only thing standing between you and an exposed key on GitHub</li>
+    <li><strong>What is AWS:</strong> Amazon Web Services, the largest public cloud; you rent compute, storage, networking, and managed services by the second</li>
+    <li><strong>AWS account:</strong> a billing and isolation boundary identified by a 12-digit ID</li>
+    <li><strong>Region:</strong> a geographic area such as <code>us-east-1</code>; the failure boundary</li>
+    <li><strong>Availability Zone (AZ):</strong> a rack-level isolation inside a Region</li>
+    <li><strong>What is IAM:</strong> Identity and Access Management; the AWS service that decides who can do what</li>
+    <li><strong>IAM user:</strong> a long-lived identity with a username and access keys</li>
+    <li><strong>IAM role:</strong> a short-lived identity that something assumes (a Lambda, an EC2 instance, a developer via SSO)</li>
+    <li><strong>What is the AWS CLI:</strong> the command-line tool for talking to every AWS API from your terminal</li>
+    <li><strong>Named profile:</strong> <code>--profile name</code> flag, lives in <code>~/.aws/credentials</code>; lets one machine talk to many accounts</li>
     <li><strong>Env vars:</strong> <code>AWS_PROFILE</code>, <code>AWS_REGION</code>, <code>AWS_ACCESS_KEY_ID</code> override the file</li>
-    <li><strong><code>aws sts get-caller-identity</code>:</strong> the canonical "who am I" check</li>
     <li><strong>Three credential parts:</strong> access key ID, secret access key, session token</li>
-    <li><strong><code>.gitignore</code>:</strong> the only thing standing between you and an exposed key on GitHub</li>
+    <li><strong><code>aws sts get-caller-identity</code>:</strong> the canonical "who am I" check</li>
   </ul>
 </div>
 
@@ -181,15 +194,44 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>S3 bucket names</strong> are globally unique across all AWS accounts</li>
-    <li><strong>Static hosting:</strong> <code>index.html</code> + bucket policy, no server</li>
-    <li><strong>Three architecture shapes:</strong> client only, client + API, client + API + DB</li>
-    <li><strong>Cannon simulator:</strong> pure client-side compute, zero backend needed</li>
-    <li><strong>Storage classes:</strong> Standard, Standard-IA, Glacier (cheaper to keep, slower to read)</li>
-    <li><strong>Presigned URL:</strong> time-limited signed access to one object, no AWS credentials needed by the caller</li>
-    <li><strong>CORS</strong> on the bucket is what lets a browser at a different origin actually upload or download</li>
-    <li><strong>Bucket policy vs object ACL:</strong> coarse, JSON, the modern default vs per-object legacy</li>
-    <li><strong>Region</strong> is the failure boundary, <strong>Availability Zone</strong> is the rack-level isolation inside it</li>
+    <li><strong>What is the cloud:</strong> someone else's data center, rented by the second; you stop owning hardware</li>
+    <li><strong>Public cloud:</strong> AWS, Azure, GCP; anyone with a credit card can use them</li>
+    <li><strong>Private cloud:</strong> the same idea, owned by one company, behind their firewall</li>
+    <li><strong>Hybrid cloud:</strong> some workloads on public cloud, some on private, connected by a network</li>
+    <li><strong>What is a distributed system:</strong> work and data spread across multiple machines connected by a network, presenting itself as one system</li>
+    <li><strong>Why distribute:</strong> more capacity than any single machine and survival when one machine fails</li>
+    <li><strong>The eight fallacies of distributed computing:</strong> the network is reliable (it is not), latency is zero (it is not), bandwidth is infinite (it is not), the network is secure, topology never changes, there is one administrator, transport cost is zero, the network is homogeneous</li>
+    <li><strong>Centralized:</strong> one machine, one owner; your laptop, a single database server</li>
+    <li><strong>Distributed:</strong> many machines, one owner or one operator; AWS, Google's data centers</li>
+    <li><strong>Decentralized:</strong> many machines, many owners, no single coordinator; Bitcoin, BitTorrent, IPFS</li>
+    <li><strong>Federated:</strong> many independent owners cooperating by protocol; email, Mastodon, Git itself</li>
+    <li><strong>Region</strong> is the geographic failure boundary; an AZ is rack-level isolation inside it</li>
+    <li><strong>Edge / CDN:</strong> cached copies of content close to users (CloudFront, Cloudflare); cuts latency, cuts origin load</li>
+    <li><strong>SLA (Service Level Agreement):</strong> a contract about uptime, e.g. 99.9% means about 8.77 hours of allowed downtime per year</li>
+    <li><strong>Durability:</strong> the chance of losing a byte; S3 advertises eleven nines (99.999999999%)</li>
+    <li><strong>Availability:</strong> the chance the system answers when you ask; lower bar than durability</li>
+    <li><strong>What is S3 (Simple Storage Service):</strong> AWS's object store; key plus bytes plus metadata at planetary scale</li>
+    <li><strong>Object storage vs filesystem:</strong> flat key namespace, no folders, no inodes, no <code>fseek</code>; vs hierarchical directories and random access</li>
+    <li><strong>S3 bucket:</strong> a top-level container; bucket names are globally unique across all AWS accounts</li>
+    <li><strong>Static hosting:</strong> bucket holds <code>index.html</code> and assets, no server in the picture</li>
+    <li><strong>Storage classes:</strong> Standard (hot), Standard-IA (infrequent), Glacier (archival); cheaper to keep, slower to read</li>
+    <li><strong>What is CORS (Cross-Origin Resource Sharing):</strong> a browser-enforced rule that blocks one origin from reading another origin's response by default</li>
+    <li><strong>Why CORS gets in your way:</strong> during local dev your front end is on <code>localhost:3000</code> and your bucket is on <code>s3.amazonaws.com</code>, so the browser blocks the call until you configure the bucket</li>
+    <li><strong>Why CORS exists anyway:</strong> it is the basic line of defense against a malicious site reading user data from your bucket through a victim's browser</li>
+    <li><strong>Bucket policy vs object ACL:</strong> coarse JSON policy on the whole bucket (modern default) vs per-object legacy ACLs</li>
+    <li><strong>Eventual vs strong consistency:</strong> read might see a stale value vs read always sees the latest write; S3 is now strong read-after-write</li>
+    <li><strong>Architecture shape 1, client only:</strong> the browser does all the work; the cannon trajectory simulator was this</li>
+    <li><strong>Architecture shape 2, client + API:</strong> the browser calls a backend for compute or shared logic</li>
+    <li><strong>Architecture shape 3, client + API + database:</strong> the backend stores state across users and sessions</li>
+    <li><strong>Architecture shape 4, client + API + DB + queue + worker:</strong> an asynchronous job runs in the background; Project 1 was this</li>
+    <li><strong>Three-tier architecture:</strong> presentation, application logic, data; the classic web app layout</li>
+    <li><strong>Stateless service:</strong> any instance can serve any request; easy to scale horizontally because there is no per-instance memory</li>
+    <li><strong>Stateful service:</strong> a specific instance owns specific data; harder to scale, needs sticky routing or careful sharding</li>
+    <li><strong>Monolith:</strong> one deployable artifact, one codebase; simple at small scale, painful past a certain size</li>
+    <li><strong>Microservices:</strong> many small services, each with its own deployable; complex but independently scalable and independently owned</li>
+    <li><strong>Cannon trajectory simulator:</strong> pure client-side compute, zero backend needed; the worked example for "do not add a server you do not need"</li>
+    <li><strong>When you actually need a server:</strong> shared state across users, secrets that must not leak to the browser, heavy compute, scheduled work</li>
+    <li><strong>When you actually need a database:</strong> durability, query, transactions, indexing</li>
   </ul>
 </div>
 
@@ -199,21 +241,32 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>boto3:</strong> the official AWS SDK for Python; every AWS API call you make from Python goes through it</li>
-    <li><strong><code>boto3.client</code> vs <code>boto3.resource</code>:</strong> low-level (every API parameter spelled out) vs higher-level object wrappers</li>
-    <li><strong>Cold vs warm start:</strong> first invocation pays init cost, subsequent ones reuse the same container and its module-scope state</li>
+    <li><strong>What is serverless:</strong> you bring code, the platform brings everything else (servers, scaling, patching); you pay per invocation, not per hour of idle</li>
+    <li><strong>What is AWS Lambda:</strong> a managed service that runs your function in response to an event, with no server for you to provision or maintain</li>
+    <li><strong>How Lambda works:</strong> you upload code; AWS spins up a small container when an event arrives; runs your handler; freezes or destroys the container after</li>
+    <li><strong>Trigger / event source:</strong> what fires the function, e.g. an SQS message, an S3 put, an HTTP call via API Gateway, a CloudWatch schedule</li>
+    <li><strong>Handler:</strong> the function AWS calls; typically <code>def lambda_handler(event, context)</code></li>
+    <li><strong><code>event</code>:</strong> the JSON payload describing what triggered this invocation (queue message body, HTTP request, S3 key, etc.)</li>
+    <li><strong><code>context</code>:</strong> runtime metadata; request ID, log group name, milliseconds remaining</li>
+    <li><strong>Memory parameter:</strong> 128 MB up to 10 GB; CPU scales linearly with memory (more memory means a faster CPU slice too)</li>
+    <li><strong>Timeout:</strong> default 3 seconds, hard maximum 15 minutes</li>
+    <li><strong>Execution role:</strong> the IAM role Lambda assumes to call other AWS services on your behalf</li>
+    <li><strong><code>requirements.txt</code></strong> is packaged at build time, not pip-installed at invoke time; whatever you forgot is not there</li>
+    <li><strong>Lambda layers:</strong> a way to share libraries or large binaries across functions without bundling them into every zip</li>
+    <li><strong>Provisioned concurrency:</strong> pre-warmed containers to skip cold starts; costs money even when idle</li>
+    <li><strong>Cold vs warm start:</strong> first invocation pays init cost (download, unzip, import); subsequent calls reuse the same container and its module-scope state</li>
+    <li><strong>Module scope persists across warm invocations:</strong> anything outside the handler is built once per container and lives until that container is recycled</li>
+    <li><strong>What is boto3:</strong> the official AWS SDK for Python; every AWS API call you make from Python goes through it</li>
     <li><strong><code>boto3.resource(...)</code> at module scope:</strong> built once per container, reused across warm invocations, never rebuilt inside the handler</li>
-    <li><strong>Why it matters:</strong> avoids paying TCP plus TLS plus auth on every call; cuts handler time and cost</li>
-    <li><strong>What to watch out for:</strong> do not stash per-request user state in module-scope objects (the next caller in that container will see it), and the connection pool inside the client is finite</li>
-    <li><strong>Lambda execution role:</strong> the IAM role Lambda assumes to call other AWS services on your behalf</li>
-    <li><strong>Lambda timeout:</strong> default 3 seconds, hard maximum 15 minutes</li>
-    <li><strong>Provisioned concurrency:</strong> pre-warmed containers to skip cold starts (costs money even when idle)</li>
-    <li><strong><code>requirements.txt</code></strong> is packaged at build time, not pip-installed at invoke time</li>
-    <li><strong>DynamoDB partition key:</strong> routes the row to a physical partition</li>
-    <li><strong>Hot partition:</strong> too many requests to one key value, throttling</li>
-    <li><strong><code>get_item</code></strong> (O(1) by key) vs <strong><code>query</code></strong> (key range) vs <strong><code>scan</code></strong> (full table, avoid)</li>
-    <li><strong><code>Decimal</code> not <code>float</code>:</strong> DynamoDB rejects floats</li>
-    <li><strong>SAM:</strong> one YAML describes Lambda + queue + table + permissions; <code>sam build</code> then <code>sam deploy --guided</code></li>
+    <li><strong>What to watch out for:</strong> do not stash per-request user state in module-scope objects, the next caller in that container will see it; and the connection pool inside the client is finite</li>
+    <li><strong>What is DynamoDB:</strong> AWS's managed serverless NoSQL key-value and document store; single-digit-millisecond reads at any scale</li>
+    <li><strong>Partition key:</strong> the field that decides which physical partition the row lives on</li>
+    <li><strong>Sort key (optional):</strong> a second key that orders rows within a partition; lets you query a range</li>
+    <li><strong>Hot partition:</strong> too many requests to one partition-key value, throttling</li>
+    <li><strong><code>get_item</code></strong> (O(1) lookup by full key) vs <strong><code>query</code></strong> (range within a partition) vs <strong><code>scan</code></strong> (walks the whole table, avoid in production)</li>
+    <li><strong><code>Decimal</code> not <code>float</code>:</strong> DynamoDB rejects Python floats; use <code>decimal.Decimal</code></li>
+    <li><strong>What is SAM (Serverless Application Model):</strong> a YAML format that lets you describe Lambda + queue + table + permissions in one file; AWS converts it to CloudFormation under the hood</li>
+    <li><strong>SAM workflow:</strong> <code>sam build</code> then <code>sam deploy --guided</code> are the two commands you actually run</li>
   </ul>
 </div>
 
@@ -223,16 +276,23 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Moore's Law:</strong> transistor density doubles roughly every 2 years</li>
-    <li><strong>Clock speed wall:</strong> physics caps single-core speed around 4 GHz</li>
-    <li><strong>Amdahl's Law:</strong> the serial fraction is the ceiling on parallel speedup</li>
-    <li><strong>Gustafson's Law:</strong> scale the problem with the cores, not the speedup of a fixed problem</li>
-    <li><strong>Scale up vs scale out:</strong> bigger machine vs more machines</li>
-    <li><strong>Latency vs throughput:</strong> time per request vs requests per second; you can trade one for the other</li>
-    <li><strong>Strong vs eventual consistency:</strong> read sees the latest write, vs read may see a slightly stale value</li>
-    <li><strong>CAP theorem:</strong> under a network partition you choose consistency or availability</li>
-    <li><strong>Backpressure:</strong> slow the producer when the consumer cannot keep up</li>
-    <li><strong>Idempotent:</strong> safe to retry, same result every time</li>
+    <li><strong>What is scaling:</strong> adding capacity to handle more work; can be vertical (scale up) or horizontal (scale out)</li>
+    <li><strong>Scale up (vertical):</strong> bigger machine, more cores, more RAM, faster disk; simple but capped by what you can buy</li>
+    <li><strong>Scale out (horizontal):</strong> more machines, each doing a slice of the work; harder to design but no upper bound</li>
+    <li><strong>What is parallelism:</strong> doing multiple pieces of work at the same time on different cores or machines</li>
+    <li><strong>Concurrency vs parallelism:</strong> dealing with many things at once vs actually doing many things at once</li>
+    <li><strong>Moore's Law:</strong> transistor density on a chip roughly doubles every 18 to 24 months; the historical reason single-machine performance grew for decades</li>
+    <li><strong>Clock-speed wall:</strong> physics caps single-core clock speed around 4 GHz; heat and power kill anything faster, which is why we got more cores instead of faster cores</li>
+    <li><strong>Amdahl's Law:</strong> the serial fraction of a program is the ceiling on speedup, no matter how many cores you add; if 10% is serial, max speedup is 10x even with infinite cores</li>
+    <li><strong>Gustafson's Law:</strong> in practice you do not run a fixed problem on more cores; you run a bigger problem in the same time, so parallel speedup compounds</li>
+    <li><strong>Latency vs throughput:</strong> time per single request vs requests served per second; you can trade one for the other</li>
+    <li><strong>Strong consistency:</strong> a read always sees the latest write</li>
+    <li><strong>Eventual consistency:</strong> a read may see a slightly stale value, but the system converges</li>
+    <li><strong>CAP theorem:</strong> under a network partition you must pick consistency or availability; you cannot have both</li>
+    <li><strong>Backpressure:</strong> when a downstream consumer cannot keep up, push the slowdown back to the producer instead of dropping or buffering forever</li>
+    <li><strong>Idempotency:</strong> an operation is idempotent if running it twice produces the same result as running it once; the property that makes safe retry possible</li>
+    <li><strong>Retry:</strong> try the same operation again after a failure; only safe when the operation is idempotent</li>
+    <li><strong>Reliability:</strong> the probability the system does the right thing under stress</li>
   </ul>
 </div>
 
@@ -242,14 +302,23 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>SQS visibility timeout:</strong> message hidden from other workers after delivery, reappears if not deleted in time</li>
-    <li><strong>At-least-once delivery:</strong> the same message can arrive twice, must design for it</li>
-    <li><strong>Idempotent worker:</strong> double delivery produces no extra side effects</li>
+    <li><strong>What is a queue:</strong> a buffer between a producer and a consumer; producers add messages, consumers pull them</li>
+    <li><strong>Why use a queue:</strong> decoupling (the producer does not have to wait for the consumer), smoothing (the queue absorbs traffic spikes), durability (the message survives if the consumer crashes mid-work)</li>
+    <li><strong>Producer:</strong> the thing that puts work into the queue</li>
+    <li><strong>Consumer / worker:</strong> the thing that takes work out of the queue and processes it</li>
+    <li><strong>Message:</strong> the unit of work; usually JSON, with a body and optional attributes</li>
+    <li><strong>Synchronous vs asynchronous:</strong> caller waits for the result vs caller fires and forgets; the queue is what makes it asynchronous</li>
+    <li><strong>What is SQS:</strong> Simple Queue Service, AWS's managed message queue; you create a queue and send and receive messages over an HTTPS API</li>
     <li><strong>Standard vs FIFO queue:</strong> high throughput, possible duplicates and reorder, vs ordered, deduplicated, lower throughput</li>
-    <li><strong>Dead letter queue:</strong> catches messages that fail repeatedly; redrive policy says after how many tries</li>
-    <li><strong>Batching:</strong> up to 10 messages per send or receive call to amortize the request overhead</li>
-    <li><strong>Long polling:</strong> cheaper and faster than constant short polls</li>
-    <li><strong>"Exactly once"</strong> is a fairy tale you build out of at-least-once plus an idempotent consumer</li>
+    <li><strong>Visibility timeout:</strong> after a worker receives a message, SQS hides it from other workers for a configurable window; if the worker does not delete it in that window, it reappears</li>
+    <li><strong>At-least-once delivery:</strong> the same message can arrive twice; you must design for it</li>
+    <li><strong>Idempotent worker:</strong> double delivery produces no extra side effects (same result, no duplicate writes downstream)</li>
+    <li><strong>Dead letter queue (DLQ):</strong> catches messages that fail repeatedly so the main queue does not get blocked behind a poison message</li>
+    <li><strong>Redrive policy:</strong> the rule that says "after N failed receives, send to the DLQ"</li>
+    <li><strong>Batching:</strong> up to 10 messages per send or receive call; amortizes the per-call cost</li>
+    <li><strong>Long polling:</strong> the receive call waits up to 20 seconds for a message instead of returning empty immediately; cheaper and faster than constant short polls</li>
+    <li><strong>"Exactly once" delivery</strong> is a fairy tale you build out of at-least-once plus an idempotent consumer</li>
+    <li><strong>Distributed Cipher lab:</strong> where all of this had to be real, not theoretical</li>
   </ul>
 </div>
 
@@ -259,15 +328,25 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>pandas:</strong> row-based, eager, single-threaded, runs out of memory around 1-2 GB</li>
-    <li><strong>Polars:</strong> columnar, lazy, multi-threaded, scales to roughly RAM size</li>
-    <li><strong>The GIL:</strong> the reason pure-Python loops in pandas cannot use more than one core</li>
-    <li><strong>Vectorization:</strong> the trick that makes NumPy and Polars fast (C loops, not Python loops)</li>
-    <li><strong>Predicate pushdown:</strong> apply filters at file scan, not after load</li>
-    <li><strong>Projection pushdown:</strong> read only the columns you need</li>
-    <li><strong>Apache Arrow:</strong> shared columnar in-memory format under both Polars and Spark</li>
-    <li><strong>DuckDB:</strong> another single-machine analytics engine, SQL on top of Parquet and Arrow</li>
-    <li><strong>Dask:</strong> the pandas-style API spread across many cores or many machines</li>
+    <li><strong>What is a dataframe:</strong> a table-like data structure with named columns and typed values; the standard tool for tabular analysis in Python</li>
+    <li><strong>What is pandas:</strong> the original Python dataframe library; in-memory, eager, single-threaded; the default for the last fifteen years</li>
+    <li><strong>What is Polars:</strong> a newer dataframe library written in Rust; columnar, lazy, multi-threaded; same idea as pandas, faster engine</li>
+    <li><strong>pandas at a glance:</strong> row-oriented in memory, runs out of room around 1 to 2 GB on a typical laptop</li>
+    <li><strong>Polars at a glance:</strong> column-oriented in memory, scales to roughly the size of your RAM</li>
+    <li><strong>Eager evaluation:</strong> each operation runs immediately, in order, exactly as written; pandas does this</li>
+    <li><strong>Lazy evaluation:</strong> operations build a plan; the engine sees the whole plan before running it and can optimize; Polars and Spark do this</li>
+    <li><strong>What is the GIL (Global Interpreter Lock):</strong> Python's rule that only one thread runs Python bytecode at a time; the reason pure-Python loops in pandas cannot use more than one core</li>
+    <li><strong>Vectorization:</strong> replace Python loops with C loops over arrays; the trick that makes NumPy, pandas, and Polars fast</li>
+    <li><strong>Row-based vs columnar storage:</strong> rows together on disk and in memory vs columns together; columnar wins for analytics because you usually want a few columns over many rows</li>
+    <li><strong>What is predicate pushdown:</strong> the engine pushes <code>WHERE</code> filters down into the file scan, so unmatching rows are never read</li>
+    <li><strong>Effect of predicate pushdown:</strong> dramatically less I/O on large Parquet files; almost always a win, only "bad" if your filter is so loose that the engine still scans almost everything</li>
+    <li><strong>Where it lives:</strong> in the query engine (Polars, Spark, DuckDB) plus the file format (Parquet stores per-row-group min and max so the engine can skip whole chunks); pandas does not do this</li>
+    <li><strong>What is projection pushdown:</strong> the engine pushes column selection down into the file scan, so unwanted columns are never read</li>
+    <li><strong>Effect of projection pushdown:</strong> a query that uses 3 columns out of 50 reads roughly 6% of the bytes; combined with predicate pushdown a query can read less than 1% of a Parquet file</li>
+    <li><strong>What is Apache Arrow:</strong> a shared columnar in-memory format; lets Polars, Spark, DuckDB, and pandas pass data around with no copy or serialization</li>
+    <li><strong>What is Parquet:</strong> a columnar file format on disk; compressed, schema-aware; the standard storage format under modern data tools</li>
+    <li><strong>What is DuckDB:</strong> a single-machine analytics engine, SQL on top of Parquet and Arrow; the "SQLite for analytics"</li>
+    <li><strong>What is Dask:</strong> a pandas-style API spread across many cores or many machines; the way to scale pandas without rewriting</li>
   </ul>
 </div>
 
@@ -277,17 +356,27 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Lazy:</strong> transformations build a DAG, only actions trigger execution</li>
-    <li><strong>Catalyst:</strong> Spark's query optimizer, rewrites the plan before it runs</li>
-    <li><strong>Driver vs executor:</strong> the planner that holds your code vs the workers that run the tasks</li>
-    <li><strong>Shuffle:</strong> the expensive operation when data has to move between executors</li>
-    <li><strong>Broadcast join:</strong> small table sent to every executor, no shuffle needed</li>
-    <li><strong>Unity Catalog three-level namespace:</strong> <code>catalog.schema.table</code></li>
-    <li><strong>Parquet vs CSV:</strong> columnar, compressed, schema-aware, much faster scans</li>
-    <li><strong>Lakehouse:</strong> cheap object storage plus warehouse-grade governance and ACID</li>
-    <li><strong>Delta Lake:</strong> the table format that gives you ACID transactions on top of Parquet</li>
-    <li><strong>Time travel:</strong> <code>VERSION AS OF</code> on a Delta table reads it as it was at that commit</li>
-    <li><strong>Iceberg, Hudi:</strong> the other two open table formats in the same family as Delta</li>
+    <li><strong>What is Spark (Apache Spark):</strong> an open-source distributed compute engine for large datasets; you write transformations in Python, SQL, or Scala and Spark runs them in parallel across a cluster</li>
+    <li><strong>What is Databricks:</strong> the commercial cloud platform built around Spark; adds notebooks, job scheduling, Unity Catalog, Delta Lake, and a managed runtime</li>
+    <li><strong>What is a cluster:</strong> a set of machines working together as one logical compute resource; in Spark, one driver and many executors</li>
+    <li><strong>What is a DAG (Directed Acyclic Graph):</strong> a graph of steps where each step has dependencies (edges) and there are no cycles; Spark represents your query as a DAG of transformations before it runs anything</li>
+    <li><strong>What is lazy evaluation:</strong> the engine records what you asked for but does not run it; only an <em>action</em> (like <code>.show()</code>, <code>.count()</code>, or <code>.write()</code>) forces execution of the whole DAG at once</li>
+    <li><strong>Transformation vs action:</strong> transformations (<code>filter</code>, <code>select</code>, <code>join</code>) are lazy and just add to the DAG; actions trigger the engine to actually compute</li>
+    <li><strong>Why lazy is good:</strong> the engine sees the full plan and can optimize across stages (push filters down, prune columns, reorder joins); eager engines cannot</li>
+    <li><strong>What is the Catalyst optimizer:</strong> Spark's query planner; it takes your DAG and rewrites it (predicate pushdown, projection pushdown, join reordering) before generating the physical plan</li>
+    <li><strong>Driver vs executor:</strong> the driver is the single coordinator that holds your code and the plan; executors are the worker processes that actually run the tasks on data partitions</li>
+    <li><strong>What is a partition (in Spark):</strong> a chunk of the dataset assigned to one executor; parallelism in Spark is one task per partition</li>
+    <li><strong>What is a shuffle:</strong> the expensive operation where data has to move between executors over the network (e.g., a wide join or a group-by); the thing you try to minimize</li>
+    <li><strong>Broadcast join:</strong> a small table is sent in full to every executor so the join can happen locally with no shuffle; only safe when the small side is actually small</li>
+    <li><strong>What is the Lakehouse:</strong> an architecture pattern that puts warehouse-grade features (ACID transactions, schema, governance) on top of cheap object storage; the answer to "data swamps"</li>
+    <li><strong>What is Parquet:</strong> a columnar file format; compressed, schema-aware, splits data into row groups with min and max statistics so scanners can skip whole chunks</li>
+    <li><strong>Parquet vs CSV:</strong> Parquet is columnar, compressed, typed; CSV is row-based plain text with no types; Parquet scans can be 10 to 100 times faster</li>
+    <li><strong>What is Delta Lake:</strong> an open table format that adds a transaction log on top of Parquet files; gives you ACID transactions, schema enforcement, and updates and deletes on object storage</li>
+    <li><strong>What is ACID:</strong> Atomicity, Consistency, Isolation, Durability; the four guarantees that make a write either fully succeed or fully not happen, even with concurrent writers</li>
+    <li><strong>Time travel:</strong> <code>VERSION AS OF</code> or <code>TIMESTAMP AS OF</code> on a Delta table reads it as it was at that commit; useful for debugging and reproducibility</li>
+    <li><strong>What is Unity Catalog:</strong> Databricks' metadata and access-control layer; one place that knows what tables exist, what their schemas are, and who can read or write them</li>
+    <li><strong>Three-level namespace:</strong> <code>catalog.schema.table</code>; the catalog is the top container, schema (a.k.a. database) groups related tables, table is the actual data</li>
+    <li><strong>"DNS for data":</strong> the metaphor for Unity Catalog; the same name resolves to the same physical table no matter who is asking, with permissions enforced centrally</li>
   </ul>
 </div>
 
@@ -297,14 +386,19 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Bronze:</strong> raw, append-only, all strings, no transformations</li>
-    <li><strong>Silver:</strong> cleaned, typed, deduplicated, modeled</li>
-    <li><strong>Gold:</strong> business-ready aggregates and joins, what dashboards and reports read</li>
-    <li><strong>Why split Silver from Gold:</strong> many Gold tables can share the same Silver source</li>
-    <li><strong>Reprocess from Bronze</strong> if Silver logic has a bug, no need to re-ingest</li>
-    <li><strong>Idempotent Bronze ingest:</strong> the same source file landed twice produces no duplicates downstream</li>
-    <li><strong>SCD Type 1 vs Type 2:</strong> overwrite the row vs keep history with <code>valid_from</code> and <code>valid_to</code></li>
-    <li><strong>Star schema:</strong> a fact table in the middle, dimension tables hanging off it</li>
+    <li><strong>What is a data architecture:</strong> the layered plan for how raw data turns into useful tables; defines what lives where, who owns it, and what shape it has at each step</li>
+    <li><strong>What is the Medallion Architecture:</strong> a three-tier convention (Bronze, Silver, Gold) for organizing tables in a Lakehouse, popularized by Databricks; one of several layouts you might use</li>
+    <li><strong>Bronze (raw):</strong> data as it landed; append-only, all strings, no transformations, no parsing; the system of record for "what arrived"</li>
+    <li><strong>Silver (cleaned):</strong> typed, deduplicated, joined to reference data, conformed to a model; one canonical version of each entity</li>
+    <li><strong>Gold (business-ready):</strong> aggregates, joins, and views shaped for a specific consumer (a dashboard, a report, a model); read-optimized</li>
+    <li><strong>Why split Silver from Gold:</strong> many Gold tables (one per audience) can share the same Silver source; you avoid recomputing cleaning logic in each report</li>
+    <li><strong>Reprocess from Bronze</strong> if Silver logic has a bug; you do not need to re-ingest from the source system because Bronze still has the raw bytes</li>
+    <li><strong>Idempotent Bronze ingest:</strong> the same source file landed twice produces no duplicates downstream; usually achieved by including the file name and offset in the row key</li>
+    <li><strong>What is SCD (Slowly Changing Dimension):</strong> the pattern for handling attributes that change over time (a customer's address, a product's price)</li>
+    <li><strong>SCD Type 1 vs Type 2:</strong> overwrite the old value (no history) vs keep history with <code>valid_from</code> and <code>valid_to</code> columns</li>
+    <li><strong>What is a star schema:</strong> a fact table in the middle (one row per event or transaction) with dimension tables hanging off it (one row per entity); the classic warehouse layout</li>
+    <li><strong>Fact vs dimension:</strong> facts are measurements (sales amount, click count), dimensions are descriptors (customer, product, date)</li>
+    <li><strong>Custodian-report worked example:</strong> the in-class case where the same Silver layer fed three different Gold reports without recomputing the cleaning logic</li>
   </ul>
 </div>
 
@@ -314,16 +408,25 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Imperative pipeline:</strong> notebooks chained by Workflows, you wire the DAG manually</li>
-    <li><strong>Declarative pipeline:</strong> <code>@dlt.table()</code> describes the contract, platform handles ordering and retries</li>
-    <li><strong>DLT expectations:</strong> data quality rules enforced at write time</li>
-    <li><strong>Streaming table vs materialized view in DLT:</strong> append-only incremental vs full recompute on a schedule</li>
-    <li><strong>dbt model:</strong> every model is a <code>SELECT</code>, <code>ref()</code> and <code>source()</code> build the DAG</li>
-    <li><strong>Materializations:</strong> view, table, incremental, ephemeral</li>
-    <li><strong>Incremental needs a watermark column</strong> (typically <code>updated_at</code>) so dbt knows what is new</li>
-    <li><strong>Jinja in dbt:</strong> SQL with conditionals, loops, and macros</li>
-    <li><strong>dbt snapshot:</strong> the built-in SCD2 helper</li>
-    <li><strong>dbt tests:</strong> <code>unique</code>, <code>not_null</code>, <code>accepted_values</code>, custom SQL</li>
+    <li><strong>What is a data pipeline:</strong> a chain of steps that moves and transforms data from a source to a usable table; runs on a schedule or in response to new data</li>
+    <li><strong>Imperative style:</strong> you write the steps in order and wire the dependencies by hand; you say <em>how</em> to do each thing; notebooks chained by a Workflow are imperative</li>
+    <li><strong>Declarative style:</strong> you describe <em>what</em> the output table should be; the platform figures out the order, retries, and incrementality; <code>@dlt.table()</code> is declarative</li>
+    <li><strong>What is a Workflow (Databricks):</strong> a job scheduler in Databricks; lets you chain notebooks or scripts in a DAG with retry policies and a schedule</li>
+    <li><strong>What is DLT (Lakeflow Declarative Pipelines, formerly Delta Live Tables):</strong> a Databricks framework where you decorate a function with <code>@dlt.table()</code> and the platform manages the DAG, scheduling, and quality enforcement for you</li>
+    <li><strong>DLT expectations:</strong> data-quality rules attached to a table; rows that fail can be dropped, quarantined, or fail the run</li>
+    <li><strong>Streaming table:</strong> append-only, processed incrementally as new data arrives</li>
+    <li><strong>Materialized view:</strong> the result of a query, recomputed on a schedule or when its inputs change</li>
+    <li><strong>What is dbt (data build tool):</strong> a SQL-first transformation framework; you write <code>SELECT</code> statements, dbt builds the DAG, runs them in the right order in your warehouse, and tests the outputs</li>
+    <li><strong>dbt model:</strong> a single <code>.sql</code> file that contains one <code>SELECT</code>; the file name becomes the table name</li>
+    <li><strong><code>ref('other_model')</code>:</strong> dbt's way of saying "this model depends on that one"; this is how dbt builds the DAG, and it lets dbt swap in dev vs prod schemas automatically</li>
+    <li><strong><code>source('schema','table')</code>:</strong> a reference to a raw upstream table that dbt did not create; lets you test and document the inputs to your pipeline</li>
+    <li><strong>Materializations in dbt:</strong> <code>view</code> (cheap, recomputed on every read), <code>table</code> (full rebuild each run), <code>incremental</code> (only new rows), <code>ephemeral</code> (compiled inline as a CTE, no object created)</li>
+    <li><strong>Incremental model needs a watermark column</strong> (typically <code>updated_at</code> or an event timestamp) so dbt knows which rows are new since the last run</li>
+    <li><strong>What is Jinja:</strong> a Python templating language; lets you put <code>{{ variables }}</code>, <code>{% for %}</code> loops, and macros inside what would otherwise be plain SQL; dbt is essentially "SQL with Jinja on top"</li>
+    <li><strong>What is a macro (in dbt):</strong> a reusable Jinja function that generates SQL; lets you stop copy-pasting the same logic across models</li>
+    <li><strong>dbt snapshot:</strong> the built-in helper for SCD Type 2 history tracking on a source table</li>
+    <li><strong>dbt tests:</strong> built-in checks like <code>unique</code>, <code>not_null</code>, <code>accepted_values</code>, plus custom SQL tests; run as part of the build</li>
+    <li><strong>What is Airflow:</strong> the older general-purpose Python-based pipeline orchestrator; Workflows is the Databricks-native equivalent for the same job</li>
   </ul>
 </div>
 
@@ -333,16 +436,26 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Three stages:</strong> dev, staging, production</li>
-    <li><strong>MLflow tracks:</strong> parameters, metrics, artifacts, every run</li>
-    <li><strong>Model Registry:</strong> named, versioned models with stage transitions</li>
-    <li><strong>Reproducibility:</strong> log enough that you can rerun the experiment six months later</li>
-    <li><strong>Feature store:</strong> shared, versioned features used by both training and serving</li>
-    <li><strong>Training-serving skew:</strong> the same feature computed two different ways in the two paths</li>
-    <li><strong>Model drift vs data drift:</strong> the model degrades vs the inputs themselves shift</li>
-    <li><strong>Canary or champion-challenger:</strong> route a small slice of traffic to the new version before full rollout</li>
-    <li><strong>Pickle is a known security risk</strong> for distributing model files</li>
-    <li><strong>"GitHub for models":</strong> versioning, lineage, rollback</li>
+    <li><strong>What is MLOps:</strong> the practices and tools for taking a model from a notebook on someone's laptop to a versioned, monitored thing running in production; "DevOps for machine learning"</li>
+    <li><strong>Why it exists:</strong> models trained once on a static dataset behave differently in production where data shifts, code changes, and dependencies move; you need versioning, lineage, and rollback or you cannot debug</li>
+    <li><strong>What is an experiment (in ML terms):</strong> one training run with a specific dataset, code, and set of hyperparameters; you typically run hundreds while developing</li>
+    <li><strong>Three environment stages:</strong> dev (your sandbox), staging (a production-like rehearsal), production (real traffic, real users)</li>
+    <li><strong>Why three stages:</strong> dev catches bugs, staging catches integration problems and performance regressions, production is what the business depends on</li>
+    <li><strong>What is MLflow:</strong> an open-source tool for tracking ML experiments and managing trained models; the de facto standard, bundled into Databricks</li>
+    <li><strong>MLflow tracking:</strong> for each run, log parameters (the hyperparameters), metrics (accuracy, loss), and artifacts (the trained model file, plots, the dataset hash)</li>
+    <li><strong>What is the Model Registry:</strong> the part of MLflow that stores named, versioned models; lets you say "model X version 7 is now in production" without redeploying code</li>
+    <li><strong>Stage transitions:</strong> a model version moves from None to Staging to Production to Archived; the transition is the audit trail</li>
+    <li><strong>Reproducibility:</strong> log enough (code commit, data version, library versions, random seed) that you can rerun the experiment six months later and get the same answer</li>
+    <li><strong>What is a feature store:</strong> a shared, versioned table of model inputs (features); the same feature definition is used for both training and live serving so they stay in sync</li>
+    <li><strong>Training-serving skew:</strong> the bug where the same feature is computed one way during training (batch SQL) and a different way during serving (live Python); the model sees different distributions and quietly degrades</li>
+    <li><strong>Model drift:</strong> the model's predictions get worse over time even though the input distribution looks the same (concept change)</li>
+    <li><strong>Data drift:</strong> the inputs themselves shift; the model is doing the same thing, but the world changed under it</li>
+    <li><strong>Canary deployment:</strong> route a small slice of traffic (say 5%) to the new model version, watch its metrics, and ramp up only if it behaves</li>
+    <li><strong>Champion-challenger (a.k.a. A/B for models):</strong> run two model versions side by side on real traffic and compare</li>
+    <li><strong>What is pickle:</strong> Python's built-in object serialization; convenient and the default way most ML libraries save models</li>
+    <li><strong>Why pickle is a security risk:</strong> unpickling a file executes arbitrary Python code; a malicious model file can run anything when loaded; never load a pickle from an untrusted source</li>
+    <li><strong>"GitHub for models":</strong> the framing for the Model Registry; versioning, lineage, rollback, code review</li>
+    <li><strong>Lineage:</strong> the recorded chain "this model came from that training run, which used that data version, which came from that pipeline"; what makes audits and rollbacks possible</li>
   </ul>
 </div>
 
@@ -352,16 +465,29 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Topic, partition, offset</strong> are the three coordinates of a Kafka record</li>
-    <li><strong>Producer key</strong> routes via <code>hash(key) mod num_partitions</code></li>
-    <li><strong>Same key</strong> always lands on the same partition (per-key ordering)</li>
-    <li><strong>Hot key</strong> creates a hot partition (the cost of ordering)</li>
-    <li><strong>Consumer group:</strong> each partition consumed by exactly one member at a time</li>
-    <li><strong>Rebalancing:</strong> triggered when a consumer joins or leaves the group</li>
-    <li><strong>Replication factor:</strong> how many brokers hold a copy of each partition</li>
-    <li><strong>Schema Registry:</strong> Avro or Protobuf contract enforcement on the topic</li>
-    <li><strong>Compaction vs retention:</strong> keep only the latest value per key vs delete after N days</li>
-    <li><strong>Kafka Connect, Kafka Streams, ksqlDB</strong> are the rest of the broader Kafka ecosystem</li>
+    <li><strong>What is event streaming:</strong> a data pattern where systems publish small immutable records (events) as they happen, and other systems subscribe and react in near real time</li>
+    <li><strong>Event vs message:</strong> an event is a fact that happened ("user clicked button X at time T"); a message is a command or request to be processed; Kafka carries events</li>
+    <li><strong>What is Kafka (Apache Kafka):</strong> a distributed, append-only, log-based event streaming platform; producers write events, brokers store them, consumers read them at their own pace</li>
+    <li><strong>Why Kafka and not SQS:</strong> Kafka keeps the log around for days or weeks so many independent consumers can replay; SQS deletes a message once it is acknowledged</li>
+    <li><strong>What is a broker:</strong> one Kafka server in the cluster; brokers store partitions and serve reads and writes</li>
+    <li><strong>What is a topic:</strong> a named append-only log; the unit of organization (e.g., <code>orders</code>, <code>sensor-readings</code>)</li>
+    <li><strong>What is a partition:</strong> a topic is split into N partitions; each partition is its own ordered log on disk; partitions are how Kafka scales horizontally</li>
+    <li><strong>What is an offset:</strong> the position of a record inside a partition; monotonically increasing, never reused</li>
+    <li><strong>The three coordinates:</strong> <em>topic, partition, offset</em> uniquely identify any record in Kafka</li>
+    <li><strong>What is a producer:</strong> the client that publishes events to a topic</li>
+    <li><strong>Producer key:</strong> an optional value attached to each event; if set, the producer routes via <code>hash(key) mod num_partitions</code> to pick the partition</li>
+    <li><strong>Same key, same partition:</strong> all events with the same key land in the same partition, in the order they were sent; this is how you get per-key ordering across a distributed log</li>
+    <li><strong>Hot key:</strong> one key value gets disproportionate traffic; that single partition becomes a bottleneck while the others sit idle; the cost of ordering</li>
+    <li><strong>What is a consumer:</strong> the client that reads events from a topic; tracks its own offset</li>
+    <li><strong>Consumer group:</strong> a set of consumers cooperating to read a topic; each partition is assigned to exactly one member of the group at a time, so the work is split</li>
+    <li><strong>Rebalancing:</strong> when a consumer joins or leaves the group, Kafka reassigns partitions; brief pause in processing while it happens</li>
+    <li><strong>Replication factor:</strong> how many brokers hold a copy of each partition; 3 is typical (one leader, two followers); survives broker failures</li>
+    <li><strong>What is Avro / Protobuf:</strong> two compact binary serialization formats with explicit schemas; the standard alternatives to JSON for high-volume topics</li>
+    <li><strong>What is the Schema Registry:</strong> a separate service that stores the Avro or Protobuf schema for each topic and refuses incompatible producer changes; contract enforcement</li>
+    <li><strong>Log compaction vs time retention:</strong> compaction keeps only the latest value per key (good for "current state" topics); retention deletes records older than N days regardless of key</li>
+    <li><strong>What is Kafka Connect:</strong> a framework of pre-built connectors that move data between Kafka and external systems (databases, S3, search) without writing code</li>
+    <li><strong>What is Kafka Streams / ksqlDB:</strong> stream-processing libraries that let you run continuous SQL or Java transformations against Kafka topics</li>
+    <li><strong>Greenhouse-sensor lab:</strong> the in-class place where keyed routing, partitions, and consumer groups stopped being theory</li>
   </ul>
 </div>
 
@@ -372,15 +498,24 @@
 <div class="callout">
   <div class="callout-label">Flashcards</div>
   <ul>
-    <li><strong>Serverless GPU:</strong> rent for roughly 90 seconds per request, billed by the second</li>
-    <li><strong>Queue worker</strong> (async job) vs <strong>HTTP endpoint</strong> (sync request)</li>
-    <li><strong>GPU vs CPU:</strong> massively parallel matrix math vs general-purpose compute</li>
-    <li><strong>Cold start on GPU</strong> is real and expensive (model load time)</li>
-    <li><strong>Quantization (int8, int4):</strong> smaller weights, lower memory, slight accuracy loss</li>
-    <li><strong>Batching:</strong> pile multiple requests into one GPU call to amortize the per-call overhead</li>
-    <li><strong>vLLM, TGI:</strong> inference servers that handle batching and KV-cache reuse for you</li>
-    <li><strong>Container image size matters:</strong> bigger image, slower pull, slower cold start</li>
-    <li><strong>You never own the hardware</strong></li>
+    <li><strong>What is a CPU:</strong> the general-purpose processor; a few powerful cores optimized for branching code and a wide range of instructions</li>
+    <li><strong>What is a GPU:</strong> the graphics processor; thousands of small cores optimized for doing the same operation on a lot of numbers at once (matrix math)</li>
+    <li><strong>Why GPUs for ML:</strong> training and inference are mostly large matrix multiplies; that is exactly what GPU hardware is built for</li>
+    <li><strong>What is specialized compute:</strong> hardware purpose-built for one class of workload (GPU for matrix math, TPU for tensor ops, FPGA for custom logic) instead of a general CPU</li>
+    <li><strong>What is Runpod:</strong> a cloud provider that rents GPUs by the second, including a serverless option where you pay only when a request is actually running</li>
+    <li><strong>Serverless GPU model:</strong> the platform spins up a GPU container on demand, runs your code (typically tens of seconds for inference), and tears it down; you pay per request, not per hour</li>
+    <li><strong>Queue worker (async):</strong> client submits a job, gets a job ID, polls or gets a webhook when it is done; good for long jobs and bursty load</li>
+    <li><strong>HTTP endpoint (sync):</strong> client sends a request and blocks waiting for the response; good for low-latency interactive use</li>
+    <li><strong>Cold start on GPU is real:</strong> the model weights (often gigabytes) have to load into GPU memory before the first request can run; can dwarf the actual inference time</li>
+    <li><strong>What is model inference:</strong> running a trained model forward on new inputs to get predictions; the production-time half of ML</li>
+    <li><strong>What is quantization:</strong> storing model weights in fewer bits (int8, int4) instead of float32; smaller memory footprint, faster compute, small accuracy hit</li>
+    <li><strong>Batching:</strong> hold a few requests for a few milliseconds, run them through the GPU together; amortizes the per-call overhead and dramatically increases throughput</li>
+    <li><strong>What is vLLM:</strong> a popular open-source inference server for large language models; handles continuous batching and KV-cache reuse so you do not have to</li>
+    <li><strong>What is TGI (Text Generation Inference):</strong> Hugging Face's inference server; same job as vLLM, different implementation</li>
+    <li><strong>What is the KV cache:</strong> the per-request attention state in a transformer; reusing it across tokens is what makes generation fast</li>
+    <li><strong>Container image size matters:</strong> bigger image means slower pull from the registry on cold start; keep base images lean</li>
+    <li><strong>VRAM (GPU memory) is the binding constraint:</strong> a model that does not fit in VRAM either does not run or has to spill to slow host memory</li>
+    <li><strong>You never own the hardware:</strong> the entire economic story of cloud compute; you rent capacity at the granularity (seconds, minutes, hours) that matches your workload</li>
   </ul>
 </div>
 
