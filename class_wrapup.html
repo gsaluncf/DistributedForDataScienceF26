@@ -317,7 +317,67 @@
 </table>
 </div>
 
-<h2 class="part"><span class="part-num">Unit 15</span> Open Discussion</h2>
+<h2 class="part"><span class="part-num">Unit 15</span> You Can Now Do This</h2>
+<p>Most of you have not yet noticed how much you picked up. Read this list slowly. Every line is something you could not credibly do in January. Now you can.</p>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You can deploy a distributed API.</strong> SAM template, Lambda, queue, table, public endpoint. You did this in Project 1. That is a real, working, multi-component cloud system.</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You can reason about scaling tradeoffs.</strong> Vertical vs horizontal. Amdahl vs Gustafson. Hot partitions vs balanced ones. Idempotent vs unsafe-to-retry. You have the vocabulary now and you have used it under pressure.</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You can move from local to cluster to cloud.</strong> pandas on a laptop, Polars when pandas runs out, Spark on Databricks when Polars runs out, S3 plus Lambda when you need it to be live. You know the ladder and you know which rung fits which problem.</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You can choose between batch and streaming systems.</strong> Daily Medallion job vs Kafka topic with consumer groups. You have built both shapes and you know the cost of choosing wrong.</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You understand cost implications in real environments.</strong> Per-call Lambda pricing, GPU-minute Runpod pricing, storage-vs-compute separation, why a scan is the expensive query. You will not be the person on the team who burns the budget by accident.</p>
+</div>
+
+<div class="callout green">
+  <div class="callout-label">Capability</div>
+  <p><strong>You can wire an end-to-end pipeline with a model in it.</strong> Ingestion, processing, storage, training, registry, serving. Project 2 was the integration test of the whole semester and you shipped it.</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 16</span> Where This Lives in Industry</h2>
+<p>The semester was framed around concepts, not job titles. Here is the explicit mapping. Most teams split this work across three roles. You have touched all three.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Role</th><th>What we covered that they do</th><th>Tools from this class they use daily</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Data Engineer</td><td>Builds the pipelines that move and shape data. Owns Bronze, Silver, Gold. Owns reliability, schedule, lineage, cost. Hands data scientists a clean Gold table and goes home.</td><td>Spark, Delta, Medallion, DLT, dbt, S3, Kafka, Airflow-style schedulers</td></tr>
+    <tr><td>ML Engineer</td><td>Takes a model from notebook to production. Owns experiment tracking, model versioning, deployment, monitoring, retraining. Talks to both data engineers (upstream) and backend engineers (downstream).</td><td>MLflow, Model Registry, Databricks, GPU compute (Runpod-style), Lambda or container endpoints for serving</td></tr>
+    <tr><td>Backend Engineer (overlap with DS)</td><td>Builds the APIs and event systems that wrap the model and the data. Owns latency, idempotency, retries, rate limits, and the public contract of the system.</td><td>Lambda, SAM, DynamoDB, SQS, SNS, Kafka, API Gateway</td></tr>
+    <tr><td>Data Scientist (the role you might apply to)</td><td>Designs the experiment, picks the model, interprets the result, communicates the answer. Increasingly expected to ship the thing themselves on small teams.</td><td>pandas, Polars, Spark notebooks, MLflow, plus enough of the columns above to not be helpless</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout">
+  <div class="callout-label">The Honest Read</div>
+  <p>Pure data scientist roles still exist, but the market increasingly rewards people who can do their own data engineering and their own deployment. That hybrid is exactly what this class trained for. When a job posting says "data scientist who can take a model to production," they mean someone who can do the things on this wall.</p>
+</div>
+
+<div class="callout gold">
+  <div class="callout-label">Open Question</div>
+  <p>Look at the four rows in the table above. Which row sounds most like the work you would actually want to do day to day? Which row would you avoid? Be honest, not aspirational.</p>
+</div>
+
+<h2 class="part"><span class="part-num">Unit 17</span> Open Discussion</h2>
 <p>The remaining time is yours. Below are five prompts. Pick at least one. Disagreement is welcome. Half-formed thoughts are welcome.</p>
 
 <div class="callout">
@@ -347,7 +407,7 @@
 
 <div class="callout green">
   <div class="callout-label">Closing</div>
-  <p>The final quiz mirrors the structure of this chart. If you can carry on a real conversation about each of these fifteen units, you have the semester.</p>
+  <p>The final quiz mirrors the structure of this chart. If you can carry on a real conversation about each of these seventeen units, you have the semester.</p>
 </div>
 
 <footer class="doc-footer">
