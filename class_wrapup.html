@@ -322,27 +322,27 @@
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You can deploy a distributed API.</strong> SAM template, Lambda, queue, table, public endpoint. You did this in Project 1. That is a real, working, multi-component cloud system.</p>
+  <p><strong>You can deploy a multi-component distributed system.</strong> SAM template, Lambda worker, SQS input and results queues, DynamoDB table. You did this in Project 1.</p>
 </div>
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You can reason about scaling tradeoffs.</strong> Vertical vs horizontal. Amdahl vs Gustafson. Hot partitions vs balanced ones. Idempotent vs unsafe-to-retry. You have the vocabulary now and you have used it under pressure.</p>
+  <p><strong>You can reason about scaling tradeoffs.</strong> Vertical vs horizontal. Amdahl vs Gustafson. Hot partitions vs balanced ones. Idempotent vs unsafe-to-retry. You have the vocabulary now.</p>
 </div>
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You can move from local to cluster to cloud.</strong> pandas on a laptop, Polars when pandas runs out, Spark on Databricks when Polars runs out, S3 plus Lambda when you need it to be live. You know the ladder and you know which rung fits which problem.</p>
+  <p><strong>You can move from local to cluster to cloud.</strong> pandas on a laptop, Polars when pandas runs out, Spark on Databricks when Polars runs out, S3 plus Lambda when you need it to be live. You know the ladder.</p>
 </div>
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You can choose between batch and streaming systems.</strong> Daily Medallion job vs Kafka topic with consumer groups. You have built both shapes and you know the cost of choosing wrong.</p>
+  <p><strong>You can choose between batch and streaming systems.</strong> Daily Medallion job vs Kafka topic with consumer groups. You have built both shapes.</p>
 </div>
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You understand cost implications in real environments.</strong> Per-call Lambda pricing, GPU-minute Runpod pricing, storage-vs-compute separation, why a scan is the expensive query. You will not be the person on the team who burns the budget by accident.</p>
+  <p><strong>You understand cost implications in real environments.</strong> Per-call Lambda pricing, GPU-minute Runpod pricing, storage-vs-compute separation, why a scan is the expensive query. You know what to watch so a runaway scan or a forgotten cluster does not catch you off guard.</p>
 </div>
 
 <div class="callout green">
@@ -351,7 +351,7 @@
 </div>
 
 <h2 class="part"><span class="part-num">Unit 16</span> Where This Lives in Industry</h2>
-<p>The semester was framed around concepts, not job titles. Here is the explicit mapping. Most teams split this work across three roles. You have touched all three.</p>
+<p>The semester was framed around concepts, not job titles. Here is the explicit mapping. Most teams split this work across these roles. You have touched work from all four.</p>
 
 <div class="table-wrap">
 <table>
@@ -359,8 +359,8 @@
     <tr><th>Role</th><th>What we covered that they do</th><th>Tools from this class they use daily</th></tr>
   </thead>
   <tbody>
-    <tr><td>Data Engineer</td><td>Builds the pipelines that move and shape data. Owns Bronze, Silver, Gold. Owns reliability, schedule, lineage, cost. Hands data scientists a clean Gold table and goes home.</td><td>Spark, Delta, Medallion, DLT, dbt, S3, Kafka, Airflow-style schedulers</td></tr>
-    <tr><td>ML Engineer</td><td>Takes a model from notebook to production. Owns experiment tracking, model versioning, deployment, monitoring, retraining. Talks to both data engineers (upstream) and backend engineers (downstream).</td><td>MLflow, Model Registry, Databricks, GPU compute (Runpod-style), Lambda or container endpoints for serving</td></tr>
+    <tr><td>Data Engineer</td><td>Builds the pipelines that move and shape data. Owns Bronze, Silver, Gold. Owns reliability, schedule, lineage, cost. Hands data scientists a clean Gold table and goes home.</td><td>Spark, Delta, Medallion, DLT, dbt, S3, Kafka</td></tr>
+    <tr><td>ML Engineer</td><td>Takes a model from notebook to production. Owns experiment tracking, model versioning, deployment, monitoring, retraining. Talks to both data engineers (upstream) and backend engineers (downstream).</td><td>MLflow, Model Registry, Databricks, GPU compute (Runpod-style), Lambda for serving</td></tr>
     <tr><td>Backend Engineer (overlap with DS)</td><td>Builds the APIs and event systems that wrap the model and the data. Owns latency, idempotency, retries, rate limits, and the public contract of the system.</td><td>Lambda, SAM, DynamoDB, SQS, SNS, Kafka, API Gateway</td></tr>
     <tr><td>Data Scientist (the role you might apply to)</td><td>Designs the experiment, picks the model, interprets the result, communicates the answer. Increasingly expected to ship the thing themselves on small teams.</td><td>pandas, Polars, Spark notebooks, MLflow, plus enough of the columns above to not be helpless</td></tr>
   </tbody>
