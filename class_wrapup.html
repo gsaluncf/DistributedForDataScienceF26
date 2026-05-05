@@ -154,7 +154,7 @@
 
 <div class="callout">
   <div class="callout-label">How To Use This</div>
-  <p>Each unit has a short summary of what we touched, then a flashcard block of the terms and ideas worth knowing cold. The quiz numbers in parentheses tell you which final-quiz questions map to that unit, so this doubles as a study sheet. Unit 17 at the end has the open discussion prompts for class.</p>
+  <p>Each unit has a short summary of what we touched, then a flashcard block of the terms and ideas worth knowing cold. Unit 16 at the end has the open discussion prompts for class.</p>
 </div>
 
 <h2 class="part"><span class="part-num">Unit 1</span> Foundations: Git and AWS Onboarding</h2>
@@ -318,7 +318,6 @@
     <li><strong>Batching:</strong> up to 10 messages per send or receive call; amortizes the per-call cost</li>
     <li><strong>Long polling:</strong> the receive call waits up to 20 seconds for a message instead of returning empty immediately; cheaper and faster than constant short polls</li>
     <li><strong>"Exactly once" delivery</strong> is a fairy tale you build out of at-least-once plus an idempotent consumer</li>
-    <li><strong>Distributed Cipher lab:</strong> where all of this had to be real, not theoretical</li>
   </ul>
 </div>
 
@@ -398,7 +397,6 @@
     <li><strong>SCD Type 1 vs Type 2:</strong> overwrite the old value (no history) vs keep history with <code>valid_from</code> and <code>valid_to</code> columns</li>
     <li><strong>What is a star schema:</strong> a fact table in the middle (one row per event or transaction) with dimension tables hanging off it (one row per entity); the classic warehouse layout</li>
     <li><strong>Fact vs dimension:</strong> facts are measurements (sales amount, click count), dimensions are descriptors (customer, product, date)</li>
-    <li><strong>Custodian-report worked example:</strong> the in-class case where the same Silver layer fed three different Gold reports without recomputing the cleaning logic</li>
   </ul>
 </div>
 
@@ -487,46 +485,17 @@
     <li><strong>Log compaction vs time retention:</strong> compaction keeps only the latest value per key (good for "current state" topics); retention deletes records older than N days regardless of key</li>
     <li><strong>What is Kafka Connect:</strong> a framework of pre-built connectors that move data between Kafka and external systems (databases, S3, search) without writing code</li>
     <li><strong>What is Kafka Streams / ksqlDB:</strong> stream-processing libraries that let you run continuous SQL or Java transformations against Kafka topics</li>
-    <li><strong>Greenhouse-sensor lab:</strong> the in-class place where keyed routing, partitions, and consumer groups stopped being theory</li>
   </ul>
 </div>
 
-<h2 class="part"><span class="part-num">Unit 12</span> Specialized Compute (Runpod, GPUs)</h2>
-<h3 class="section">What we covered</h3>
-<p>Runpod serverless workers, the GPU vs CPU split, queue-based workers vs load-balanced HTTP endpoints. Compute as something you rent for ninety seconds at a time. The economics of "I do not own any of this hardware and I never will."</p>
-
-<div class="callout">
-  <div class="callout-label">Flashcards</div>
-  <ul>
-    <li><strong>What is a CPU:</strong> the general-purpose processor; a few powerful cores optimized for branching code and a wide range of instructions</li>
-    <li><strong>What is a GPU:</strong> the graphics processor; thousands of small cores optimized for doing the same operation on a lot of numbers at once (matrix math)</li>
-    <li><strong>Why GPUs for ML:</strong> training and inference are mostly large matrix multiplies; that is exactly what GPU hardware is built for</li>
-    <li><strong>What is specialized compute:</strong> hardware purpose-built for one class of workload (GPU for matrix math, TPU for tensor ops, FPGA for custom logic) instead of a general CPU</li>
-    <li><strong>What is Runpod:</strong> a cloud provider that rents GPUs by the second, including a serverless option where you pay only when a request is actually running</li>
-    <li><strong>Serverless GPU model:</strong> the platform spins up a GPU container on demand, runs your code (typically tens of seconds for inference), and tears it down; you pay per request, not per hour</li>
-    <li><strong>Queue worker (async):</strong> client submits a job, gets a job ID, polls or gets a webhook when it is done; good for long jobs and bursty load</li>
-    <li><strong>HTTP endpoint (sync):</strong> client sends a request and blocks waiting for the response; good for low-latency interactive use</li>
-    <li><strong>Cold start on GPU is real:</strong> the model weights (often gigabytes) have to load into GPU memory before the first request can run; can dwarf the actual inference time</li>
-    <li><strong>What is model inference:</strong> running a trained model forward on new inputs to get predictions; the production-time half of ML</li>
-    <li><strong>What is quantization:</strong> storing model weights in fewer bits (int8, int4) instead of float32; smaller memory footprint, faster compute, small accuracy hit</li>
-    <li><strong>Batching:</strong> hold a few requests for a few milliseconds, run them through the GPU together; amortizes the per-call overhead and dramatically increases throughput</li>
-    <li><strong>What is vLLM:</strong> a popular open-source inference server for large language models; handles continuous batching and KV-cache reuse so you do not have to</li>
-    <li><strong>What is TGI (Text Generation Inference):</strong> Hugging Face's inference server; same job as vLLM, different implementation</li>
-    <li><strong>What is the KV cache:</strong> the per-request attention state in a transformer; reusing it across tokens is what makes generation fast</li>
-    <li><strong>Container image size matters:</strong> bigger image means slower pull from the registry on cold start; keep base images lean</li>
-    <li><strong>VRAM (GPU memory) is the binding constraint:</strong> a model that does not fit in VRAM either does not run or has to spill to slow host memory</li>
-    <li><strong>You never own the hardware:</strong> the entire economic story of cloud compute; you rent capacity at the granularity (seconds, minutes, hours) that matches your workload</li>
-  </ul>
-</div>
-
-<h2 class="part"><span class="part-num">Unit 13</span> The Projects</h2>
+<h2 class="part"><span class="part-num">Unit 12</span> The Projects</h2>
 <h3 class="section">Project 1: AdFlow (serverless ad-auction pipeline)</h3>
 <p>SAM, Lambda, SQS, DynamoDB. Idempotency under retries. The first time most of you deployed infrastructure as code instead of clicking around the console.</p>
 
 <h3 class="section">Project 2: End-to-end pipeline with a predictive component</h3>
 <p>Ingestion, processing/storage, ML, serving. Medallion layers, MLflow tracking, a live endpoint behind a UI. The whole semester compressed into one deliverable.</p>
 
-<h2 class="part"><span class="part-num">Unit 14</span> The Map of the Territory</h2>
+<h2 class="part"><span class="part-num">Unit 13</span> The Map of the Territory</h2>
 <h3 class="section">One-page summary of the toolchains</h3>
 <div class="table-wrap">
 <table>
@@ -534,7 +503,7 @@
     <tr><th>Layer</th><th>Single machine</th><th>Distributed / cloud</th><th>What it adds</th></tr>
   </thead>
   <tbody>
-    <tr><td>Compute</td><td>your laptop</td><td>Lambda, Spark on Databricks, Runpod</td><td>elastic capacity, pay per call</td></tr>
+    <tr><td>Compute</td><td>your laptop</td><td>Lambda, Spark on Databricks</td><td>elastic capacity, pay per call</td></tr>
     <tr><td>Storage</td><td>local files, SQLite</td><td>S3, DynamoDB, Delta on object store</td><td>durable, shared, scales independently of compute</td></tr>
     <tr><td>Processing</td><td>pandas, NumPy</td><td>Polars, Spark, dbt</td><td>columnar I/O, lazy plans, distributed shuffle</td></tr>
     <tr><td>Pipelines</td><td>cron + scripts</td><td>Workflows, DLT, dbt DAGs</td><td>declarative dependencies, retries, lineage</td></tr>
@@ -544,7 +513,7 @@
 </table>
 </div>
 
-<h2 class="part"><span class="part-num">Unit 15</span> You Can Now Do This</h2>
+<h2 class="part"><span class="part-num">Unit 14</span> You Can Now Do This</h2>
 <p>Most of you have not yet noticed how much you picked up. Read this list slowly. Every line is something you could not credibly do in January. Now you can.</p>
 
 <div class="callout green">
@@ -569,7 +538,7 @@
 
 <div class="callout green">
   <div class="callout-label">Capability</div>
-  <p><strong>You understand cost implications in real environments.</strong> Per-call Lambda pricing, GPU-minute Runpod pricing, storage-vs-compute separation, why a scan is the expensive query. You know what to watch so a runaway scan or a forgotten cluster does not catch you off guard.</p>
+  <p><strong>You understand cost implications in real environments.</strong> Per-call Lambda pricing, storage-vs-compute separation, why a scan is the expensive query. You know what to watch so a runaway scan or a forgotten cluster does not catch you off guard.</p>
 </div>
 
 <div class="callout green">
@@ -577,7 +546,7 @@
   <p><strong>You can wire an end-to-end pipeline with a model in it.</strong> Ingestion, processing, storage, training, registry, serving. Project 2 was the integration test of the whole semester and you shipped it.</p>
 </div>
 
-<h2 class="part"><span class="part-num">Unit 16</span> Where This Lives in Industry</h2>
+<h2 class="part"><span class="part-num">Unit 15</span> Where This Lives in Industry</h2>
 <p>The semester was framed around concepts, not job titles. Here is the explicit mapping. Most teams split this work across these roles. You have touched work from all four.</p>
 
 <div class="table-wrap">
@@ -587,7 +556,7 @@
   </thead>
   <tbody>
     <tr><td>Data Engineer</td><td>Builds the pipelines that move and shape data. Owns Bronze, Silver, Gold. Owns reliability, schedule, lineage, cost. Hands data scientists a clean Gold table and goes home.</td><td>Spark, Delta, Medallion, DLT, dbt, S3, Kafka</td></tr>
-    <tr><td>ML Engineer</td><td>Takes a model from notebook to production. Owns experiment tracking, model versioning, deployment, monitoring, retraining. Talks to both data engineers (upstream) and backend engineers (downstream).</td><td>MLflow, Model Registry, Databricks, GPU compute (Runpod-style), Lambda for serving</td></tr>
+    <tr><td>ML Engineer</td><td>Takes a model from notebook to production. Owns experiment tracking, model versioning, deployment, monitoring, retraining. Talks to both data engineers (upstream) and backend engineers (downstream).</td><td>MLflow, Model Registry, Databricks, Lambda for serving</td></tr>
     <tr><td>Backend Engineer (overlap with DS)</td><td>Builds the APIs and event systems that wrap the model and the data. Owns latency, idempotency, retries, rate limits, and the public contract of the system.</td><td>Lambda, SAM, DynamoDB, SQS, SNS, Kafka, API Gateway</td></tr>
     <tr><td>Data Scientist (the role you might apply to)</td><td>Designs the experiment, picks the model, interprets the result, communicates the answer. Increasingly expected to ship the thing themselves on small teams.</td><td>pandas, Polars, Spark notebooks, MLflow, plus enough of the columns above to not be helpless</td></tr>
   </tbody>
@@ -599,7 +568,7 @@
   <p>Pure data scientist roles still exist, but the market increasingly rewards people who can do their own data engineering and their own deployment. That hybrid is exactly what this class trained for. When a job posting says "data scientist who can take a model to production," they mean someone who can do the things on this wall.</p>
 </div>
 
-<h2 class="part"><span class="part-num">Unit 17</span> Open Discussion</h2>
+<h2 class="part"><span class="part-num">Unit 16</span> Open Discussion</h2>
 <p>The remaining time is yours. Below are five prompts. Pick at least one. Disagreement is welcome. Half-formed thoughts are welcome.</p>
 
 <div class="callout">
